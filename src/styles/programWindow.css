@@ -1,0 +1,785 @@
+/* Program Window Styles */
+.program-window {
+  position: absolute;
+  background-color: var(--win98-gray);
+  border: 2px outset var(--win98-gray);
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  min-height: 150px;
+}
+
+.program-window:focus-within {
+  /* Ensure focused windows appear on top */
+}
+
+/* Title Bar */
+.program-window-title {
+  background: linear-gradient(90deg, var(--win98-blue) 0%, var(--win98-dark-blue) 100%);
+  color: white;
+  padding: 2px 4px;
+  font-weight: bold;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: move;
+  user-select: none;
+  height: 18px;
+}
+
+.title-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.window-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.window-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.title-controls {
+  display: flex;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.win98-title-button {
+  background-color: var(--win98-gray);
+  border: 1px outset var(--win98-gray);
+  color: black;
+  font-size: 8px;
+  font-weight: bold;
+  width: 16px;
+  height: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+}
+
+.win98-title-button:hover {
+  background-color: var(--win98-light-gray);
+}
+
+.win98-title-button:active {
+  border: 1px inset var(--win98-gray);
+}
+
+.win98-title-button.close:hover {
+  background-color: #ff6b6b;
+  color: white;
+}
+
+/* Window Content */
+.program-window-content {
+  flex: 1;
+  background-color: white;
+  border: 1px inset var(--win98-gray);
+  margin: 1px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Resize Handle */
+.resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  cursor: nw-resize;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    var(--win98-dark-gray) 30%,
+    var(--win98-dark-gray) 35%,
+    transparent 35%,
+    transparent 65%,
+    var(--win98-dark-gray) 65%,
+    var(--win98-dark-gray) 70%,
+    transparent 70%
+  );
+}
+
+/* Program-specific content areas */
+.program-content {
+  padding: 8px;
+  height: 100%;
+  overflow: auto;
+}
+
+.program-content textarea,
+.program-content input {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  border: 1px inset var(--win98-gray);
+  padding: 4px;
+  background-color: white;
+  width: 100%;
+  resize: none;
+}
+
+.program-content textarea {
+  height: 100%;
+  min-height: 200px;
+}
+
+/* Program toolbars */
+.program-toolbar {
+  background-color: var(--win98-gray);
+  border-bottom: 1px solid var(--win98-dark-gray);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+  border-right: 1px solid var(--win98-dark-gray);
+}
+
+.toolbar-group:last-child {
+  border-right: none;
+}
+
+.toolbar-button {
+  background-color: var(--win98-gray);
+  border: 1px outset var(--win98-gray);
+  padding: 2px 6px;
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-button:hover {
+  background-color: var(--win98-light-gray);
+}
+
+.toolbar-button:active,
+.toolbar-button.active {
+  border: 1px inset var(--win98-gray);
+}
+
+.toolbar-select {
+  background-color: white;
+  border: 1px inset var(--win98-gray);
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 11px;
+  padding: 2px 4px;
+  height: 20px;
+  margin: 0 2px;
+}
+
+.toolbar-select:disabled {
+  background-color: var(--win98-gray);
+  color: var(--win98-dark-gray);
+}
+
+.color-picker-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin: 0 2px;
+  position: relative;
+}
+
+.color-picker {
+  position: absolute;
+  opacity: 0;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.color-picker-label:hover {
+  opacity: 0.8;
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 20px;
+  background-color: var(--win98-dark-gray);
+  margin: 0 4px;
+}
+
+/* Status bars */
+.program-status-bar {
+  background-color: var(--win98-gray);
+  border-top: 1px solid var(--win98-dark-gray);
+  padding: 2px 8px;
+  font-size: 11px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.status-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-panel {
+  border: 1px inset var(--win98-gray);
+  padding: 1px 4px;
+  background-color: white;
+  font-size: 10px;
+}
+
+/* Menu bars */
+.program-menu-bar {
+  background-color: var(--win98-gray);
+  border-bottom: 1px solid var(--win98-dark-gray);
+  padding: 2px;
+  display: flex;
+}
+
+.menu-item {
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.menu-item:hover {
+  background-color: var(--win98-blue);
+  color: white;
+}
+
+/* Canvas for Paint program */
+.paint-canvas {
+  border: 1px inset var(--win98-gray);
+  background-color: white;
+  cursor: crosshair;
+}
+
+/* Checkers board */
+.checkers-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  width: 320px;
+  height: 320px;
+  border: 2px inset var(--win98-gray);
+  margin: 8px auto;
+}
+
+.checkers-square {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 24px;
+  user-select: none;
+}
+
+.checkers-square.light {
+  background-color: #f0d0a0;
+}
+
+.checkers-square.dark {
+  background-color: #8b4513;
+}
+
+.checkers-square.selected {
+  background-color: #ffff99 !important;
+}
+
+.checkers-piece {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.checkers-piece.red {
+  background: radial-gradient(circle, #ff6b6b, #cc0000);
+}
+
+.checkers-piece.black {
+  background: radial-gradient(circle, #666, #000);
+}
+
+.checkers-piece.king::after {
+  content: '♔';
+  font-size: 16px;
+}
+
+/* Winamp Player Styles */
+.winamp-player {
+  background: linear-gradient(135deg, #232323, #1a1a1a);
+  color: #00ff00;
+  font-family: 'Better VCR', monospace;
+  font-size: 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.winamp-display {
+  background: linear-gradient(135deg, #000000, #1a1a1a);
+  border: 2px inset #666;
+  margin: 4px;
+  padding: 4px;
+  height: 80px;
+  position: relative;
+}
+
+.winamp-screen {
+  background: #000000;
+  border: 1px inset #333;
+  padding: 4px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.track-info {
+  color: #00ff00;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.track-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-shadow: 0 0 2px #00ff00;
+}
+
+.track-time {
+  font-size: 9px;
+  color: #ffff00;
+  margin-top: 2px;
+}
+
+.winamp-visualizer {
+  display: flex;
+  align-items: end;
+  height: 30px;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.visualizer-bar {
+  width: 3px;
+  background: linear-gradient(to top, #ff0000, #ffff00, #00ff00);
+  border-radius: 1px;
+  transition: height 0.1s ease;
+  min-height: 2px;
+}
+
+.winamp-controls {
+  background: linear-gradient(135deg, #666, #333);
+  border-top: 1px solid #888;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+}
+
+.winamp-btn {
+  background: linear-gradient(135deg, #999, #666);
+  border: 1px outset #888;
+  color: white;
+  width: 32px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+}
+
+.winamp-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #aaa, #777);
+}
+
+.winamp-btn:active:not(:disabled) {
+  border: 1px inset #888;
+  background: linear-gradient(135deg, #777, #555);
+}
+
+.winamp-btn:disabled {
+  background: linear-gradient(135deg, #555, #333);
+  color: #666;
+  cursor: not-allowed;
+}
+
+.winamp-btn.play-pause {
+  width: 40px;
+  font-size: 14px;
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.volume-slider {
+  width: 60px;
+  height: 4px;
+  background: #333;
+  border: 1px inset #666;
+  outline: none;
+  border-radius: 2px;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  width: 12px;
+  height: 16px;
+  background: linear-gradient(135deg, #999, #666);
+  border: 1px outset #888;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.winamp-add-song {
+  background: linear-gradient(135deg, #444, #222);
+  border-top: 1px solid #666;
+  padding: 4px;
+  display: flex;
+  gap: 4px;
+}
+
+.url-input {
+  flex: 1;
+  background: #000;
+  border: 1px inset #333;
+  color: #00ff00;
+  padding: 2px 4px;
+  font-family: 'Better VCR', monospace;
+  font-size: 10px;
+}
+
+.url-input::placeholder {
+  color: #666;
+}
+
+.add-btn {
+  background: linear-gradient(135deg, #666, #333);
+  border: 1px outset #888;
+  color: white;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: 'Better VCR', sans-serif;
+  font-size: 10px;
+}
+
+.add-btn:hover {
+  background: linear-gradient(135deg, #777, #444);
+}
+
+.winamp-bottom {
+  background: linear-gradient(135deg, #444, #222);
+  border-top: 1px solid #666;
+  padding: 4px;
+  text-align: center;
+}
+
+.playlist-toggle {
+  background: linear-gradient(135deg, #666, #333);
+  border: 1px outset #888;
+  color: white;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: 'Better VCR', sans-serif;
+  font-size: 10px;
+  border-radius: 2px;
+}
+
+.playlist-toggle:hover {
+  background: linear-gradient(135deg, #777, #444);
+}
+
+.winamp-playlist {
+  background: #000;
+  border: 1px inset #333;
+  margin: 4px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.empty-playlist {
+  color: #666;
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+}
+
+.playlist-item {
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
+  border-bottom: 1px solid #222;
+  font-size: 10px;
+  gap: 4px;
+}
+
+.playlist-item:hover {
+  background: #1a1a1a;
+}
+
+.playlist-item.current {
+  background: #003300;
+  color: #00ff00;
+  text-shadow: 0 0 2px #00ff00;
+}
+
+.track-number {
+  color: #666;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.track-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.track-added-by {
+  color: #999;
+  font-size: 9px;
+  flex-shrink: 0;
+}
+
+.listener-notice {
+  background: linear-gradient(135deg, #003366, #001133);
+  color: #66ccff;
+  text-align: center;
+  padding: 6px;
+  font-size: 10px;
+  border-top: 1px solid #0066cc;
+  font-style: italic;
+}
+
+/* Snake Game Styles */
+.snake-program {
+  padding: 8px;
+  background: var(--win98-gray);
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.snake-title-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  background: #000000;
+  color: white;
+  border: 2px inset var(--win98-gray);
+}
+
+.snake-logo {
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  font-family: 'Better VCR', monospace;
+}
+
+.snake-instructions {
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 15px;
+}
+
+.snake-instructions p {
+  margin: 8px 0;
+}
+
+.snake-start-hint {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.snake-start-hint strong {
+  color: #ffff00;
+  font-size: 14px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.snake-high-score {
+  font-size: 14px;
+  color: #ffff00;
+  font-weight: bold;
+  margin-top: 10px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.snake-game-area {
+  border: 2px inset var(--win98-gray);
+  background: #000;
+  position: relative;
+  margin: 4px;
+}
+
+.snake-status {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #00ff00;
+  font-family: 'Better VCR', monospace;
+  font-size: 10px;
+  padding: 4px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 10;
+  border: 1px solid #00ff00;
+}
+
+.snake-status > div {
+  white-space: nowrap;
+}
+
+.snake-controls-hint {
+  font-size: 9px;
+  color: #ffff00;
+  text-align: center;
+}
+
+.snake-spectator-hint {
+  font-size: 9px;
+  color: #00ffff;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Snake segments and food now rendered via canvas for better performance */
+
+.snake-game-over {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: linear-gradient(45deg, #660000, #440000);
+  color: white;
+  text-align: center;
+  border: 2px inset var(--win98-gray);
+}
+
+.snake-game-over-text {
+  font-size: 28px;
+  font-weight: bold;
+  color: #ff0000;
+  margin-bottom: 15px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+  font-family: 'Better VCR', monospace;
+}
+
+.snake-final-score {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #ffff00;
+}
+
+.snake-new-record {
+  font-size: 14px;
+  color: #00ff00;
+  font-weight: bold;
+  margin-bottom: 15px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.5; }
+}
+
+.snake-game-over button {
+  background: var(--win98-gray);
+  border: 2px outset var(--win98-gray);
+  padding: 8px 16px;
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  color: black;
+}
+
+.snake-game-over button:hover:not(:disabled) {
+  background: var(--win98-light-gray);
+}
+
+.snake-game-over button:active:not(:disabled) {
+  border: 2px inset var(--win98-gray);
+}
+
+.snake-game-over button:disabled {
+  background: var(--win98-dark-gray);
+  color: #666;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .program-window {
+    min-width: 280px;
+  }
+  
+  .win98-title-button {
+    width: 20px;
+    height: 16px;
+    font-size: 10px;
+  }
+  
+  .snake-logo {
+    font-size: 24px;
+  }
+  
+  .snake-game-over-text {
+    font-size: 20px;
+  }
+} 

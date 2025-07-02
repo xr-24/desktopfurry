@@ -1,0 +1,126 @@
+/* Win98 Theme Styles */
+:root {
+  --win98-gray: #c0c0c0;
+  --win98-light-gray: #dfdfdf;
+  --win98-dark-gray: #808080;
+  --win98-darker-gray: #404040;
+  --win98-blue: #0080ff;
+  --win98-dark-blue: #0000ff;
+  --win98-desktop-teal: #008080;
+}
+
+.win98-window {
+  background-color: var(--win98-gray);
+  border: 2px outset var(--win98-gray);
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 11px;
+}
+
+.win98-window-title {
+  background: linear-gradient(90deg, var(--win98-blue) 0%, var(--win98-dark-blue) 100%);
+  color: white;
+  padding: 2px 4px;
+  font-weight: bold;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.win98-button {
+  background-color: var(--win98-gray);
+  border: 1px outset var(--win98-gray);
+  padding: 4px 12px;
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+  min-width: 75px;
+}
+
+.win98-button:hover {
+  background-color: var(--win98-light-gray);
+}
+
+.win98-button:active {
+  border: 1px inset var(--win98-gray);
+}
+
+.win98-input {
+  border: 1px inset var(--win98-gray);
+  padding: 2px 4px;
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 11px;
+  background-color: white;
+}
+
+.win98-desktop {
+  background-color: var(--win98-desktop-teal);
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.win98-taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background-color: var(--win98-gray);
+  border-top: 1px solid var(--win98-light-gray);
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.win98-start-button {
+  background-color: var(--win98-gray);
+  border: 1px outset var(--win98-gray);
+  padding: 4px 8px;
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lobby-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  min-height: 300px;
+}
+
+.lobby-content {
+  padding: 16px;
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+
+.button-group {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.room-info {
+  background-color: white;
+  border: 1px inset var(--win98-gray);
+  padding: 8px;
+  margin: 12px 0;
+  font-family: monospace;
+  font-size: 12px;
+} 

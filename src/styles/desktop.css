@@ -1,0 +1,358 @@
+/* Desktop Environment Styles */
+.desktop-container {
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--win98-desktop-teal);
+  position: relative;
+  overflow: hidden;
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 1px, transparent 1px),
+    radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Character Styles */
+.character {
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: none; /* Disable transition for smooth real-time movement */
+  z-index: 10;
+  position: relative;
+}
+
+.character.current-player {
+  /* Clean character appearance without border/shadow */
+}
+
+
+
+.character-sprite {
+  user-select: none;
+  position: relative;
+  z-index: 2;
+  width: 128px;
+  height: 128px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sprite-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated; /* Keep crisp pixel art */
+}
+
+/* Walking Animation - Sprite based */
+
+.character-username {
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 9px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 1px 4px;
+  border-radius: 3px;
+  /* Move the name tag higher to account for the 1.3× sprite scale */
+  transform: translateY(-18px);
+  white-space: nowrap;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+/* Room Info Popup (replaces overlay) */
+.room-info-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 998;
+}
+
+.room-info-popup {
+  position: fixed;
+  bottom: 35px;
+  right: 10px;
+  width: 280px;
+  background-color: var(--win98-gray);
+  border: 2px outset var(--win98-gray);
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 11px;
+  z-index: 999;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.room-info-header {
+  background: linear-gradient(90deg, var(--win98-blue) 0%, var(--win98-dark-blue) 100%);
+  color: white;
+  padding: 4px 8px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.room-info-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.room-info-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.room-info-content {
+  padding: 12px;
+}
+
+.room-info-content > div {
+  margin-bottom: 8px;
+}
+
+.room-info-content > div:last-child {
+  margin-bottom: 0;
+}
+
+.room-id {
+  font-weight: bold;
+  color: var(--win98-dark-blue);
+}
+
+.player-count {
+  color: var(--win98-darker-gray);
+}
+
+.controls-hint {
+  font-size: 10px;
+  color: var(--win98-dark-gray);
+  font-style: italic;
+}
+
+.interaction-hint {
+  font-size: 10px;
+  color: var(--win98-dark-blue);
+  font-weight: bold;
+  margin-top: 4px;
+}
+
+/* Room Info Taskbar Button */
+.room-info-button {
+  background-color: var(--win98-gray);
+  border: 1px outset var(--win98-gray);
+  padding: 4px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 4px;
+  height: 22px;
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.room-info-button:hover {
+  background-color: var(--win98-light-gray);
+}
+
+.room-info-button:active {
+  border: 1px inset var(--win98-gray);
+}
+
+/* Taskbar specific to desktop */
+.desktop-container .win98-taskbar {
+  z-index: 1000;
+  justify-content: space-between;
+}
+
+.taskbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.taskbar-right {
+  display: flex;
+  align-items: center;
+}
+
+/* System Clock Styles */
+.system-clock {
+  background-color: var(--win98-gray);
+  border: 1px inset var(--win98-gray);
+  padding: 4px 8px;
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 11px;
+  text-align: center;
+  min-width: 80px;
+}
+
+.clock-time {
+  font-weight: bold;
+  line-height: 12px;
+}
+
+.clock-date {
+  font-size: 9px;
+  line-height: 10px;
+}
+
+/* Start Menu Styles */
+.start-menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+.start-menu {
+  position: fixed;
+  bottom: 30px;
+  left: 0;
+  width: 200px;
+  background-color: var(--win98-gray);
+  border: 2px outset var(--win98-gray);
+  z-index: 1001;
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 11px;
+}
+
+.start-menu-header {
+  background: linear-gradient(90deg, var(--win98-blue) 0%, var(--win98-dark-blue) 100%);
+  color: white;
+  padding: 8px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.start-menu-items {
+  padding: 4px 0;
+}
+
+.start-menu-item {
+  display: flex;
+  align-items: center;
+  padding: 4px 16px;
+  cursor: pointer;
+  position: relative;
+  gap: 8px;
+}
+
+.start-menu-item:hover {
+  background-color: var(--win98-blue);
+  color: white;
+}
+
+.start-menu-item .arrow {
+  margin-left: auto;
+  font-size: 8px;
+}
+
+.start-menu-separator {
+  height: 1px;
+  background-color: var(--win98-dark-gray);
+  margin: 4px 8px;
+}
+
+/* Backgrounds Submenu */
+.backgrounds-item {
+  position: relative;
+}
+
+.backgrounds-submenu {
+  position: absolute;
+  left: 100%;
+  bottom: 0;
+  width: 180px;
+  background-color: var(--win98-gray);
+  border: 2px outset var(--win98-gray);
+  display: none;
+  z-index: 1002;
+}
+
+.backgrounds-item:hover .backgrounds-submenu {
+  display: block;
+}
+
+.background-option {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  cursor: pointer;
+  gap: 8px;
+}
+
+.background-option:hover {
+  background-color: var(--win98-blue);
+  color: white;
+}
+
+.background-option.selected {
+  background-color: var(--win98-light-gray);
+}
+
+.background-preview {
+  width: 16px;
+  height: 12px;
+  border: 1px solid var(--win98-dark-gray);
+  flex-shrink: 0;
+}
+
+/* Desktop Icons (for future use) */
+.desktop-icon {
+  position: absolute;
+  width: 64px;
+  height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px;
+}
+
+.desktop-icon:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.desktop-icon.nearby {
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+}
+
+.desktop-icon-image {
+  width: 32px;
+  height: 32px;
+  font-size: 32px;
+  margin-bottom: 4px;
+}
+
+.desktop-icon-label {
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 10px;
+  color: white;
+  text-align: center;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  line-height: 12px;
+} 

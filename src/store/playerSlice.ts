@@ -1,0 +1,52 @@
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+interface PlayerState {
+  id: string | null;
+  username: string;
+  quadrant: number;
+  position: { x: number; y: number };
+  isGaming: boolean;
+  gamingInputDirection: 'up' | 'down' | 'left' | 'right' | null;
+}
+
+const initialState: PlayerState = {
+  id: null,
+  username: '',
+  quadrant: 0,
+  position: { x: 100, y: 100 }, // Default starting position
+  isGaming: false,
+  gamingInputDirection: null,
+};
+
+const playerSlice = createSlice({
+  name: 'player',
+  initialState,
+  reducers: {
+    setPlayer: (state, action: PayloadAction<{ id: string; username: string; quadrant: number }>) => {
+      state.id = action.payload.id;
+      state.username = action.payload.username;
+      state.quadrant = action.payload.quadrant;
+    },
+    setUsername: (state, action: PayloadAction<string>) => {
+      state.username = action.payload;
+    },
+    setPosition: (state, action: PayloadAction<{ x: number; y: number }>) => {
+      state.position = action.payload;
+    },
+    setGamingState: (state, action: PayloadAction<{ isGaming: boolean; inputDirection?: 'up' | 'down' | 'left' | 'right' | null }>) => {
+      state.isGaming = action.payload.isGaming;
+      state.gamingInputDirection = action.payload.inputDirection || null;
+    },
+    resetPlayer: (state) => {
+      state.id = null;
+      state.username = '';
+      state.quadrant = 0;
+      state.position = { x: 100, y: 100 };
+      state.isGaming = false;
+      state.gamingInputDirection = null;
+    },
+  },
+});
+
+export const { setPlayer, setUsername, setPosition, setGamingState, resetPlayer } = playerSlice.actions;
+export default playerSlice.reducer; 
