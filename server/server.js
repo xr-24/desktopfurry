@@ -6,14 +6,19 @@ const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const server = http.createServer(app);
+
+// Allow CORS from the production front-end domain or localhost during dev.
+const allowedOrigin = process.env.CLIENT_ORIGIN || '*';
+
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
+    origin: allowedOrigin,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
 });
 
-app.use(cors());
+app.use(cors({ origin: allowedOrigin }));
 app.use(express.json());
 
 // In-memory storage for rooms (later we'll use Redis)

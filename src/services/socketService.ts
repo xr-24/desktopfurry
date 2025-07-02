@@ -7,8 +7,12 @@ class SocketService {
   private socket: Socket | null = null;
 
   connect() {
-    // For now, we'll connect to localhost. Later we'll use your Render.com backend
-    this.socket = io('http://localhost:3001');
+    // Use env variable in production, fallback to localhost during development
+    const serverUrl =
+      (process.env.REACT_APP_SOCKET_URL as string | undefined) ||
+      'http://localhost:3001';
+
+    this.socket = io(serverUrl);
 
     this.socket.on('connect', () => {
       console.log('Connected to server');
