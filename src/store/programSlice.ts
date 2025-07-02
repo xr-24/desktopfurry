@@ -17,12 +17,14 @@ interface ProgramState {
   openPrograms: { [windowId: string]: ProgramWindow };
   highestZIndex: number;
   interactionRange: number; // Pixels for E key interaction
+  backgroundId: string;
 }
 
 const initialState: ProgramState = {
   openPrograms: {},
   highestZIndex: 100,
   interactionRange: 80,
+  backgroundId: 'sandstone',
 };
 
 const programSlice = createSlice({
@@ -122,6 +124,14 @@ const programSlice = createSlice({
         state.highestZIndex = program.zIndex;
       }
     },
+
+    setBackground: (state, action: PayloadAction<string>) => {
+      state.backgroundId = action.payload;
+    },
+
+    syncDesktop: (state, action: PayloadAction<ProgramState>) => {
+      return { ...action.payload };
+    },
   },
 });
 
@@ -213,6 +223,8 @@ export const {
   updateProgramSize,
   updateProgramState,
   syncProgramFromServer,
+  setBackground,
+  syncDesktop,
 } = programSlice.actions;
 
 export default programSlice.reducer; 

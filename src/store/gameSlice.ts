@@ -12,6 +12,11 @@ interface Player {
   username: string;
   position: { x: number; y: number };
   quadrant: number; // 0-3 for top-left, top-right, bottom-left, bottom-right
+  // movement / animation extras
+  isMoving?: boolean;
+  movementDirection?: string | null;
+  walkFrame?: number;
+  facingDirection?: 'left' | 'right';
 }
 
 const initialState: GameState = {
@@ -38,9 +43,14 @@ const gameSlice = createSlice({
     updatePlayers: (state, action: PayloadAction<{ [playerId: string]: Player }>) => {
       state.players = action.payload;
     },
-    updatePlayerPosition: (state, action: PayloadAction<{ playerId: string; position: { x: number; y: number } }>) => {
-      if (state.players[action.payload.playerId]) {
-        state.players[action.payload.playerId].position = action.payload.position;
+    updatePlayerPosition: (state, action: PayloadAction<{ playerId: string; position: { x: number; y: number }; isMoving?: boolean; movementDirection?: string | null; walkFrame?: number; facingDirection?: 'left' | 'right' }>) => {
+      const player = state.players[action.payload.playerId];
+      if (player) {
+        player.position = action.payload.position;
+        if (action.payload.isMoving !== undefined) player.isMoving = action.payload.isMoving;
+        if (action.payload.movementDirection !== undefined) player.movementDirection = action.payload.movementDirection;
+        if (action.payload.walkFrame !== undefined) player.walkFrame = action.payload.walkFrame;
+        if (action.payload.facingDirection !== undefined) player.facingDirection = action.payload.facingDirection;
       }
     },
   },

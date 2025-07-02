@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useAppSelector } from '../store/hooks';
+import React, { useState } from 'react';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
 import Character from './Character';
 import SystemClock from './SystemClock';
 import StartMenu from './StartMenu';
 import ProgramManager from './ProgramManager';
 import useMovement from '../hooks/useMovement';
+import { setBackground } from '../store/programSlice';
 import '../styles/desktop.css';
 
 // Dynamically load pattern images
@@ -20,10 +21,11 @@ const patternsMap: { [key: string]: string } = patternsContext.keys().reduce((ac
 const Desktop: React.FC = () => {
   const { roomId, players } = useAppSelector((state: any) => state.game || {});
   const { id: currentPlayerId, isGaming, gamingInputDirection } = useAppSelector((state: any) => state.player || {});
+  const backgroundId = useAppSelector((state: any) => state.programs.backgroundId);
+  const dispatch = useAppDispatch();
   
   // Desktop customization state
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
-  const [backgroundId, setBackgroundId] = useState('sandstone');
   const [isRoomInfoOpen, setIsRoomInfoOpen] = useState(false);
   
   // Initialize movement controls for current player
@@ -59,10 +61,10 @@ const Desktop: React.FC = () => {
             key={player.id}
             player={displayPlayer}
             isCurrentPlayer={player.id === currentPlayerId}
-            isMoving={player.id === currentPlayerId ? isMoving : false}
-            movementDirection={player.id === currentPlayerId ? movementDirection : null}
-            walkFrame={player.id === currentPlayerId ? walkFrame : 1}
-            facingDirection={player.id === currentPlayerId ? facingDirection : 'left'}
+            isMoving={player.id === currentPlayerId ? isMoving : player.isMoving}
+            movementDirection={player.id === currentPlayerId ? movementDirection : player.movementDirection}
+            walkFrame={player.id === currentPlayerId ? walkFrame : player.walkFrame || 1}
+            facingDirection={player.id === currentPlayerId ? facingDirection : player.facingDirection || 'left'}
             isGrabbing={player.id === currentPlayerId ? isGrabbing : false}
             isResizing={player.id === currentPlayerId ? isResizing : false}
             isGaming={player.id === currentPlayerId ? isGaming : false}
@@ -173,7 +175,7 @@ const Desktop: React.FC = () => {
       <StartMenu 
         isOpen={isStartMenuOpen}
         onClose={() => setIsStartMenuOpen(false)}
-        onChangeBackground={setBackgroundId}
+        onChangeBackground={(id) => dispatch(setBackground(id))}
         currentBackground={backgroundId}
       />
     </div>

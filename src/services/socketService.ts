@@ -2,9 +2,20 @@ import { io, Socket } from 'socket.io-client';
 import { store } from '../store/store';
 import { setConnected, joinRoom, updatePlayers, updatePlayerPosition } from '../store/gameSlice';
 import { setPlayer } from '../store/playerSlice';
+import { syncDesktop } from '../store/programSlice';
+
+// Utility to deep compare objects by JSON stringify (cheap & ok for small state)
+function jsonEqual(a: any, b: any) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
 
 class SocketService {
   private socket: Socket | null = null;
+
+  // Keep last sent desktop state so we only emit diffs
+  private lastDesktopState: any = null;
+  // Flag to ignore local store updates that originated remotely
+  private ignoreNextDesktopUpdate = false;
 
   connect() {
     // Use env variable in production, fallback to localhost during development
@@ -33,9 +44,36 @@ class SocketService {
       store.dispatch(updatePlayers(players));
     });
 
-    this.socket.on('playerMoved', (data: { playerId: string; position: { x: number; y: number } }) => {
+    this.socket.on('playerMoved', (data: any) => {
       store.dispatch(updatePlayerPosition(data));
     });
+
+    // Receive full desktop state from server
+    this.socket.on('desktopState', (desktopState: any) => {
+      this.ignoreNextDesktopUpdate = true;
+      this.lastDesktopState = desktopState;
+      store.dispatch({ type: syncDesktop.type, payload: desktopState, meta: { remote: true } });
+      // reset flag after current tick
+      setTimeout(() => { this.ignoreNextDesktopUpdate = false; }, 0);
+    });
+
+    // Prime lastDesktopState with current slice
+    this.lastDesktopState = store.getState().programs;
+
+    // Subscribe once to program slice changes to broadcast
+    const sendDesktopState = () => {
+      if (this.ignoreNextDesktopUpdate) return;
+      const state = store.getState().programs;
+      if (!jsonEqual(state, this.lastDesktopState)) {
+        const roomId = store.getState().game.roomId;
+        if (roomId && this.socket) {
+          this.socket.emit('desktopStateUpdate', { roomId, desktopState: state });
+          this.lastDesktopState = state;
+        }
+      }
+    };
+
+    store.subscribe(sendDesktopState);
   }
 
   createRoom(username: string) {
@@ -50,9 +88,15 @@ class SocketService {
     }
   }
 
-  movePlayer(position: { x: number; y: number }) {
+  movePlayer(data: {
+    position: { x: number; y: number };
+    isMoving: boolean;
+    movementDirection: string | null;
+    walkFrame: number;
+    facingDirection: 'left' | 'right';
+  }) {
     if (this.socket) {
-      this.socket.emit('playerMove', position);
+      this.socket.emit('playerMove', data);
     }
   }
 

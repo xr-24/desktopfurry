@@ -496,7 +496,13 @@ const useMovement = () => {
       positionRef.current = newPosition;
       setLocalPosition(newPosition);
       dispatch(setPosition(newPosition));
-      socketService.movePlayer(newPosition);
+      socketService.movePlayer({
+        position: newPosition,
+        isMoving: moving,
+        movementDirection: currentDirection,
+        walkFrame: walkFrame,
+        facingDirection: facingDirection,
+      });
       
       // Check for nearby icons
       const nearby = findNearbyIcon(newX, newY);
