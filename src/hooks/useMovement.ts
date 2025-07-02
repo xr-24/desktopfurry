@@ -28,8 +28,10 @@ const useMovement = () => {
   const [isMoving, setIsMoving] = useState(false);
   const [movementDirection, setMovementDirection] = useState<string | null>(null);
   const [walkFrame, setWalkFrame] = useState(1); // 1 or 2 for walk animation
+  const walkFrameRef = useRef(1);
   const [nearbyIcon, setNearbyIcon] = useState<string | null>(null);
   const [facingDirection, setFacingDirection] = useState<'left' | 'right'>('left'); // Track last facing direction
+  const facingDirectionRef = useRef<'left' | 'right'>('left');
   const [isGrabbing, setIsGrabbing] = useState(false);
   const [grabbedWindowId, setGrabbedWindowId] = useState<string | null>(null);
   const [grabOffset, setGrabOffset] = useState({ x: 0, y: 0 });
@@ -500,8 +502,8 @@ const useMovement = () => {
         position: newPosition,
         isMoving: moving,
         movementDirection: currentDirection,
-        walkFrame: walkFrame,
-        facingDirection: facingDirection,
+        walkFrame: walkFrameRef.current,
+        facingDirection: facingDirectionRef.current,
       });
       
       // Check for nearby icons
@@ -521,8 +523,19 @@ const useMovement = () => {
       }
     } else {
       // Stop moving when no keys pressed
+      const wasMoving = isMoving;
       setIsMoving(false);
       setMovementDirection(null);
+      if (wasMoving) {
+        // Inform server that movement stopped
+        socketService.movePlayer({
+          position: positionRef.current,
+          isMoving: false,
+          movementDirection: null,
+          walkFrame: 1,
+          facingDirection: facingDirectionRef.current,
+        });
+      }
       // Clean up animation frame
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -542,7 +555,15 @@ const useMovement = () => {
     openProgramsRef.current = openPrograms;
   }, [openPrograms]);
 
+  // Sync walkFrame ref
+  useEffect(() => {
+    walkFrameRef.current = walkFrame;
+  }, [walkFrame]);
 
+  // Sync facingDirection ref
+  useEffect(() => {
+    facingDirectionRef.current = facingDirection;
+  }, [facingDirection]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

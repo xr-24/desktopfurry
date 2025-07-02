@@ -106,6 +106,20 @@ io.on('connection', (socket) => {
     socket.emit('roomJoined', { roomId, playerId, username, quadrant });
     socket.emit('desktopState', room.desktop);
     
+    // Send current movement state of existing players to the new player
+    Object.values(room.players).forEach(existingPlayer => {
+      if (existingPlayer.id !== playerId) {
+        socket.emit('playerMoved', {
+          playerId: existingPlayer.id,
+          position: existingPlayer.position,
+          isMoving: existingPlayer.isMoving,
+          movementDirection: existingPlayer.movementDirection,
+          walkFrame: existingPlayer.walkFrame,
+          facingDirection: existingPlayer.facingDirection,
+        });
+      }
+    });
+    
     // Update all players in the room
     io.to(roomId).emit('playersUpdate', room.players);
 
