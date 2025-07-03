@@ -46,7 +46,7 @@ const programSlice = createSlice({
         winamp: { width: 300, height: 200, isMultiplayer: false },
         checkers: { width: 450, height: 450, isMultiplayer: true },
         snake: { width: 400, height: 450, isMultiplayer: true },
-        characterEditor: { width: 420, height: 500, isMultiplayer: false },
+        characterEditor: { width: 520, height: 500, isMultiplayer: false },
       };
       
       const config = programConfigs[type];

@@ -60,6 +60,31 @@ const Character: React.FC<CharacterProps> = ({
   const shouldFlip = facingDirection === 'right';
 
   const baseName = player.appearance?.body || 'CustomBase';
+  const prefix = baseName.replace('Base', ''); // "Custom"
+
+  const fileForState = () => {
+    // Gaming (sitting)
+    if (isGaming) {
+      const dir = gamingInputDirection ? `-${gamingInputDirection.charAt(0).toUpperCase()}${gamingInputDirection.slice(1)}` : '';
+      return `${prefix}Sit${dir}`;
+    }
+
+    // Grabbing
+    if (isGrabbing) {
+      if (isMoving) {
+        return `${prefix}Grab-Walk${walkFrame}`;
+      }
+      return `${prefix}Grab`;
+    }
+
+    // Walking (not grabbing)
+    if (isMoving) {
+      return `${prefix}-Walk${walkFrame}`;
+    }
+
+    // Idle
+    return baseName; // CustomBase
+  };
 
   return (
     <div
@@ -91,19 +116,7 @@ const Character: React.FC<CharacterProps> = ({
           />
         )}
         <img 
-          src={`/assets/characters/body/${baseName}${
-            isGaming 
-              ? gamingInputDirection 
-                ? `-sit-${gamingInputDirection}` 
-                : '-sit'
-              : isMoving && isGrabbing 
-                ? `-grab-walk${walkFrame}` 
-                : isMoving 
-                  ? `-walk${walkFrame}` 
-                  : isGrabbing 
-                    ? '-grab' 
-                    : ''
-          }.png`} 
+          src={`/assets/characters/body/${fileForState()}.png`} 
           alt={player.username}
           className="sprite-layer"
           style={{ zIndex: 2, filter: `hue-rotate(${player.appearance?.hue || 0}deg)` }}
@@ -124,7 +137,7 @@ const Character: React.FC<CharacterProps> = ({
             style={{ zIndex: 4, filter: `hue-rotate(${player.appearance?.hue || 0}deg)` }}
           />
         )}
-        {player.appearance?.eyes && (
+        {player.appearance?.eyes && player.appearance.eyes !== 'none' && (
           <img 
             src={`/assets/characters/eyes/${player.appearance.eyes}.png`} 
             alt="eyes"

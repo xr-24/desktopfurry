@@ -61,7 +61,7 @@ io.on('connection', (socket) => {
           facingDirection: 'left',
           isGaming: false,
           gamingInputDirection: null,
-          appearance: { hue: 0, eyes: 'Eyes1', ears: 'none', fluff: 'none', tail: 'none', body: 'CustomBase' },
+          appearance: { hue: 0, eyes: 'none', ears: 'none', fluff: 'none', tail: 'none', body: 'CustomBase' },
         }
       },
       maxPlayers: 4,
@@ -105,7 +105,7 @@ io.on('connection', (socket) => {
       facingDirection: 'left',
       isGaming: false,
       gamingInputDirection: null,
-      appearance: { hue: 0, eyes: 'Eyes1', ears: 'none', fluff: 'none', tail: 'none', body: 'CustomBase' },
+      appearance: { hue: 0, eyes: 'none', ears: 'none', fluff: 'none', tail: 'none', body: 'CustomBase' },
     };
 
     socket.join(roomId);

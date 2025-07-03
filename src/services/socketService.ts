@@ -51,6 +51,12 @@ class SocketService {
 
     // Receive full desktop state from server
     this.socket.on('desktopState', (desktopState: any) => {
+      // remove any characterEditor windows before syncing local store
+      for (const id of Object.keys(desktopState.openPrograms || {})) {
+        if (desktopState.openPrograms[id].type === 'characterEditor') {
+          delete desktopState.openPrograms[id];
+        }
+      }
       this.ignoreNextDesktopUpdate = true;
       this.lastDesktopState = desktopState;
       store.dispatch(syncDesktop(desktopState));
@@ -65,10 +71,21 @@ class SocketService {
     this.lastPlayerState = store.getState().player;
 
     // Subscribe once to program slice changes to broadcast
+    const sanitize = (progState:any) => {
+      const clone = JSON.parse(JSON.stringify(progState));
+      for (const id of Object.keys(clone.openPrograms)) {
+        if (clone.openPrograms[id].type === 'characterEditor') {
+          delete clone.openPrograms[id];
+        }
+      }
+      return clone;
+    };
+
     const sendDesktopState = () => {
       if (this.ignoreNextDesktopUpdate) return;
-      const state = store.getState().programs;
-      if (!jsonEqual(state, this.lastDesktopState)) {
+      const raw = store.getState().programs;
+      const state = sanitize(raw);
+      if (!jsonEqual(state, sanitize(this.lastDesktopState))) {
         const roomId = store.getState().game.roomId;
         if (roomId && this.socket) {
           this.socket.emit('desktopStateUpdate', { roomId, desktopState: state });

@@ -26,10 +26,10 @@ const tailCtx = (require as any).context('../../assets/characters/tail', false, 
 
 const listFrom = (ctx:any)=> ctx.keys().map((k:string)=>k.replace('./','').replace('.png',''));
 
-const EYES  = listFrom(eyesCtx);
-const EARS  = listFrom(earsCtx);
-const FLUFF = listFrom(fluffCtx);
-const TAIL  = listFrom(tailCtx);
+const EYES  = ['none', ...listFrom(eyesCtx).filter((n:string)=>n!=='none')];
+const EARS  = ['none', ...listFrom(earsCtx).filter((n:string)=>n!=='none')];
+const FLUFF = ['none', ...listFrom(fluffCtx).filter((n:string)=>n!=='none')];
+const TAIL  = ['none', ...listFrom(tailCtx).filter((n:string)=>n!=='none')];
 
 const CharacterEditor: React.FC<CharacterEditorProps> = ({
   windowId, position, size, zIndex, isMinimized,
@@ -84,16 +84,16 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
       isMinimized={false}
       isResizable={false}
     >
-      <div style={{ display:'flex', height:'100%', padding:8 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'200px 1fr', height:'100%', padding:8, gap:12 }}>
         {/* Preview */}
-        <div style={{ flex:'0 0 180px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center' }}>
           <Character 
             player={{ id: currentPlayerId, username:'You', position:{x:0, y:0}, quadrant:0, appearance:previewAppearance }}
             isCurrentPlayer={true}
           />
         </div>
         {/* Controls */}
-        <div style={{ flex:1, display:'flex', flexDirection:'column', gap:8 }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           {[
             {label:'Eyes',   arr:EYES,   idx:eyesIdx,  set:setEyesIdx},
             {label:'Ears',   arr:EARS,   idx:earsIdx,  set:setEarsIdx},
