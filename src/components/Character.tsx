@@ -66,20 +66,20 @@ const Character: React.FC<CharacterProps> = ({
         const now = Date.now();
         const timeSinceUpdate = now - lastAnimationUpdateRef.current;
         
-        // If no frame update in 500ms but player is still moving, start local animation
-        if (timeSinceUpdate > 500) {
+        // If no frame update in 200ms but player is still moving, start local animation
+        if (timeSinceUpdate > 200) {
           console.log(`Starting local animation recovery for player ${player.id}`);
           const interval = setInterval(() => {
             setLocalWalkFrame(prev => prev === 1 ? 2 : 1);
-          }, 120); // Slightly slower than normal to avoid conflicts
+          }, 100); // Match closer to normal animation speed
           
           // Stop local animation after a reasonable time
           setTimeout(() => {
             clearInterval(interval);
             console.log(`Stopping local animation recovery for player ${player.id}`);
-          }, 3000);
+          }, 2000);
         }
-      }, 600);
+      }, 250);
     }
 
     return () => {

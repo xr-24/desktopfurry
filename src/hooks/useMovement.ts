@@ -80,6 +80,10 @@ const useMovement = (): {
   const [isPageVisible, setIsPageVisible] = useState(!document.hidden);
   const lastAnimationTime = useRef<number>(Date.now());
   const animationRecoveryTimeout = useRef<NodeJS.Timeout | null>(null);
+  
+  // Socket update throttling
+  const lastSocketUpdate = useRef<number>(0);
+  const SOCKET_UPDATE_INTERVAL = 50; // Send socket updates max every 50ms (20fps)
 
   // Helper function to calculate distance between player and icon
   const getDistanceToIcon = (iconX: number, iconY: number, playerX: number, playerY: number) => {
@@ -538,21 +542,12 @@ const useMovement = (): {
       }
     }
 
-    // Only update if position actually changed
+    // Update position if it actually changed
     if (newX !== positionRef.current.x || newY !== positionRef.current.y) {
       const newPosition = { x: newX, y: newY };
       positionRef.current = newPosition;
       setLocalPosition(newPosition);
       dispatch(setPosition(newPosition));
-      socketService.movePlayer({
-        position: newPosition,
-        isMoving: moving,
-        movementDirection: currentDirection,
-        walkFrame: walkFrameRef.current,
-        facingDirection: facingDirectionRef.current,
-        isGrabbing: isGrabbingRef.current,
-        isResizing: isResizingRef.current,
-      });
       
       // Check for nearby icons
       const nearby = findNearbyIcon(newX, newY);
@@ -560,6 +555,23 @@ const useMovement = (): {
         nearbyIconRef.current = nearby;
         setNearbyIcon(nearby);
       }
+    }
+    
+    // CRITICAL FIX: Always send movement state updates when keys are pressed
+    // This ensures other players see animations even if position doesn't change (hitting walls, etc.)
+    // Add throttling to prevent excessive socket messages
+    const now = Date.now();
+    if (keysPressed.current.size > 0 && (now - lastSocketUpdate.current) >= SOCKET_UPDATE_INTERVAL) {
+      lastSocketUpdate.current = now;
+      socketService.movePlayer({
+        position: positionRef.current,
+        isMoving: moving,
+        movementDirection: currentDirection,
+        walkFrame: walkFrameRef.current,
+        facingDirection: facingDirectionRef.current,
+        isGrabbing: isGrabbingRef.current,
+        isResizing: isResizingRef.current,
+      });
     }
 
     // Continue the animation loop if any keys are pressed
@@ -573,7 +585,8 @@ const useMovement = (): {
       // Stop moving when no keys pressed
       setIsMoving(false);
       setMovementDirection(null);
-      // NEW: Notify server that movement has stopped so other clients update animation
+      // Immediately notify server that movement has stopped (no throttling for stop events)
+      lastSocketUpdate.current = now; // Update throttle timer
       socketService.movePlayer({
         position: positionRef.current,
         isMoving: false,
@@ -721,8 +734,9 @@ const useMovement = (): {
       if (['w', 'a', 's', 'd'].includes(key)) {
         keysPressed.current.delete(key);
 
-        // NEW: If no movement keys are pressed anymore, immediately notify others
+        // Immediately notify others when movement stops (no throttling for stop events)
         if (keysPressed.current.size === 0) {
+          lastSocketUpdate.current = Date.now(); // Update throttle timer
           socketService.movePlayer({
             position: positionRef.current,
             isMoving: false,
