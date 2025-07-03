@@ -6,6 +6,7 @@ import Winamp from './programs/Winamp';
 import Snake from './programs/Snake';
 import CharacterEditor from './programs/CharacterEditor';
 import BDEMediaPlayer from './programs/BDEMediaPlayer';
+import DexSocial from './programs/DexSocial';
 // Import other programs as they're created
 // import Paint from './programs/Paint';
 // import Checkers from './programs/Checkers';
@@ -98,6 +99,14 @@ const ProgramManager: React.FC = () => {
       case 'bdemediaplayer':
         return (
           <BDEMediaPlayer
+            key={program.id}
+            {...commonProps}
+          />
+        );
+      
+      case 'dexsocial':
+        return (
+          <DexSocial
             key={program.id}
             {...commonProps}
           />

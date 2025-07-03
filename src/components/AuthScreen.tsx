@@ -64,7 +64,7 @@ const AuthScreen: React.FC = () => {
           size: p.size,
           isMinimized: p.isMinimized,
           zIndex: p.zIndex,
-          controllerId: authService.getStoredUser()?.id || '',
+          controllerId: '',
           isMultiplayer: true,
           state: p.state || {},
         };

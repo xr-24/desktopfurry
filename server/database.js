@@ -52,6 +52,49 @@ const db = {
     await pool.query('UPDATE users SET last_active = NOW() WHERE id = $1', [userId]);
   },
 
+  // Friend functions
+  async findUserByUsername(username) {
+    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    return result.rows[0];
+  },
+
+  async addFriend(userId1, userId2) {
+    // Add friendship in both directions
+    await pool.query(`
+      INSERT INTO friendships (user_id, friend_id, created_at)
+      VALUES ($1, $2, NOW()), ($2, $1, NOW())
+      ON CONFLICT (user_id, friend_id) DO NOTHING
+    `, [userId1, userId2]);
+  },
+
+  async removeFriend(userId1, userId2) {
+    // Remove friendship in both directions
+    await pool.query(`
+      DELETE FROM friendships 
+      WHERE (user_id = $1 AND friend_id = $2)
+         OR (user_id = $2 AND friend_id = $1)
+    `, [userId1, userId2]);
+  },
+
+  async getUserFriends(userId) {
+    const result = await pool.query(`
+      SELECT u.id, u.username, u.last_active
+      FROM friendships f
+      JOIN users u ON f.friend_id = u.id
+      WHERE f.user_id = $1
+      ORDER BY u.username
+    `, [userId]);
+    return result.rows;
+  },
+
+  async areFriends(userId1, userId2) {
+    const result = await pool.query(`
+      SELECT 1 FROM friendships
+      WHERE user_id = $1 AND friend_id = $2
+    `, [userId1, userId2]);
+    return result.rows.length > 0;
+  },
+
   // Dextop functions
   async getUserDextop(userId) {
     let result = await pool.query(`

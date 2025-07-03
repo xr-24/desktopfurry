@@ -37,6 +37,9 @@ app.use('/api/dextop', dextopRoutes);
 // In-memory storage for active dextop sessions
 const activeDextops = new Map(); // dextopId -> { visitors: Map<userId, playerData> }
 const userSockets = new Map(); // userId -> socketId
+const userFriends = new Map(); // userId -> Set<friendId>
+const userFriendRequests = new Map(); // userId -> Set<requestId>
+const onlineUsers = new Map(); // userId -> { socketId, currentDextop }
 
 // Legacy room system (for backward compatibility)
 const rooms = new Map();
@@ -324,45 +327,277 @@ io.on('connection', (socket) => {
     socket.to(dextopId).emit('dextopState', desktopState);
   });
 
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-    
-    // Remove from dextop sessions
-    for (const [dextopId, session] of activeDextops.entries()) {
-      for (const [userId, player] of session.visitors.entries()) {
-        if (player.socketId === socket.id) {
-          session.visitors.delete(userId);
-          userSockets.delete(userId);
-          
-          // Notify remaining visitors
-          socket.to(dextopId).emit('visitorLeft', { userId });
-          
-          // Clean up empty dextop sessions
-          if (session.visitors.size === 0) {
-            activeDextops.delete(dextopId);
+  // Social feature handlers
+  socket.on('localMessage', ({ roomId, message }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+
+    // Broadcast message to all users in the room
+    io.to(roomId).emit('localMessage', message);
+  });
+
+  socket.on('privateMessage', async ({ recipientId, message }) => {
+    try {
+      // Get recipient's socket ID
+      const recipientSocketId = userSockets.get(recipientId);
+      if (!recipientSocketId) return; // User is offline
+
+      // Send to recipient
+      io.to(recipientSocketId).emit('privateMessage', message);
+      // Send back to sender
+      socket.emit('privateMessage', message);
+    } catch (error) {
+      console.error('Error sending private message:', error);
+    }
+  });
+
+  socket.on('friendRequest', async ({ username }) => {
+    try {
+      // Get user from token
+      const token = socket.handshake.auth.token;
+      const decoded = authService.verifyJWT(token);
+      if (!decoded) return;
+
+      // Find target user by username
+      const targetUser = await db.findUserByUsername(username);
+      if (!targetUser) {
+        socket.emit('error', { message: 'User not found' });
+        return;
+      }
+
+      // Check if already friends
+      const userFriendsList = userFriends.get(decoded.userId) || new Set();
+      if (userFriendsList.has(targetUser.id)) {
+        socket.emit('error', { message: 'Already friends with this user' });
+        return;
+      }
+
+      // Create friend request
+      const requestId = uuidv4();
+      const targetUserRequests = userFriendRequests.get(targetUser.id) || new Set();
+      targetUserRequests.add({
+        id: requestId,
+        from: decoded.userId,
+        username: decoded.username,
+        timestamp: Date.now()
+      });
+      userFriendRequests.set(targetUser.id, targetUserRequests);
+
+      // Notify target user if online
+      const targetSocketId = userSockets.get(targetUser.id);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('friendRequest', {
+          requestId,
+          from: decoded.userId,
+          username: decoded.username
+        });
+      }
+    } catch (error) {
+      console.error('Error sending friend request:', error);
+      socket.emit('error', { message: 'Failed to send friend request' });
+    }
+  });
+
+  socket.on('acceptFriendRequest', async ({ requestId }) => {
+    try {
+      // Get user from token
+      const token = socket.handshake.auth.token;
+      const decoded = authService.verifyJWT(token);
+      if (!decoded) return;
+
+      // Find the request
+      const userRequests = userFriendRequests.get(decoded.userId);
+      if (!userRequests) return;
+
+      const request = Array.from(userRequests).find(r => r.id === requestId);
+      if (!request) return;
+
+      // Remove request
+      userRequests.delete(request);
+
+      // Add to friends lists
+      const userFriendsList = userFriends.get(decoded.userId) || new Set();
+      const otherUserFriendsList = userFriends.get(request.from) || new Set();
+
+      userFriendsList.add(request.from);
+      otherUserFriendsList.add(decoded.userId);
+
+      userFriends.set(decoded.userId, userFriendsList);
+      userFriends.set(request.from, otherUserFriendsList);
+
+      // Save to database
+      await db.addFriend(decoded.userId, request.from);
+
+      // Notify both users
+      const friendData = {
+        id: request.from,
+        username: request.username,
+        isOnline: true,
+        currentDextop: onlineUsers.get(request.from)?.currentDextop
+      };
+
+      const userData = {
+        id: decoded.userId,
+        username: decoded.username,
+        isOnline: true,
+        currentDextop: onlineUsers.get(decoded.userId)?.currentDextop
+      };
+
+      socket.emit('friendRequestAccepted', { friend: friendData });
+
+      const otherSocketId = userSockets.get(request.from);
+      if (otherSocketId) {
+        io.to(otherSocketId).emit('friendRequestAccepted', { friend: userData });
+      }
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      socket.emit('error', { message: 'Failed to accept friend request' });
+    }
+  });
+
+  socket.on('rejectFriendRequest', async ({ requestId }) => {
+    try {
+      // Get user from token
+      const token = socket.handshake.auth.token;
+      const decoded = authService.verifyJWT(token);
+      if (!decoded) return;
+
+      // Find and remove the request
+      const userRequests = userFriendRequests.get(decoded.userId);
+      if (!userRequests) return;
+
+      const request = Array.from(userRequests).find(r => r.id === requestId);
+      if (!request) return;
+
+      userRequests.delete(request);
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+    }
+  });
+
+  socket.on('getFriendsList', async () => {
+    try {
+      // Get user from token
+      const token = socket.handshake.auth.token;
+      const decoded = authService.verifyJWT(token);
+      if (!decoded) return;
+
+      // Get friends from database
+      const friends = await db.getUserFriends(decoded.userId);
+      const friendsList = {};
+
+      for (const friend of friends) {
+        const isOnline = onlineUsers.has(friend.id);
+        friendsList[friend.id] = {
+          id: friend.id,
+          username: friend.username,
+          isOnline,
+          currentDextop: isOnline ? onlineUsers.get(friend.id).currentDextop : undefined
+        };
+      }
+
+      socket.emit('friendStatusUpdate', friendsList);
+    } catch (error) {
+      console.error('Error getting friends list:', error);
+    }
+  });
+
+  socket.on('joinFriendDextop', async ({ friendId }) => {
+    try {
+      // Get user from token
+      const token = socket.handshake.auth.token;
+      const decoded = authService.verifyJWT(token);
+      if (!decoded) return;
+
+      // Check if they are friends
+      const userFriendsList = userFriends.get(decoded.userId);
+      if (!userFriendsList?.has(friendId)) {
+        socket.emit('error', { message: 'Not friends with this user' });
+        return;
+      }
+
+      // Check if friend is online
+      const friendDextop = onlineUsers.get(friendId)?.currentDextop;
+      if (!friendDextop) {
+        socket.emit('error', { message: 'Friend is not online' });
+        return;
+      }
+
+      // Join friend's dextop
+      socket.emit('joinDextopByCode', { code: friendDextop });
+    } catch (error) {
+      console.error('Error joining friend dextop:', error);
+      socket.emit('error', { message: 'Failed to join friend\'s dextop' });
+    }
+  });
+
+  // Update user tracking on connection/disconnection
+  socket.on('authenticate', async (token) => {
+    try {
+      const decoded = authService.verifyJWT(token);
+      if (!decoded) return;
+
+      // Store socket mapping
+      userSockets.set(decoded.userId, socket.id);
+      onlineUsers.set(decoded.userId, { socketId: socket.id, currentDextop: decoded.userId });
+
+      // Notify friends that user is online
+      const userFriendsList = userFriends.get(decoded.userId);
+      if (userFriendsList) {
+        for (const friendId of userFriendsList) {
+          const friendSocketId = userSockets.get(friendId);
+          if (friendSocketId) {
+            io.to(friendSocketId).emit('friendStatusUpdate', {
+              [decoded.userId]: {
+                id: decoded.userId,
+                username: decoded.username,
+                isOnline: true,
+                currentDextop: decoded.userId
+              }
+            });
           }
-          
-          console.log(`User ${userId} left dextop ${dextopId}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error authenticating socket:', error);
+    }
+  });
+
+  socket.on('disconnect', async () => {
+    try {
+      // Find user ID from socket
+      let userId;
+      for (const [uid, sid] of userSockets.entries()) {
+        if (sid === socket.id) {
+          userId = uid;
           break;
         }
       }
-    }
-    
-    // Legacy room cleanup
-    for (const [roomId, room] of rooms.entries()) {
-      if (room.players[socket.id]) {
-        delete room.players[socket.id];
-        
-        // If room is empty, delete it
-        if (Object.keys(room.players).length === 0) {
-          rooms.delete(roomId);
-          console.log(`Room ${roomId} deleted (empty)`);
-        } else {
-          // Update remaining players
-          io.to(roomId).emit('playersUpdate', room.players);
+
+      if (userId) {
+        // Clean up user tracking
+        userSockets.delete(userId);
+        onlineUsers.delete(userId);
+
+        // Notify friends that user is offline
+        const userFriendsList = userFriends.get(userId);
+        if (userFriendsList) {
+          for (const friendId of userFriendsList) {
+            const friendSocketId = userSockets.get(friendId);
+            if (friendSocketId) {
+              io.to(friendSocketId).emit('friendStatusUpdate', {
+                [userId]: {
+                  id: userId,
+                  username: decoded.username,
+                  isOnline: false
+                }
+              });
+            }
+          }
         }
-        break;
       }
+    } catch (error) {
+      console.error('Error handling disconnect:', error);
     }
   });
 });

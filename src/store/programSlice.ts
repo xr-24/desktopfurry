@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface ProgramWindow {
   id: string;
-  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'characterEditor' | 'bdemediaplayer';
+  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'characterEditor' | 'bdemediaplayer' | 'dexsocial';
   isOpen: boolean;
   position: { x: number; y: number };
   size: { width: number; height: number };
@@ -48,6 +48,7 @@ const programSlice = createSlice({
         checkers: { width: 450, height: 450, isMultiplayer: true },
         snake: { width: 400, height: 450, isMultiplayer: true },
         characterEditor: { width: 520, height: 500, isMultiplayer: false },
+        dexsocial: { width: 600, height: 500, isMultiplayer: false },
       };
       
       const config = programConfigs[type];
@@ -216,6 +217,14 @@ function getProgramInitialState(type: ProgramWindow['type']) {
       };
     case 'characterEditor':
       return {};
+    case 'dexsocial':
+      return {
+        activeTab: 'local',
+        localMessages: [],
+        privateMessages: {},
+        friends: [],
+        selectedFriend: undefined
+      };
     default:
       return {};
   }

@@ -3,6 +3,7 @@ import { store } from '../store/store';
 import { setConnected, joinRoom, updatePlayers, updatePlayerPosition } from '../store/gameSlice';
 import { setPlayer } from '../store/playerSlice';
 import { syncDesktop } from '../store/programSlice';
+import { v4 as uuidv4 } from 'uuid';
 
 // Utility to deep compare objects by JSON stringify (cheap & ok for small state)
 function jsonEqual(a: any, b: any) {
@@ -22,6 +23,10 @@ class SocketService {
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
+
+  // Message handlers
+  private messageHandlers: { [windowId: string]: (message: any) => void } = {};
+  private friendStatusHandlers: { [windowId: string]: (friends: any) => void } = {};
 
   connect() {
     // Use env variable in production, fallback to localhost during development
@@ -71,12 +76,26 @@ class SocketService {
       const appearance = store.getState().player.appearance;
       if (appearance) setTimeout(() => this.updateAppearance(appearance), 0);
 
-      // After joining, push current desktop state (persisted layout) to server
-      const desktopState = store.getState().programs;
-      if (this.socket) {
-        this.socket.emit('desktopStateUpdate', { roomId: data.roomId, desktopState });
-        // Update internal cache so subsequent diffs compare correctly
-        this.lastDesktopState = desktopState;
+      // Ensure all local program windows are assigned to this player as controller
+      const progSlice = store.getState().programs;
+      const patchedOpen: any = {};
+      let needsPatch = false;
+      Object.values(progSlice.openPrograms).forEach((p: any) => {
+        if (p.controllerId !== data.playerId) {
+          needsPatch = true;
+          patchedOpen[p.id] = { ...p, controllerId: data.playerId };
+        } else {
+          patchedOpen[p.id] = p;
+        }
+      });
+      if (needsPatch) {
+        const patchedState = { ...progSlice, openPrograms: patchedOpen };
+        store.dispatch(syncDesktop(patchedState));
+        // Send patched version to server to sync others
+        if (this.socket) {
+          this.socket.emit('desktopStateUpdate', { roomId: data.roomId, desktopState: patchedState });
+          this.lastDesktopState = patchedState;
+        }
       }
     });
 
@@ -168,6 +187,31 @@ class SocketService {
     };
 
     store.subscribe(sendPlayerState);
+
+    // Add new socket event handlers for social features
+    this.socket.on('localMessage', (message: any) => {
+      Object.values(this.messageHandlers).forEach(handler => handler(message));
+    });
+
+    this.socket.on('privateMessage', (message: any) => {
+      Object.values(this.messageHandlers).forEach(handler => handler(message));
+    });
+
+    this.socket.on('friendStatusUpdate', (friends: any) => {
+      Object.values(this.friendStatusHandlers).forEach(handler => handler(friends));
+    });
+
+    this.socket.on('friendRequest', (data: { from: string; username: string }) => {
+      // TODO: Show friend request notification
+      console.log('Friend request from:', data.username);
+    });
+
+    this.socket.on('friendRequestAccepted', (data: { friend: any }) => {
+      // Update friends list
+      Object.values(this.friendStatusHandlers).forEach(handler => 
+        handler({ [data.friend.id]: data.friend })
+      );
+    });
   }
 
   createRoom(username: string) {
@@ -231,6 +275,94 @@ class SocketService {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = null;
     }
+  }
+
+  // New methods for social features
+  registerMessageHandler(windowId: string, handler: (message: any) => void) {
+    this.messageHandlers[windowId] = handler;
+  }
+
+  unregisterMessageHandler(windowId: string) {
+    delete this.messageHandlers[windowId];
+  }
+
+  registerFriendStatusHandler(windowId: string, handler: (friends: any) => void) {
+    this.friendStatusHandlers[windowId] = handler;
+  }
+
+  unregisterFriendStatusHandler(windowId: string) {
+    delete this.friendStatusHandlers[windowId];
+  }
+
+  sendLocalMessage(content: string) {
+    if (!this.socket) return;
+    
+    const message = {
+      id: uuidv4(),
+      sender: store.getState().auth.user?.username,
+      content,
+      timestamp: Date.now(),
+      type: 'local'
+    };
+
+    this.socket.emit('localMessage', {
+      roomId: store.getState().game.roomId,
+      message
+    });
+  }
+
+  sendPrivateMessage(recipientId: string, content: string) {
+    if (!this.socket) return;
+
+    const message = {
+      id: uuidv4(),
+      sender: store.getState().auth.user?.username,
+      content,
+      timestamp: Date.now(),
+      type: 'private',
+      recipientId
+    };
+
+    this.socket.emit('privateMessage', {
+      recipientId,
+      message
+    });
+  }
+
+  sendFriendRequest(username: string) {
+    if (!this.socket) return;
+    this.socket.emit('friendRequest', { username });
+  }
+
+  acceptFriendRequest(requestId: string) {
+    if (!this.socket) return;
+    this.socket.emit('acceptFriendRequest', { requestId });
+  }
+
+  rejectFriendRequest(requestId: string) {
+    if (!this.socket) return;
+    this.socket.emit('rejectFriendRequest', { requestId });
+  }
+
+  getFriendsList() {
+    if (!this.socket) return;
+    this.socket.emit('getFriendsList');
+  }
+
+  joinFriendDextop(friendId: string) {
+    if (!this.socket) return;
+    this.socket.emit('joinFriendDextop', { friendId });
+  }
+
+  joinDextopByCode(code: string) {
+    if (!this.socket) return;
+    this.socket.emit('joinDextopByCode', { code });
+  }
+
+  leaveDextop() {
+    if (!this.socket) return;
+    const userId = store.getState().auth.user?.id;
+    this.socket.emit('joinDextopByCode', { code: userId }); // Join own dextop
   }
 }
 

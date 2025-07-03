@@ -95,6 +95,18 @@ CREATE TABLE dextop_visits (
     UNIQUE(dextop_id, visitor_user_id, visited_at)
 );
 
+-- Create friendships table
+CREATE TABLE IF NOT EXISTS friendships (
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  friend_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  PRIMARY KEY (user_id, friend_id)
+);
+
+-- Create index for faster friend lookups
+CREATE INDEX IF NOT EXISTS idx_friendships_user_id ON friendships(user_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_friend_id ON friendships(friend_id);
+
 -- Indexes for performance
 CREATE INDEX idx_users_guest_token ON users(guest_token);
 CREATE INDEX idx_users_email ON users(email);

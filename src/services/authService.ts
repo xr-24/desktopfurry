@@ -232,28 +232,35 @@ class AuthService {
     }
   }
 
-  // Save program state
-  async saveProgramState(programType: string, position: any, size: any, zIndex: number, isMinimized: boolean, programData: any): Promise<boolean> {
+  // Helper that uses fetch keepalive for background/unload-safe POSTs
+  private async postKeepAlive(path: string, payload: any): Promise<boolean> {
     try {
-      await axios.post('/dextop/save-program', {
-        programType, position, size, zIndex, isMinimized, programData
+      const res = await fetch(`${API_BASE}${path}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': this.token ? `Bearer ${this.token}` : ''
+        },
+        body: JSON.stringify(payload),
+        keepalive: true,
       });
-      return true;
-    } catch (error) {
-      console.error('Failed to save program state:', error);
+      return res.ok;
+    } catch (err) {
+      console.error('keepalive POST failed', err);
       return false;
     }
   }
 
-  // Update background
+  // Save program state  (now uses keepalive fetch)
+  async saveProgramState(programType: string, position: any, size: any, zIndex: number, isMinimized: boolean, programData: any): Promise<boolean> {
+    return this.postKeepAlive('/dextop/save-program', {
+      programType, position, size, zIndex, isMinimized, programData
+    });
+  }
+
+  // Update background (now uses keepalive fetch)
   async updateBackground(backgroundId: string): Promise<boolean> {
-    try {
-      await axios.post('/dextop/background', { backgroundId });
-      return true;
-    } catch (error) {
-      console.error('Failed to update background:', error);
-      return false;
-    }
+    return this.postKeepAlive('/dextop/background', { backgroundId });
   }
 
   // Update avatar
@@ -290,6 +297,17 @@ class AuthService {
   // Get current token for socket connection
   getToken(): string | null {
     return this.token;
+  }
+
+  // Search users by username
+  async searchUsers(query: string): Promise<any[]> {
+    try {
+      const response = await axios.get(`/users/search?q=${encodeURIComponent(query)}`);
+      return response.data.users;
+    } catch (error) {
+      console.error('Failed to search users:', error);
+      return [];
+    }
   }
 }
 
