@@ -5,6 +5,7 @@ import Notepad from './programs/Notepad';
 import Winamp from './programs/Winamp';
 import Snake from './programs/Snake';
 import CharacterEditor from './programs/CharacterEditor';
+import BDEMediaPlayer from './programs/BDEMediaPlayer';
 // Import other programs as they're created
 // import Paint from './programs/Paint';
 // import Checkers from './programs/Checkers';
@@ -94,8 +95,27 @@ const ProgramManager: React.FC = () => {
           />
         );
       
+      case 'bdemediaplayer':
+        return (
+          <BDEMediaPlayer
+            key={program.id}
+            {...commonProps}
+          />
+        );
+      
       default:
-        return null;
+        return (
+          <div key={program.id} style={{ 
+            position: 'absolute',
+            left: program.position.x,
+            top: program.position.y,
+            background: '#c0c0c0',
+            border: '2px outset #c0c0c0',
+            padding: '16px'
+          }}>
+            Program type '{program.type}' not implemented yet
+          </div>
+        );
     }
   };
 

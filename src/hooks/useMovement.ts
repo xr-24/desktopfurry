@@ -18,7 +18,8 @@ const DESKTOP_ICONS = [
   { id: 'paint', label: 'Paint', icon: '🎨', x: 50, y: 60, type: 'paint' as const },
   { id: 'notepad', label: 'Notepad', icon: '📝', x: 50, y: 160, type: 'notepad' as const },
   { id: 'winamp', label: 'Muze', icon: '🎵', x: 50, y: 260, type: 'winamp' as const },
-  { id: 'checkers', label: 'Checkers', icon: '🔴', x: 50, y: 360, type: 'checkers' as const },
+  { id: 'bdemediaplayer', label: 'BDE Media Player', icon: '🚧', x: 50, y: 360, type: 'bdemediaplayer' as const },
+  { id: 'checkers', label: 'Checkers', icon: '🔴', x: 50, y: 460, type: 'checkers' as const },
   { id: 'snake', label: 'SNEK', icon: '🐍', x: 150, y: 60, type: 'snake' as const },
 ];
 

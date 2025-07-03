@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface ProgramWindow {
   id: string;
-  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'characterEditor';
+  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'characterEditor' | 'bdemediaplayer';
   isOpen: boolean;
   position: { x: number; y: number };
   size: { width: number; height: number };
@@ -44,6 +44,7 @@ const programSlice = createSlice({
         paint: { width: 500, height: 400, isMultiplayer: true },
         notepad: { width: 400, height: 300, isMultiplayer: false },
         winamp: { width: 300, height: 200, isMultiplayer: false },
+        bdemediaplayer: { width: 500, height: 400, isMultiplayer: true },
         checkers: { width: 450, height: 450, isMultiplayer: true },
         snake: { width: 400, height: 450, isMultiplayer: true },
         characterEditor: { width: 520, height: 500, isMultiplayer: false },
@@ -166,6 +167,16 @@ function getProgramInitialState(type: ProgramWindow['type']) {
         volume: 50,
         currentTime: 0,
         totalTime: 0,
+      };
+    case 'bdemediaplayer':
+      return {
+        playlist: [],
+        currentTrack: 0,
+        isPlaying: false,
+        volume: 50,
+        currentTime: 0,
+        totalTime: 0,
+        isFullscreen: false,
       };
     case 'checkers':
       return {
