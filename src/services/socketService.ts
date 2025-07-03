@@ -4,6 +4,7 @@ import { setConnected, joinRoom, updatePlayers, updatePlayerPosition } from '../
 import { setPlayer } from '../store/playerSlice';
 import { syncDesktop } from '../store/programSlice';
 import { v4 as uuidv4 } from 'uuid';
+import { authService } from './authService';
 
 // Utility to deep compare objects by JSON stringify (cheap & ok for small state)
 function jsonEqual(a: any, b: any) {
@@ -34,11 +35,16 @@ class SocketService {
       (process.env.REACT_APP_SOCKET_URL as string | undefined) ||
       'http://localhost:3001';
 
+    const token = authService.getToken();
+
     this.socket = io(serverUrl, {
       // Add connection options for better reliability
       forceNew: true,
       timeout: 20000,
       transports: ['websocket', 'polling'],
+      auth: {
+        token: token || undefined,
+      },
     });
 
     this.socket.on('connect', () => {
@@ -46,6 +52,11 @@ class SocketService {
       store.dispatch(setConnected(true));
       this.reconnectAttempts = 0;
       this.startHeartbeat();
+
+      const tk = authService.getToken();
+      if (tk) {
+        this.socket!.emit('authenticate', tk);
+      }
     });
 
     this.socket.on('disconnect', (reason) => {
@@ -201,9 +212,13 @@ class SocketService {
       Object.values(this.friendStatusHandlers).forEach(handler => handler(friends));
     });
 
-    this.socket.on('friendRequest', (data: { from: string; username: string }) => {
-      // TODO: Show friend request notification
-      console.log('Friend request from:', data.username);
+    this.socket.on('friendRequest', (data: { requestId: string; from: string; username: string }) => {
+      const accept = window.confirm(`${data.username} wants to add you as a friend. Accept?`);
+      if (accept) {
+        this.acceptFriendRequest(data.requestId);
+      } else {
+        this.rejectFriendRequest(data.requestId);
+      }
     });
 
     this.socket.on('friendRequestAccepted', (data: { friend: any }) => {
@@ -211,6 +226,11 @@ class SocketService {
       Object.values(this.friendStatusHandlers).forEach(handler => 
         handler({ [data.friend.id]: data.friend })
       );
+    });
+
+    this.socket.on('joinDextopByCode', ({ code }) => {
+      console.log('Server instructed to join dextop', code);
+      this.joinDextopByCode(code);
     });
   }
 
@@ -363,6 +383,13 @@ class SocketService {
     if (!this.socket) return;
     const userId = store.getState().auth.user?.id;
     this.socket.emit('joinDextopByCode', { code: userId }); // Join own dextop
+  }
+
+  authenticate() {
+    const tk = authService.getToken();
+    if (this.socket && tk) {
+      this.socket.emit('authenticate', tk);
+    }
   }
 }
 

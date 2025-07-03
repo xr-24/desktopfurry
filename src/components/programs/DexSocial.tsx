@@ -5,6 +5,7 @@ import ProgramWindow from '../ProgramWindow';
 import { socketService } from '../../services/socketService';
 import { authService } from '../../services/authService';
 import './DexSocial.css';
+import { store } from '../../store/store';
 
 interface Message {
   id: string;
@@ -75,10 +76,12 @@ const DexSocial: React.FC<DexSocialProps> = ({
   // Register message handlers
   useEffect(() => {
     socketService.registerMessageHandler(windowId, (message: Message) => {
-      const updatedState = { ...programState };
+      // Fetch the freshest state from Redux to avoid closure staleness
+      const currentProg = store.getState().programs.openPrograms[windowId];
+      const updatedState = currentProg ? { ...currentProg.state } : { ...programState };
 
       if (message.type === 'local') {
-        updatedState.localMessages = [...updatedState.localMessages, message];
+        updatedState.localMessages = [...(updatedState.localMessages || []), message];
       } else if (message.type === 'private') {
         const friendId = message.recipientId === currentUser?.id 
           ? message.sender 

@@ -32,6 +32,7 @@ const AuthScreen: React.FC = () => {
           if (userData && userData.userType !== 'guest') {
             dispatch(loginSuccess(userData));
             await loadUserDextop();
+            socketService.authenticate();
             socketService.createRoom(userData.username);
           }
         }
@@ -103,6 +104,7 @@ const AuthScreen: React.FC = () => {
     if (result.success && result.user) {
       dispatch(loginSuccess(result.user));
       await loadUserDextop();
+      socketService.authenticate();
       socketService.createRoom(result.user.username);
     } else {
       dispatch(loginFailure(result.error || 'Failed to create guest account'));
@@ -126,6 +128,8 @@ const AuthScreen: React.FC = () => {
     if (result.success && result.user) {
       dispatch(loginSuccess(result.user));
       await loadUserDextop();
+      socketService.authenticate();
+      socketService.createRoom(result.user.username);
     } else {
       dispatch(loginFailure(result.error || 'Login failed'));
       setFormError(result.error || 'Login failed');
@@ -162,6 +166,8 @@ const AuthScreen: React.FC = () => {
     if (result.success && result.user) {
       dispatch(loginSuccess(result.user));
       await loadUserDextop();
+      socketService.authenticate();
+      socketService.createRoom(result.user.username);
     } else {
       dispatch(loginFailure(result.error || 'Registration failed'));
       setFormError(result.error || 'Registration failed');
@@ -193,6 +199,7 @@ const AuthScreen: React.FC = () => {
     if (result.success && result.user) {
       dispatch(loginSuccess(result.user));
       await loadUserDextop();
+      socketService.authenticate();
       socketService.createRoom(result.user.username);
     } else {
       dispatch(loginFailure(result.error || 'Migration failed'));

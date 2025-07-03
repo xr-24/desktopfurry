@@ -601,6 +601,22 @@ io.on('connection', (socket) => {
       console.error('Error handling disconnect:', error);
     }
   });
+
+  // Allow clients to request joining a dextop by code (user ID)
+  socket.on('joinDextopByCode', async ({ code }) => {
+    try {
+      const token = socket.handshake.auth.token;
+      if (!token) {
+        socket.emit('error', { message: 'Not authenticated' });
+        return;
+      }
+      // Reuse existing joinDextop logic
+      socket.emit('joinDextop', { token, dextopId: code });
+    } catch (err) {
+      console.error('Error in joinDextopByCode:', err);
+      socket.emit('error', { message: 'Failed to join dextop' });
+    }
+  });
 });
 
 // Add cleanup interval for stale player states
