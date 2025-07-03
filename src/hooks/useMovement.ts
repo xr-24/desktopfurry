@@ -243,6 +243,8 @@ const useMovement = () => {
 
     setIsGrabbing(true);
     setGrabbedWindowId(windowId);
+    isGrabbingRef.current = true;
+    grabbedWindowIdRef.current = windowId;
     
     // Calculate offset from player to window using current position ref
     const playerCenterX = positionRef.current.x + 80;
@@ -253,32 +255,37 @@ const useMovement = () => {
     };
     setGrabOffset(offset);
 
-    // Update refs for immediate use in updatePosition callback
-    isGrabbingRef.current = true;
-    grabbedWindowIdRef.current = windowId;
-    grabOffsetRef.current = offset;
-
-
+    // Notify others
+    socketService.movePlayer({
+      position: positionRef.current,
+      isMoving: false,
+      movementDirection: null,
+      walkFrame: walkFrameRef.current,
+      facingDirection: facingDirectionRef.current,
+      isGrabbing: true,
+      isResizing: false,
+    });
   };
 
   // Helper function to stop grabbing
   const stopGrabbing = () => {
     setIsGrabbing(false);
-    setGrabbedWindowId(null);
-    setGrabOffset({ x: 0, y: 0 });
+    isGrabbingRef.current = false;
+    grabbedWindowIdRef.current = null;
     setIsResizing(false);
     setResizeAnchor({ x: 0, y: 0, width: 0, height: 0 });
     setResizeStartPosition({ x: 0, y: 0 });
     setResizeSide({ horizontal: 'left', vertical: 'top' });
     
-    // Update refs for immediate use in updatePosition callback
-    isGrabbingRef.current = false;
-    grabbedWindowIdRef.current = null;
-    grabOffsetRef.current = { x: 0, y: 0 };
-    isResizingRef.current = false;
-    resizeAnchorRef.current = { x: 0, y: 0, width: 0, height: 0 };
-    resizeStartPositionRef.current = { x: 0, y: 0 };
-    resizeSideRef.current = { horizontal: 'left', vertical: 'top' };
+    socketService.movePlayer({
+      position: positionRef.current,
+      isMoving: false,
+      movementDirection: null,
+      walkFrame: walkFrameRef.current,
+      facingDirection: facingDirectionRef.current,
+      isGrabbing: false,
+      isResizing: false,
+    });
   };
 
   // Helper function to start resizing
@@ -321,6 +328,16 @@ const useMovement = () => {
     resizeAnchorRef.current = anchor;
     resizeStartPositionRef.current = startPos;
     resizeSideRef.current = side;
+
+    socketService.movePlayer({
+      position: positionRef.current,
+      isMoving: false,
+      movementDirection: null,
+      walkFrame: walkFrameRef.current,
+      facingDirection: facingDirectionRef.current,
+      isGrabbing: true,
+      isResizing: true,
+    });
   };
 
   // Helper function to stop resizing (but continue grabbing)
@@ -329,6 +346,16 @@ const useMovement = () => {
     isResizingRef.current = false;
     // Stay in grab mode - don't drop the window
     // Don't recalculate grab offset - keep the original one from when grab started
+
+    socketService.movePlayer({
+      position: positionRef.current,
+      isMoving: false,
+      movementDirection: null,
+      walkFrame: walkFrameRef.current,
+      facingDirection: facingDirectionRef.current,
+      isGrabbing: true,
+      isResizing: false,
+    });
   };
 
   // Helper function to resize grabbed window based on character movement
@@ -505,6 +532,8 @@ const useMovement = () => {
         movementDirection: currentDirection,
         walkFrame: walkFrameRef.current,
         facingDirection: facingDirectionRef.current,
+        isGrabbing: isGrabbingRef.current,
+        isResizing: isResizingRef.current,
       });
       
       // Check for nearby icons
@@ -533,6 +562,8 @@ const useMovement = () => {
         movementDirection: null,
         walkFrame: 1,
         facingDirection: facingDirectionRef.current,
+        isGrabbing: isGrabbingRef.current,
+        isResizing: isResizingRef.current,
       });
       // Clean up animation frame
       if (animationFrameRef.current) {
@@ -680,6 +711,8 @@ const useMovement = () => {
             movementDirection: null,
             walkFrame: 1,
             facingDirection: facingDirectionRef.current,
+            isGrabbing: isGrabbingRef.current,
+            isResizing: isResizingRef.current,
           });
         }
       }

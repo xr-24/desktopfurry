@@ -117,7 +117,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('playerMove', (data) => {
-    const { position, isMoving, movementDirection, walkFrame, facingDirection } = data;
+    const { position, isMoving, movementDirection, walkFrame, facingDirection, isGrabbing, isResizing } = data;
     // Find the room this player is in
     for (const [roomId, room] of rooms.entries()) {
       if (room.players[socket.id]) {
@@ -126,6 +126,8 @@ io.on('connection', (socket) => {
         room.players[socket.id].movementDirection = movementDirection;
         room.players[socket.id].walkFrame = walkFrame;
         room.players[socket.id].facingDirection = facingDirection;
+        room.players[socket.id].isGrabbing = isGrabbing;
+        room.players[socket.id].isResizing = isResizing;
         // Broadcast the movement to other players in the room
         socket.to(roomId).emit('playerMoved', {
           playerId: socket.id,
@@ -134,6 +136,8 @@ io.on('connection', (socket) => {
           movementDirection,
           walkFrame,
           facingDirection,
+          isGrabbing,
+          isResizing,
         });
         break;
       }

@@ -118,6 +118,8 @@ class SocketService {
     movementDirection: string | null;
     walkFrame: number;
     facingDirection: 'left' | 'right';
+    isGrabbing?: boolean;
+    isResizing?: boolean;
   }) {
     if (this.socket) {
       this.socket.emit('playerMove', data);
