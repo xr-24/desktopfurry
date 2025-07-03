@@ -5,6 +5,7 @@ import { closeProgram } from '../../store/programSlice';
 import ProgramWindow from '../ProgramWindow';
 import { socketService } from '../../services/socketService';
 import Character from '../Character';
+import { authService } from '../../services/authService';
 
 interface CharacterEditorProps {
   windowId: string;
@@ -63,6 +64,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
   const save = () => {
     dispatch(setAppearance(previewAppearance));
     socketService.updateAppearance(previewAppearance);
+    authService.updateAvatar(previewAppearance);
     // Close window via program slice minimise
     dispatch(closeProgram(windowId));
   };

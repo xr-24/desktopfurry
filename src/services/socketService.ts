@@ -68,6 +68,13 @@ class SocketService {
     this.socket.on('roomJoined', (data: { roomId: string; playerId: string; username: string; quadrant: number }) => {
       store.dispatch(joinRoom(data.roomId));
       store.dispatch(setPlayer({ id: data.playerId, username: data.username, quadrant: data.quadrant }));
+
+      // After Redux slices are set up, broadcast saved avatar appearance to the room
+      const appearance = store.getState().player.appearance;
+      if (appearance) {
+        // Slight delay ensures player slice dispatch finishes before we emit
+        setTimeout(() => this.updateAppearance(appearance), 0);
+      }
     });
 
     this.socket.on('playersUpdate', (players: any) => {

@@ -8,6 +8,8 @@ import useMovement from '../hooks/useMovement';
 import { setBackground } from '../store/programSlice';
 import { updatePlayerPosition } from '../store/gameSlice';
 import '../styles/desktop.css';
+import { authService } from '../services/authService';
+import { store } from '../store/store';
 
 // Dynamically load pattern images
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -81,6 +83,36 @@ const Desktop: React.FC = () => {
   const getBackgroundPattern = (bgId: string) => {
     return patternsMap[bgId] || patternsMap['sandstone'];
   };
+
+  // Persist desktop state and background on unload (refresh / close)
+  useEffect(() => {
+    const handleSave = () => {
+      const state = store.getState().programs as any;
+      const user = authService.getStoredUser();
+      if (!user) return;
+
+      // Save background
+      authService.updateBackground(state.backgroundId);
+
+      // Save each program window
+      Object.values(state.openPrograms).forEach((p: any) => {
+        authService.saveProgramState(
+          p.type,
+          p.position,
+          p.size,
+          p.zIndex,
+          p.isMinimized,
+          p.state || {}
+        );
+      });
+    };
+
+    window.addEventListener('beforeunload', handleSave);
+    return () => {
+      handleSave();
+      window.removeEventListener('beforeunload', handleSave);
+    };
+  }, []);
 
   if (!roomId) {
     return null; // Don't show desktop if not in a room

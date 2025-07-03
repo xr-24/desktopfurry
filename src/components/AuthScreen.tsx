@@ -6,6 +6,7 @@ import { setAppearance } from '../store/playerSlice';
 import { authService } from '../services/authService';
 import { socketService } from '../services/socketService';
 import '../styles/win98.css';
+import { syncDesktop } from '../store/programSlice';
 
 const AuthScreen: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -28,17 +29,11 @@ const AuthScreen: React.FC = () => {
         const isValid = await authService.verifyToken();
         if (isValid) {
           const userData = authService.getStoredUser();
-          if (userData) {
+          if (userData && userData.userType !== 'guest') {
             dispatch(loginSuccess(userData));
             await loadUserDextop();
+            socketService.createRoom(userData.username);
           }
-        }
-      } else {
-        // Try to resume guest session
-        const guestResult = await authService.resumeGuestSession();
-        if (guestResult.success && guestResult.user) {
-          dispatch(loginSuccess(guestResult.user));
-          await loadUserDextop();
         }
       }
     };
@@ -55,8 +50,34 @@ const AuthScreen: React.FC = () => {
         unlockedPrograms: dextopData.unlockedPrograms
       }));
       
-      // Set avatar appearance
       dispatch(setAppearance(dextopData.avatar));
+
+      const openPrograms: any = {};
+      let highestZ = 100;
+      for (const p of dextopData.programs) {
+        const windowId = p.id || `${p.type}-${Date.now()}`;
+        openPrograms[windowId] = {
+          id: windowId,
+          type: p.type,
+          isOpen: true,
+          position: p.position,
+          size: p.size,
+          isMinimized: p.isMinimized,
+          zIndex: p.zIndex,
+          controllerId: authService.getStoredUser()?.id || '',
+          isMultiplayer: true,
+          state: p.state || {},
+        };
+        if (p.zIndex > highestZ) highestZ = p.zIndex;
+      }
+      dispatch(syncDesktop({
+        openPrograms,
+        highestZIndex: highestZ,
+        interactionRange: 80,
+        backgroundId: dextopData.dextop.backgroundId || 'sandstone',
+      }));
+
+      socketService.updateAppearance(dextopData.avatar);
     }
   };
 
@@ -82,6 +103,7 @@ const AuthScreen: React.FC = () => {
     if (result.success && result.user) {
       dispatch(loginSuccess(result.user));
       await loadUserDextop();
+      socketService.createRoom(result.user.username);
     } else {
       dispatch(loginFailure(result.error || 'Failed to create guest account'));
       setFormError(result.error || 'Failed to create guest account');
@@ -178,6 +200,16 @@ const AuthScreen: React.FC = () => {
     }
     
     setIsSubmitting(false);
+  };
+
+  // Helper to ensure room creation only fires once socket is connected
+  const createRoomSafe = (username: string) => {
+    const sock: any = (socketService as any).socket;
+    if (sock && sock.connected) {
+      socketService.createRoom(username);
+    } else {
+      sock?.once('connect', () => socketService.createRoom(username));
+    }
   };
 
   // Don't show auth screen if already authenticated

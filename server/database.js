@@ -106,9 +106,16 @@ const db = {
   // Avatar functions
   async updateAvatarAppearance(userId, appearance) {
     await pool.query(`
-      UPDATE avatar_appearances 
-      SET hue = $2, eyes = $3, ears = $4, fluff = $5, tail = $6, body = $7, updated_at = NOW()
-      WHERE user_id = $1
+      INSERT INTO avatar_appearances (user_id, hue, eyes, ears, fluff, tail, body, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      ON CONFLICT (user_id) DO UPDATE SET
+        hue   = EXCLUDED.hue,
+        eyes  = EXCLUDED.eyes,
+        ears  = EXCLUDED.ears,
+        fluff = EXCLUDED.fluff,
+        tail  = EXCLUDED.tail,
+        body  = EXCLUDED.body,
+        updated_at = NOW();
     `, [userId, appearance.hue, appearance.eyes, appearance.ears, appearance.fluff, appearance.tail, appearance.body]);
   },
 
