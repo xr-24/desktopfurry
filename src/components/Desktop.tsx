@@ -61,14 +61,14 @@ const Desktop: React.FC = () => {
             key={player.id}
             player={displayPlayer}
             isCurrentPlayer={player.id === currentPlayerId}
-            isMoving={player.id === currentPlayerId ? isMoving : (player.isMoving || false)}
-            movementDirection={player.id === currentPlayerId ? movementDirection : (player.movementDirection || null)}
-            walkFrame={player.id === currentPlayerId ? walkFrame : (player.walkFrame || 1)}
-            facingDirection={player.id === currentPlayerId ? facingDirection : (player.facingDirection || 'left')}
+            isMoving={player.id === currentPlayerId ? isMoving : player.isMoving}
+            movementDirection={player.id === currentPlayerId ? movementDirection : player.movementDirection}
+            walkFrame={player.id === currentPlayerId ? walkFrame : player.walkFrame || 1}
+            facingDirection={player.id === currentPlayerId ? facingDirection : player.facingDirection || 'left'}
             isGrabbing={player.id === currentPlayerId ? isGrabbing : false}
             isResizing={player.id === currentPlayerId ? isResizing : false}
-            isGaming={player.id === currentPlayerId ? isGaming : false}
-            gamingInputDirection={player.id === currentPlayerId ? gamingInputDirection : null}
+            isGaming={player.id === currentPlayerId ? isGaming : player.isGaming || false}
+            gamingInputDirection={player.id === currentPlayerId ? gamingInputDirection : player.gamingInputDirection || null}
           />
         );
       })}

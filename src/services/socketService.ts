@@ -14,6 +14,7 @@ class SocketService {
 
   // Keep last sent desktop state so we only emit diffs
   private lastDesktopState: any = null;
+  private lastPlayerState: any = null;
   // Flag to ignore local store updates that originated remotely
   private ignoreNextDesktopUpdate = false;
 
@@ -52,13 +53,16 @@ class SocketService {
     this.socket.on('desktopState', (desktopState: any) => {
       this.ignoreNextDesktopUpdate = true;
       this.lastDesktopState = desktopState;
-      store.dispatch({ type: syncDesktop.type, payload: desktopState, meta: { remote: true } });
+      store.dispatch(syncDesktop(desktopState));
       // reset flag after current tick
       setTimeout(() => { this.ignoreNextDesktopUpdate = false; }, 0);
     });
 
     // Prime lastDesktopState with current slice
     this.lastDesktopState = store.getState().programs;
+
+    // Prime lastPlayerState
+    this.lastPlayerState = store.getState().player;
 
     // Subscribe once to program slice changes to broadcast
     const sendDesktopState = () => {
@@ -74,6 +78,26 @@ class SocketService {
     };
 
     store.subscribe(sendDesktopState);
+
+    // Subscribe once to player slice changes to broadcast gaming state
+    const sendPlayerState = () => {
+      const player = store.getState().player;
+      // Only care about gaming state fields changing
+      if (player && !jsonEqual({ isGaming: player.isGaming, dir: player.gamingInputDirection }, { isGaming: this.lastPlayerState?.isGaming, dir: this.lastPlayerState?.gamingInputDirection })) {
+        const roomId = store.getState().game.roomId;
+        if (roomId && this.socket) {
+          this.socket.emit('playerStateUpdate', {
+            roomId,
+            playerId: player.id,
+            isGaming: player.isGaming,
+            gamingInputDirection: player.gamingInputDirection,
+          });
+          this.lastPlayerState = player;
+        }
+      }
+    };
+
+    store.subscribe(sendPlayerState);
   }
 
   createRoom(username: string) {

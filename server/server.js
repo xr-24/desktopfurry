@@ -59,6 +59,8 @@ io.on('connection', (socket) => {
           movementDirection: null,
           walkFrame: 1,
           facingDirection: 'left',
+          isGaming: false,
+          gamingInputDirection: null,
         }
       },
       maxPlayers: 4,
@@ -100,25 +102,13 @@ io.on('connection', (socket) => {
       movementDirection: null,
       walkFrame: 1,
       facingDirection: 'left',
+      isGaming: false,
+      gamingInputDirection: null,
     };
 
     socket.join(roomId);
     socket.emit('roomJoined', { roomId, playerId, username, quadrant });
     socket.emit('desktopState', room.desktop);
-    
-    // Send current movement state of existing players to the new player
-    Object.values(room.players).forEach(existingPlayer => {
-      if (existingPlayer.id !== playerId) {
-        socket.emit('playerMoved', {
-          playerId: existingPlayer.id,
-          position: existingPlayer.position,
-          isMoving: existingPlayer.isMoving,
-          movementDirection: existingPlayer.movementDirection,
-          walkFrame: existingPlayer.walkFrame,
-          facingDirection: existingPlayer.facingDirection,
-        });
-      }
-    });
     
     // Update all players in the room
     io.to(roomId).emit('playersUpdate', room.players);
@@ -157,6 +147,15 @@ io.on('connection', (socket) => {
     room.desktop = desktopState;
     // Broadcast to all other clients in the room
     socket.to(roomId).emit('desktopState', desktopState);
+  });
+
+  socket.on('playerStateUpdate', ({ roomId, playerId, isGaming, gamingInputDirection }) => {
+    const room = rooms.get(roomId);
+    if (!room || !room.players[playerId]) return;
+    room.players[playerId].isGaming = isGaming;
+    room.players[playerId].gamingInputDirection = gamingInputDirection;
+    // Broadcast updated players list
+    io.to(roomId).emit('playersUpdate', room.players);
   });
 
   socket.on('disconnect', () => {

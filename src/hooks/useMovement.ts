@@ -55,6 +55,7 @@ const useMovement = () => {
   
   const roomId = useAppSelector((state: any) => state.game?.roomId);
   const currentPlayerId = useAppSelector((state: any) => state.player?.id);
+  
   const { openPrograms } = useAppSelector((state: any) => state.programs);
   const openProgramsRef = useRef(openPrograms);
   
@@ -523,19 +524,16 @@ const useMovement = () => {
       }
     } else {
       // Stop moving when no keys pressed
-      const wasMoving = isMoving;
       setIsMoving(false);
       setMovementDirection(null);
-      if (wasMoving) {
-        // Inform server that movement stopped
-        socketService.movePlayer({
-          position: positionRef.current,
-          isMoving: false,
-          movementDirection: null,
-          walkFrame: 1,
-          facingDirection: facingDirectionRef.current,
-        });
-      }
+      // NEW: Notify server that movement has stopped so other clients update animation
+      socketService.movePlayer({
+        position: positionRef.current,
+        isMoving: false,
+        movementDirection: null,
+        walkFrame: 1,
+        facingDirection: facingDirectionRef.current,
+      });
       // Clean up animation frame
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -673,6 +671,17 @@ const useMovement = () => {
       // Always allow key release regardless of focus (to prevent stuck keys)
       if (['w', 'a', 's', 'd'].includes(key)) {
         keysPressed.current.delete(key);
+
+        // NEW: If no movement keys are pressed anymore, immediately notify others
+        if (keysPressed.current.size === 0) {
+          socketService.movePlayer({
+            position: positionRef.current,
+            isMoving: false,
+            movementDirection: null,
+            walkFrame: 1,
+            facingDirection: facingDirectionRef.current,
+          });
+        }
       }
     };
 

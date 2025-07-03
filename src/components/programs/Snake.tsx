@@ -212,7 +212,7 @@ const Snake: React.FC<SnakeProps> = ({
       
       ctx.fillText(arrow, headCenterX, headCenterY - 15);
     }
-  }, []); // Remove dependency to prevent recreations
+  }, [isController, programState.snake, programState.food, programState.direction, programState.score, programState.gameState]);
 
   const gameOver = useCallback(() => {
     const gameState = gameStateRef.current;
