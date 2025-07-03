@@ -4,6 +4,7 @@ import { loginStart, loginSuccess, loginFailure } from '../store/authSlice';
 import { loadDextopSuccess } from '../store/dextopSlice';
 import { setAppearance } from '../store/playerSlice';
 import { authService } from '../services/authService';
+import { socketService } from '../services/socketService';
 import '../styles/win98.css';
 
 const AuthScreen: React.FC = () => {
@@ -170,6 +171,7 @@ const AuthScreen: React.FC = () => {
     if (result.success && result.user) {
       dispatch(loginSuccess(result.user));
       await loadUserDextop();
+      socketService.createRoom(result.user.username);
     } else {
       dispatch(loginFailure(result.error || 'Migration failed'));
       setFormError(result.error || 'Migration failed');
