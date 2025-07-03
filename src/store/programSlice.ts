@@ -44,7 +44,7 @@ const programSlice = createSlice({
         paint: { width: 500, height: 400, isMultiplayer: true },
         notepad: { width: 400, height: 300, isMultiplayer: false },
         winamp: { width: 300, height: 200, isMultiplayer: false },
-        bdemediaplayer: { width: 500, height: 400, isMultiplayer: true },
+        bdemediaplayer: { width: 800, height: 600, isMultiplayer: true },
         checkers: { width: 450, height: 450, isMultiplayer: true },
         snake: { width: 400, height: 450, isMultiplayer: true },
         characterEditor: { width: 520, height: 500, isMultiplayer: false },
@@ -53,11 +53,29 @@ const programSlice = createSlice({
       const config = programConfigs[type];
       state.highestZIndex += 1;
       
+      // Calculate position - center BDE Media Player, offset others
+      let windowPosition = position || { x: 100, y: 80 };
+      if (!position) {
+        if (type === 'bdemediaplayer') {
+          // Center the BDE Media Player on screen
+          windowPosition = { 
+            x: Math.max(50, (window.innerWidth - config.width) / 2), 
+            y: Math.max(50, (window.innerHeight - config.height - 100) / 2) 
+          };
+        } else {
+          // Offset other windows as before
+          windowPosition = { 
+            x: 100 + Object.keys(state.openPrograms).length * 30, 
+            y: 80 
+          };
+        }
+      }
+      
       state.openPrograms[windowId] = {
         id: windowId,
         type,
         isOpen: true,
-        position: position || { x: 100 + Object.keys(state.openPrograms).length * 30, y: 80 },
+        position: windowPosition,
         size: { width: config.width, height: config.height },
         isMinimized: false,
         zIndex: state.highestZIndex,

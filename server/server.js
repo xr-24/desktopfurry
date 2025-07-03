@@ -3,6 +3,15 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+require('dotenv').config();
+
+// Import database and auth
+const { db } = require('./database');
+const authService = require('./auth');
+
+// Import routes
+const authRoutes = require('./routes/auth');
+const dextopRoutes = require('./routes/dextop');
 
 const app = express();
 const server = http.createServer(app);
@@ -21,7 +30,15 @@ const io = socketIo(server, {
 app.use(cors({ origin: allowedOrigin }));
 app.use(express.json());
 
-// In-memory storage for rooms (later we'll use Redis)
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/dextop', dextopRoutes);
+
+// In-memory storage for active dextop sessions
+const activeDextops = new Map(); // dextopId -> { visitors: Map<userId, playerData> }
+const userSockets = new Map(); // userId -> socketId
+
+// Legacy room system (for backward compatibility)
 const rooms = new Map();
 
 // Helper to create an empty desktop state
@@ -188,10 +205,150 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('playersUpdate', room.players);
   });
 
+  // New dextop-based socket handlers
+  socket.on('joinDextop', async ({ token, dextopId }) => {
+    try {
+      // Verify user token
+      const decoded = authService.verifyJWT(token);
+      if (!decoded) {
+        socket.emit('error', { message: 'Invalid token' });
+        return;
+      }
+
+      // Get user from database
+      const user = await db.findUserById(decoded.userId);
+      if (!user) {
+        socket.emit('error', { message: 'User not found' });
+        return;
+      }
+
+      // Get dextop and avatar
+      const dextop = await db.getUserDextop(user.id);
+      
+      const targetDextopId = dextopId || dextop.id; // Use provided dextop or user's own
+      
+      // Initialize active dextop if needed
+      if (!activeDextops.has(targetDextopId)) {
+        activeDextops.set(targetDextopId, { visitors: new Map() });
+      }
+
+      const dextopSession = activeDextops.get(targetDextopId);
+      
+      // Create player data
+      const playerData = {
+        id: user.id,
+        username: user.username,
+        position: { x: 200, y: 200 },
+        isMoving: false,
+        movementDirection: null,
+        walkFrame: 1,
+        facingDirection: 'left',
+        isGaming: false,
+        gamingInputDirection: null,
+        appearance: {
+          hue: dextop.hue || 0,
+          eyes: dextop.eyes || 'none',
+          ears: dextop.ears || 'none',
+          fluff: dextop.fluff || 'none',
+          tail: dextop.tail || 'none',
+          body: dextop.body || 'CustomBase'
+        },
+        lastSeen: Date.now(),
+        socketId: socket.id
+      };
+
+      // Add player to dextop session
+      dextopSession.visitors.set(user.id, playerData);
+      userSockets.set(user.id, socket.id);
+      
+      // Join socket room
+      socket.join(targetDextopId);
+      
+      // Send success response
+      socket.emit('dextopJoined', { 
+        dextopId: targetDextopId, 
+        userId: user.id, 
+        username: user.username 
+      });
+
+      // Send current visitors to new player
+      const visitors = Array.from(dextopSession.visitors.values());
+      socket.emit('visitorsUpdate', visitors);
+      
+      // Notify other visitors
+      socket.to(targetDextopId).emit('visitorJoined', playerData);
+
+      // Record visit if not owner
+      if (dextopId && dextopId !== dextop.id) {
+        await db.recordDextopVisit(targetDextopId, user.id);
+      }
+
+      console.log(`${user.username} joined dextop ${targetDextopId}`);
+    } catch (error) {
+      console.error('Error joining dextop:', error);
+      socket.emit('error', { message: 'Failed to join dextop' });
+    }
+  });
+
+  socket.on('dextopPlayerMove', (data) => {
+    // Find which dextop this socket is in
+    for (const [dextopId, session] of activeDextops.entries()) {
+      for (const [userId, player] of session.visitors.entries()) {
+        if (player.socketId === socket.id) {
+          // Update player data
+          Object.assign(player, {
+            position: data.position,
+            isMoving: data.isMoving,
+            movementDirection: data.movementDirection,
+            walkFrame: data.walkFrame,
+            facingDirection: data.facingDirection,
+            isGrabbing: data.isGrabbing,
+            isResizing: data.isResizing,
+            lastSeen: Date.now()
+          });
+          
+          // Broadcast to other visitors in the same dextop
+          socket.to(dextopId).emit('visitorMoved', {
+            userId,
+            ...data,
+            timestamp: Date.now()
+          });
+          return;
+        }
+      }
+    }
+  });
+
+  socket.on('dextopStateUpdate', ({ dextopId, desktopState }) => {
+    // Broadcast desktop state to all visitors of this dextop
+    socket.to(dextopId).emit('dextopState', desktopState);
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
     
-    // Remove player from all rooms
+    // Remove from dextop sessions
+    for (const [dextopId, session] of activeDextops.entries()) {
+      for (const [userId, player] of session.visitors.entries()) {
+        if (player.socketId === socket.id) {
+          session.visitors.delete(userId);
+          userSockets.delete(userId);
+          
+          // Notify remaining visitors
+          socket.to(dextopId).emit('visitorLeft', { userId });
+          
+          // Clean up empty dextop sessions
+          if (session.visitors.size === 0) {
+            activeDextops.delete(dextopId);
+          }
+          
+          console.log(`User ${userId} left dextop ${dextopId}`);
+          break;
+        }
+      }
+    }
+    
+    // Legacy room cleanup
     for (const [roomId, room] of rooms.entries()) {
       if (room.players[socket.id]) {
         delete room.players[socket.id];

@@ -123,4 +123,139 @@
   margin: 12px 0;
   font-family: monospace;
   font-size: 12px;
+}
+
+/* Authentication Screen Styles */
+.auth-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 450px;
+  min-height: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.auth-content {
+  padding: 20px;
+  text-align: center;
+}
+
+.auth-content h2 {
+  margin-bottom: 16px;
+  color: var(--win98-dark-blue);
+  font-size: 16px;
+}
+
+.auth-content p {
+  margin-bottom: 20px;
+  color: var(--win98-darker-gray);
+}
+
+.auth-options {
+  margin: 24px 0;
+}
+
+.auth-options .win98-button {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 12px;
+  font-size: 12px;
+}
+
+.auth-options .win98-button.primary {
+  background: linear-gradient(90deg, var(--win98-blue) 0%, var(--win98-dark-blue) 100%);
+  color: white;
+  border: 2px outset var(--win98-blue);
+  font-weight: bold;
+}
+
+.auth-subtitle {
+  font-size: 10px;
+  color: var(--win98-dark-gray);
+  margin: 4px 0 16px 0;
+}
+
+.auth-divider {
+  margin: 20px 0;
+  color: var(--win98-dark-gray);
+  font-size: 11px;
+  position: relative;
+}
+
+.auth-divider:before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--win98-dark-gray);
+  z-index: 1;
+}
+
+.auth-divider {
+  background: var(--win98-gray);
+  padding: 0 10px;
+  z-index: 2;
+  position: relative;
+  display: inline-block;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.auth-actions .win98-button {
+  min-width: 100px;
+}
+
+.auth-actions .win98-button.primary {
+  background: linear-gradient(90deg, var(--win98-blue) 0%, var(--win98-dark-blue) 100%);
+  color: white;
+  border: 2px outset var(--win98-blue);
+  font-weight: bold;
+}
+
+.auth-error {
+  background-color: #ffe4e1;
+  border: 1px solid #cd5c5c;
+  color: #8b0000;
+  padding: 8px;
+  margin: 12px 0;
+  border-radius: 2px;
+  font-size: 11px;
+  text-align: left;
+}
+
+.auth-note {
+  background-color: #f0f8ff;
+  border: 1px solid var(--win98-blue);
+  color: var(--win98-dark-blue);
+  padding: 12px;
+  margin: 20px 0;
+  border-radius: 2px;
+  font-size: 11px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: bold;
+  font-size: 11px;
+}
+
+.form-group input {
+  width: 100%;
+  box-sizing: border-box;
 } 

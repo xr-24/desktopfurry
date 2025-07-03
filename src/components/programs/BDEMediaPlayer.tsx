@@ -98,7 +98,7 @@ const BDEMediaPlayer: React.FC<BDEMediaPlayerProps> = ({
 
   // Calculate video player dimensions based on window size
   const playerWidth = size.width - 20; // Account for padding
-  const playerHeight = Math.min(size.height - 120, Math.floor(playerWidth * 9 / 16)); // 16:9 aspect ratio, leave room for controls
+  const playerHeight = Math.min(size.height - 140, Math.floor(playerWidth * 9 / 16)); // 16:9 aspect ratio, leave room for controls
 
   // Initialize / re-initialize YouTube player
   useEffect(() => {
@@ -322,7 +322,7 @@ const BDEMediaPlayer: React.FC<BDEMediaPlayerProps> = ({
       size={size}
       zIndex={zIndex}
       isMinimized={isMinimized}
-      isResizable={true}
+      isResizable={false}
     >
       <div className="bde-media-player">
         {/* Video Display Area */}
@@ -342,9 +342,19 @@ const BDEMediaPlayer: React.FC<BDEMediaPlayerProps> = ({
               color: '#fff', 
               textAlign: 'center',
               fontFamily: 'Better VCR, MS Sans Serif, sans-serif',
-              fontSize: '14px'
+              fontSize: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              gap: '10px'
             }}>
-              {isHost ? 'Add a video to get started' : 'Waiting for host to add videos...'}
+              <div style={{ fontSize: '48px' }}>🚧</div>
+              <div>BDE Media Player</div>
+              <div style={{ fontSize: '12px', opacity: '0.8' }}>
+                {isHost ? 'Add a YouTube video below to get started' : 'Waiting for host to add videos...'}
+              </div>
             </div>
           )}
         </div>
