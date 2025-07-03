@@ -12,6 +12,7 @@ const authService = require('./auth');
 // Import routes
 const authRoutes = require('./routes/auth');
 const dextopRoutes = require('./routes/dextop');
+const usersRoutes = require('./routes/users');
 
 const app = express();
 const server = http.createServer(app);
@@ -33,6 +34,7 @@ app.use(express.json());
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/dextop', dextopRoutes);
+app.use('/api/users', usersRoutes);
 
 // In-memory storage for active dextop sessions
 const activeDextops = new Map(); // dextopId -> { visitors: Map<userId, playerData> }
@@ -578,7 +580,7 @@ io.on('connection', (socket) => {
         // Clean up user tracking
         userSockets.delete(userId);
         onlineUsers.delete(userId);
-
+        
         // Notify friends that user is offline
         const userFriendsList = userFriends.get(userId);
         if (userFriendsList) {
@@ -588,7 +590,6 @@ io.on('connection', (socket) => {
               io.to(friendSocketId).emit('friendStatusUpdate', {
                 [userId]: {
                   id: userId,
-                  username: decoded.username,
                   isOnline: false
                 }
               });

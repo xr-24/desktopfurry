@@ -233,7 +233,16 @@ const db = {
       'UPDATE dextops SET visit_count = visit_count + 1 WHERE id = $1',
       [dextopId]
     );
-  }
+  },
+
+  async searchUsers(query) {
+    const like = `%${query}%`;
+    const result = await pool.query(
+      'SELECT id, username FROM users WHERE LOWER(username) LIKE LOWER($1) ORDER BY username LIMIT 20',
+      [like]
+    );
+    return result.rows;
+  },
 };
 
 module.exports = { pool, db }; 
