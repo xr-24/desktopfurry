@@ -7,6 +7,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-in-producti
 const SALT_ROUNDS = 12;
 
 class AuthService {
+  constructor() {
+    // Ensure that instance methods used as Express middleware retain the correct `this` context.
+    this.authenticateToken = this.authenticateToken.bind(this);
+  }
+
   // Generate a secure guest token
   generateGuestToken() {
     return uuidv4() + '-' + Date.now();
