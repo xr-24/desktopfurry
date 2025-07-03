@@ -73,6 +73,118 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
 
   if (isMinimized) return null;
 
+  const editorStyles = {
+    container: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      height: '100%',
+      padding: '12px',
+      background: '#c0c0c0',
+      fontFamily: 'Better VCR, MS Sans Serif, sans-serif',
+      fontSize: '11px'
+    },
+    header: {
+      textAlign: 'center' as const,
+      marginBottom: '16px',
+      fontSize: '13px',
+      fontWeight: 'bold' as const,
+      color: '#000080'
+    },
+    mainContent: {
+      display: 'flex',
+      gap: '20px',
+      flex: 1,
+      alignItems: 'center'
+    },
+    previewSection: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      alignItems: 'center',
+      gap: '12px',
+      background: '#ffffff',
+      border: '2px inset #c0c0c0',
+      padding: '20px',
+      borderRadius: '4px',
+      minWidth: '180px'
+    },
+    previewLabel: {
+      fontSize: '12px',
+      fontWeight: 'bold' as const,
+      color: '#000080',
+      marginBottom: '8px'
+    },
+    controlsSection: {
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '14px'
+    },
+    controlGroup: {
+      background: '#f0f0f0',
+      border: '1px inset #c0c0c0',
+      padding: '12px',
+      borderRadius: '2px'
+    },
+    controlRow: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      marginBottom: '8px'
+    },
+    label: {
+      minWidth: '50px',
+      fontWeight: 'bold' as const,
+      color: '#000080'
+    },
+    cycleButton: {
+      background: '#c0c0c0',
+      border: '1px outset #c0c0c0',
+      width: '24px',
+      height: '20px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '12px',
+      fontFamily: 'Better VCR, MS Sans Serif, sans-serif'
+    },
+    valueDisplay: {
+      flex: 1,
+      textAlign: 'center' as const,
+      background: '#ffffff',
+      border: '1px inset #c0c0c0',
+      padding: '4px 8px',
+      fontSize: '11px'
+    },
+    colorSection: {
+      background: '#f0f0f0',
+      border: '1px inset #c0c0c0',
+      padding: '12px',
+      borderRadius: '2px'
+    },
+    colorSlider: {
+      width: '100%',
+      margin: '8px 0'
+    },
+    buttonSection: {
+      display: 'flex',
+      justifyContent: 'flex-end',
+      gap: '8px',
+      marginTop: '16px',
+      paddingTop: '12px',
+      borderTop: '1px solid #808080'
+    },
+    button: {
+      background: '#c0c0c0',
+      border: '2px outset #c0c0c0',
+      padding: '6px 16px',
+      cursor: 'pointer',
+      fontFamily: 'Better VCR, MS Sans Serif, sans-serif',
+      fontSize: '11px',
+      fontWeight: 'bold' as const
+    }
+  };
+
   return (
     <ProgramWindow
       windowId={windowId}
@@ -84,39 +196,102 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
       isMinimized={false}
       isResizable={false}
     >
-      <div style={{ display:'grid', gridTemplateColumns:'200px 1fr', height:'100%', padding:8, gap:12 }}>
-        {/* Preview */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <Character 
-            player={{ id: currentPlayerId, username:'You', position:{x:0, y:0}, quadrant:0, appearance:previewAppearance }}
-            isCurrentPlayer={true}
-          />
+      <div style={editorStyles.container}>
+        <div style={editorStyles.header}>
+          Customize Your Avatar
         </div>
-        {/* Controls */}
-        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-          {[
-            {label:'Eyes',   arr:EYES,   idx:eyesIdx,  set:setEyesIdx},
-            {label:'Ears',   arr:EARS,   idx:earsIdx,  set:setEarsIdx},
-            {label:'Fluff',  arr:FLUFF,  idx:fluffIdx, set:setFluffIdx},
-            {label:'Tail',   arr:TAIL,   idx:tailIdx,  set:setTailIdx},
-          ].map(({label, arr, idx, set})=> (
-            <div key={label} style={{ display:'flex', alignItems:'center', gap:4 }}>
-              <span style={{ width:60 }}>{label}:</span>
-              <button onClick={()=>set(cycle(arr,idx,-1))}>{'◀'}</button>
-              <span style={{ flex:1, textAlign:'center' }}>{arr[idx]}</span>
-              <button onClick={()=>set(cycle(arr,idx,1))}>{'▶'}</button>
+        
+        <div style={editorStyles.mainContent}>
+          {/* Preview Section */}
+          <div style={editorStyles.previewSection}>
+            <div style={editorStyles.previewLabel}>Preview</div>
+            <Character 
+              player={{ id: currentPlayerId, username:'You', position:{x:0, y:0}, quadrant:0, appearance:previewAppearance }}
+              isCurrentPlayer={true}
+            />
+          </div>
+
+          {/* Controls Section */}
+          <div style={editorStyles.controlsSection}>
+            {/* Features */}
+            <div style={editorStyles.controlGroup}>
+              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#000080', marginBottom: '10px' }}>
+                Features
+              </div>
+              {[
+                {label:'Eyes',   arr:EYES,   idx:eyesIdx,  set:setEyesIdx},
+                {label:'Ears',   arr:EARS,   idx:earsIdx,  set:setEarsIdx},
+                {label:'Fluff',  arr:FLUFF,  idx:fluffIdx, set:setFluffIdx},
+                {label:'Tail',   arr:TAIL,   idx:tailIdx,  set:setTailIdx},
+              ].map(({label, arr, idx, set})=> (
+                <div key={label} style={editorStyles.controlRow}>
+                  <span style={editorStyles.label}>{label}:</span>
+                  <button 
+                    style={editorStyles.cycleButton}
+                    onClick={()=>set(cycle(arr,idx,-1))}
+                    onMouseDown={(e) => e.currentTarget.style.border = '1px inset #c0c0c0'}
+                    onMouseUp={(e) => e.currentTarget.style.border = '1px outset #c0c0c0'}
+                    onMouseLeave={(e) => e.currentTarget.style.border = '1px outset #c0c0c0'}
+                  >
+                    ◀
+                  </button>
+                  <div style={editorStyles.valueDisplay}>{arr[idx]}</div>
+                  <button 
+                    style={editorStyles.cycleButton}
+                    onClick={()=>set(cycle(arr,idx,1))}
+                    onMouseDown={(e) => e.currentTarget.style.border = '1px inset #c0c0c0'}
+                    onMouseUp={(e) => e.currentTarget.style.border = '1px outset #c0c0c0'}
+                    onMouseLeave={(e) => e.currentTarget.style.border = '1px outset #c0c0c0'}
+                  >
+                    ▶
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
 
-          <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-            <span style={{ width:60 }}>Colour:</span>
-            <input type="range" min={0} max={359} value={hue} onChange={e=>setHue(parseInt(e.target.value))} style={{ flex:1 }} />
+            {/* Color */}
+            <div style={editorStyles.colorSection}>
+              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#000080', marginBottom: '10px' }}>
+                Color
+              </div>
+              <div style={editorStyles.controlRow}>
+                <span style={editorStyles.label}>Hue:</span>
+                <input 
+                  type="range" 
+                  min={0} 
+                  max={359} 
+                  value={hue} 
+                  onChange={e=>setHue(parseInt(e.target.value))} 
+                  style={editorStyles.colorSlider}
+                />
+                <div style={{...editorStyles.valueDisplay, minWidth: '40px'}}>
+                  {hue}°
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <div style={{ marginTop:'auto', display:'flex', justifyContent:'flex-end', gap:6 }}>
-            <button onClick={save}>Save</button>
-            <button onClick={cancel}>Cancel</button>
-          </div>
+        {/* Action Buttons */}
+        <div style={editorStyles.buttonSection}>
+          <button 
+            style={editorStyles.button}
+            onClick={cancel}
+            onMouseDown={(e) => e.currentTarget.style.border = '2px inset #c0c0c0'}
+            onMouseUp={(e) => e.currentTarget.style.border = '2px outset #c0c0c0'}
+            onMouseLeave={(e) => e.currentTarget.style.border = '2px outset #c0c0c0'}
+          >
+            Cancel
+          </button>
+          <button 
+            style={{...editorStyles.button, background: '#0000ff', color: '#ffffff'}}
+            onClick={save}
+            onMouseDown={(e) => e.currentTarget.style.border = '2px inset #0000ff'}
+            onMouseUp={(e) => e.currentTarget.style.border = '2px outset #0000ff'}
+            onMouseLeave={(e) => e.currentTarget.style.border = '2px outset #0000ff'}
+          >
+            Save
+          </button>
         </div>
       </div>
     </ProgramWindow>

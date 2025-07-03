@@ -17,6 +17,11 @@ class SocketService {
   private lastPlayerState: any = null;
   // Flag to ignore local store updates that originated remotely
   private ignoreNextDesktopUpdate = false;
+  
+  // Add heartbeat and connection recovery
+  private heartbeatInterval: NodeJS.Timeout | null = null;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
 
   connect() {
     // Use env variable in production, fallback to localhost during development
@@ -24,15 +29,39 @@ class SocketService {
       (process.env.REACT_APP_SOCKET_URL as string | undefined) ||
       'http://localhost:3001';
 
-    this.socket = io(serverUrl);
+    this.socket = io(serverUrl, {
+      // Add connection options for better reliability
+      forceNew: true,
+      timeout: 20000,
+      transports: ['websocket', 'polling'],
+    });
 
     this.socket.on('connect', () => {
       console.log('Connected to server');
       store.dispatch(setConnected(true));
+      this.reconnectAttempts = 0;
+      this.startHeartbeat();
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('Disconnected from server');
+    this.socket.on('disconnect', (reason) => {
+      console.log('Disconnected from server:', reason);
+      store.dispatch(setConnected(false));
+      this.stopHeartbeat();
+      
+      // Attempt reconnection if not manual disconnect
+      if (reason !== 'io client disconnect' && this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.reconnectAttempts++;
+        console.log(`Attempting reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+        setTimeout(() => {
+          if (this.socket) {
+            this.socket.connect();
+          }
+        }, 1000 * this.reconnectAttempts);
+      }
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.log('Connection error:', error);
       store.dispatch(setConnected(false));
     });
 
@@ -138,8 +167,13 @@ class SocketService {
     isGrabbing?: boolean;
     isResizing?: boolean;
   }) {
-    if (this.socket) {
-      this.socket.emit('playerMove', data);
+    if (this.socket && this.socket.connected) {
+      // Add timestamp for animation sync
+      const timestampedData = {
+        ...data,
+        timestamp: Date.now()
+      };
+      this.socket.emit('playerMove', timestampedData);
     }
   }
 
@@ -152,9 +186,26 @@ class SocketService {
   }
 
   disconnect() {
+    this.stopHeartbeat();
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
+    }
+  }
+
+  // Add heartbeat and connection recovery
+  private startHeartbeat() {
+    this.heartbeatInterval = setInterval(() => {
+      if (this.socket) {
+        this.socket.emit('heartbeat');
+      }
+    }, 10000);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
     }
   }
 }

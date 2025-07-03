@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface Player {
   id: string;
@@ -41,6 +41,54 @@ const Character: React.FC<CharacterProps> = ({
   isGaming = false,
   gamingInputDirection = null
 }) => {
+  // Add animation recovery for non-current players
+  const [localWalkFrame, setLocalWalkFrame] = useState(walkFrame);
+  const animationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAnimationUpdateRef = useRef<number>(Date.now());
+
+  // For remote players, add animation recovery
+  useEffect(() => {
+    if (isCurrentPlayer) return;
+
+    // Update local walk frame when prop changes
+    setLocalWalkFrame(walkFrame);
+    lastAnimationUpdateRef.current = Date.now();
+
+    // Clear any existing timeout
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+      animationTimeoutRef.current = null;
+    }
+
+    // If player is moving but frame hasn't updated in a while, force local animation
+    if (isMoving) {
+      animationTimeoutRef.current = setTimeout(() => {
+        const now = Date.now();
+        const timeSinceUpdate = now - lastAnimationUpdateRef.current;
+        
+        // If no frame update in 500ms but player is still moving, start local animation
+        if (timeSinceUpdate > 500) {
+          console.log(`Starting local animation recovery for player ${player.id}`);
+          const interval = setInterval(() => {
+            setLocalWalkFrame(prev => prev === 1 ? 2 : 1);
+          }, 120); // Slightly slower than normal to avoid conflicts
+          
+          // Stop local animation after a reasonable time
+          setTimeout(() => {
+            clearInterval(interval);
+            console.log(`Stopping local animation recovery for player ${player.id}`);
+          }, 3000);
+        }
+      }, 600);
+    }
+
+    return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+    };
+  }, [walkFrame, isMoving, isCurrentPlayer, player.id]);
+
   // Different colors for each quadrant
   const getPlayerColor = (quadrant: number) => {
     const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24'];
@@ -62,6 +110,9 @@ const Character: React.FC<CharacterProps> = ({
   const baseName = player.appearance?.body || 'CustomBase';
   const prefix = baseName.replace('Base', ''); // "Custom"
 
+  // Use localWalkFrame for remote players, walkFrame for current player
+  const effectiveWalkFrame = isCurrentPlayer ? walkFrame : localWalkFrame;
+
   const fileForState = () => {
     // Gaming (sitting)
     if (isGaming) {
@@ -72,14 +123,14 @@ const Character: React.FC<CharacterProps> = ({
     // Grabbing
     if (isGrabbing) {
       if (isMoving) {
-        return `${prefix}Grab-Walk${walkFrame}`;
+        return `${prefix}Grab-Walk${effectiveWalkFrame}`;
       }
       return `${prefix}Grab`;
     }
 
     // Walking (not grabbing)
     if (isMoving) {
-      return `${prefix}-Walk${walkFrame}`;
+      return `${prefix}-Walk${effectiveWalkFrame}`;
     }
 
     // Idle

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import Character from './Character';
 import SystemClock from './SystemClock';
@@ -6,6 +6,7 @@ import StartMenu from './StartMenu';
 import ProgramManager from './ProgramManager';
 import useMovement from '../hooks/useMovement';
 import { setBackground } from '../store/programSlice';
+import { updatePlayerPosition } from '../store/gameSlice';
 import '../styles/desktop.css';
 
 // Dynamically load pattern images
@@ -28,8 +29,53 @@ const Desktop: React.FC = () => {
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
   const [isRoomInfoOpen, setIsRoomInfoOpen] = useState(false);
   
+  // Animation recovery for remote players
+  const lastPlayerUpdate = useRef<{ [playerId: string]: number }>({});
+  const animationRecoveryInterval = useRef<NodeJS.Timeout | null>(null);
+  
   // Initialize movement controls for current player
   const { position: currentPlayerPosition, isMoving, movementDirection, walkFrame, nearbyIcon, desktopIcons, facingDirection, isGrabbing, isResizing } = useMovement();
+
+  // Animation recovery system for remote players
+  useEffect(() => {
+    // Track animation health of remote players
+    animationRecoveryInterval.current = setInterval(() => {
+      const now = Date.now();
+      Object.keys(players).forEach(playerId => {
+        if (playerId === currentPlayerId) return; // Skip current player
+        
+        const player = players[playerId];
+        const lastUpdate = lastPlayerUpdate.current[playerId] || 0;
+        
+        // If a player hasn't updated in 5 seconds and appears to be moving, they might be stuck
+        if (player?.isMoving && (now - lastUpdate) > 5000) {
+          console.log(`Remote player ${playerId} animation might be stuck, forcing refresh`);
+          // Force a visual refresh by dispatching a minimal update
+          dispatch(updatePlayerPosition({
+            playerId,
+            position: player.position,
+            isMoving: false, // Force stop moving to reset animation
+            walkFrame: 1
+          }));
+        }
+      });
+    }, 3000); // Check every 3 seconds
+
+    return () => {
+      if (animationRecoveryInterval.current) {
+        clearInterval(animationRecoveryInterval.current);
+      }
+    };
+  }, [players, currentPlayerId, dispatch]);
+
+  // Track when players update to detect stale animations
+  useEffect(() => {
+    Object.keys(players).forEach(playerId => {
+      if (playerId !== currentPlayerId) {
+        lastPlayerUpdate.current[playerId] = Date.now();
+      }
+    });
+  }, [players, currentPlayerId]);
 
   // Background pattern mapping (dynamic)
   const getBackgroundPattern = (bgId: string) => {

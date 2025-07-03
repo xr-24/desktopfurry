@@ -42,6 +42,17 @@ function getPlayerQuadrant(room) {
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
+  // Add heartbeat handler
+  socket.on('heartbeat', () => {
+    // Update last seen time for this socket
+    for (const [roomId, room] of rooms.entries()) {
+      if (room.players[socket.id]) {
+        room.players[socket.id].lastSeen = Date.now();
+        break;
+      }
+    }
+  });
+
   socket.on('createRoom', ({ username }) => {
     const roomId = uuidv4().substring(0, 8); // Short room ID
     const playerId = socket.id;
@@ -62,6 +73,7 @@ io.on('connection', (socket) => {
           isGaming: false,
           gamingInputDirection: null,
           appearance: { hue: 0, eyes: 'none', ears: 'none', fluff: 'none', tail: 'none', body: 'CustomBase' },
+          lastSeen: Date.now(),
         }
       },
       maxPlayers: 4,
@@ -106,6 +118,7 @@ io.on('connection', (socket) => {
       isGaming: false,
       gamingInputDirection: null,
       appearance: { hue: 0, eyes: 'none', ears: 'none', fluff: 'none', tail: 'none', body: 'CustomBase' },
+      lastSeen: Date.now(),
     };
 
     socket.join(roomId);
@@ -119,7 +132,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('playerMove', (data) => {
-    const { position, isMoving, movementDirection, walkFrame, facingDirection, isGrabbing, isResizing } = data;
+    const { position, isMoving, movementDirection, walkFrame, facingDirection, isGrabbing, isResizing, timestamp } = data;
     // Find the room this player is in
     for (const [roomId, room] of rooms.entries()) {
       if (room.players[socket.id]) {
@@ -130,6 +143,8 @@ io.on('connection', (socket) => {
         room.players[socket.id].facingDirection = facingDirection;
         room.players[socket.id].isGrabbing = isGrabbing;
         room.players[socket.id].isResizing = isResizing;
+        room.players[socket.id].lastSeen = Date.now();
+        
         // Broadcast the movement to other players in the room
         socket.to(roomId).emit('playerMoved', {
           playerId: socket.id,
@@ -140,6 +155,7 @@ io.on('connection', (socket) => {
           facingDirection,
           isGrabbing,
           isResizing,
+          timestamp,
         });
         break;
       }
@@ -193,6 +209,34 @@ io.on('connection', (socket) => {
     }
   });
 });
+
+// Add cleanup interval for stale player states
+setInterval(() => {
+  const now = Date.now();
+  const STALE_THRESHOLD = 30000; // 30 seconds without update = stale
+  
+  for (const [roomId, room] of rooms.entries()) {
+    let roomChanged = false;
+    
+    for (const [playerId, player] of Object.entries(room.players)) {
+      const timeSinceLastSeen = now - (player.lastSeen || now);
+      
+      // If player hasn't been seen in a while and appears to be moving, reset their state
+      if (timeSinceLastSeen > STALE_THRESHOLD && player.isMoving) {
+        console.log(`Resetting stale player state for ${playerId} in room ${roomId}`);
+        player.isMoving = false;
+        player.movementDirection = null;
+        player.walkFrame = 1;
+        roomChanged = true;
+      }
+    }
+    
+    // If any player states were changed, broadcast the update
+    if (roomChanged) {
+      io.to(roomId).emit('playersUpdate', room.players);
+    }
+  }
+}, 15000); // Check every 15 seconds
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {

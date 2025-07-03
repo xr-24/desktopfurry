@@ -22,7 +22,17 @@ const DESKTOP_ICONS = [
   { id: 'snake', label: 'SNEK', icon: '🐍', x: 150, y: 60, type: 'snake' as const },
 ];
 
-const useMovement = () => {
+const useMovement = (): {
+  position: { x: number; y: number };
+  isMoving: boolean;
+  movementDirection: string | null;
+  walkFrame: number;
+  nearbyIcon: string | null;
+  desktopIcons: typeof DESKTOP_ICONS;
+  facingDirection: 'left' | 'right';
+  isGrabbing: boolean;
+  isResizing: boolean;
+} => {
   const dispatch = useAppDispatch();
   const [localPosition, setLocalPosition] = useState({ x: 200, y: 200 });
   const [isMoving, setIsMoving] = useState(false);
@@ -64,6 +74,11 @@ const useMovement = () => {
   const isAnimationRunningRef = useRef(false);
   const positionRef = useRef({ x: 200, y: 200 });
   const nearbyIconRef = useRef<string | null>(null);
+
+  // Add visibility state tracking
+  const [isPageVisible, setIsPageVisible] = useState(!document.hidden);
+  const lastAnimationTime = useRef<number>(Date.now());
+  const animationRecoveryTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Helper function to calculate distance between player and icon
   const getDistanceToIcon = (iconX: number, iconY: number, playerX: number, playerY: number) => {
@@ -747,16 +762,65 @@ const useMovement = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Handle walk animation frame switching
+  // Page Visibility API - restart animations when tab becomes active
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const visible = !document.hidden;
+      setIsPageVisible(visible);
+      
+      if (visible) {
+        // Tab became visible again - restart animations
+        console.log('Tab visible - restarting animations');
+        
+        // Clear any existing recovery timeout
+        if (animationRecoveryTimeout.current) {
+          clearTimeout(animationRecoveryTimeout.current);
+          animationRecoveryTimeout.current = null;
+        }
+        
+                 // Restart animation systems after a small delay
+         animationRecoveryTimeout.current = setTimeout(() => {
+           // Force restart walk animation if player is moving
+           if (isMoving) {
+             setIsMoving(false);
+             requestAnimationFrame(() => {
+               setIsMoving(true);
+             });
+           }
+           
+           // Restart movement loop if keys are pressed
+           if (keysPressed.current.size > 0 && !isAnimationRunningRef.current) {
+             isAnimationRunningRef.current = true;
+             animationFrameRef.current = requestAnimationFrame(updatePosition);
+           }
+         }, 100);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+         return () => {
+       document.removeEventListener('visibilitychange', handleVisibilityChange);
+       if (animationRecoveryTimeout.current) {
+         clearTimeout(animationRecoveryTimeout.current);
+       }
+     };
+   }, [isMoving]);
+
+  // Enhanced walk animation frame switching with recovery logic
   useEffect(() => {
     let walkAnimationInterval: NodeJS.Timeout | null = null;
     
-    if (isMoving) {
-      // Switch between walk frames every 60ms while moving (5x faster)
+    if (isMoving && isPageVisible) {
+      // Switch between walk frames every 60ms while moving
       walkAnimationInterval = setInterval(() => {
-        setWalkFrame(prev => prev === 1 ? 2 : 1);
+        setWalkFrame(prev => {
+          const newFrame = prev === 1 ? 2 : 1;
+          lastAnimationTime.current = Date.now();
+          return newFrame;
+        });
       }, 60);
-    } else {
+    } else if (!isMoving) {
       // Reset to frame 1 when not moving
       setWalkFrame(1);
     }
@@ -766,6 +830,25 @@ const useMovement = () => {
         clearInterval(walkAnimationInterval);
       }
     };
+  }, [isMoving, isPageVisible]);
+
+  // Animation recovery watchdog - detect stuck animations
+  useEffect(() => {
+    if (!isMoving) return;
+
+    const watchdog = setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastAnimation = now - lastAnimationTime.current;
+      
+      // If no animation update in 200ms while moving, restart
+      if (timeSinceLastAnimation > 200) {
+        console.log('Animation stuck - recovering');
+        setWalkFrame(prev => prev === 1 ? 2 : 1);
+        lastAnimationTime.current = now;
+      }
+    }, 250);
+
+    return () => clearInterval(watchdog);
   }, [isMoving]);
 
   // Return the current position and movement state for the Character component to use
