@@ -11,6 +11,7 @@ interface Player {
     ears: string;
     fluff: string;
     tail: string;
+    body: string;
   };
   characterParts?: never; // deprecated
 }
@@ -58,6 +59,8 @@ const Character: React.FC<CharacterProps> = ({
   // Determine if sprite should be flipped (sprite faces left by default, flip when facing right)
   const shouldFlip = facingDirection === 'right';
 
+  const baseName = player.appearance?.body || 'CustomBase';
+
   return (
     <div
       className={characterClasses}
@@ -88,7 +91,7 @@ const Character: React.FC<CharacterProps> = ({
           />
         )}
         <img 
-          src={`/assets/characters/body/base${
+          src={`/assets/characters/body/${baseName}${
             isGaming 
               ? gamingInputDirection 
                 ? `-sit-${gamingInputDirection}` 

@@ -27,6 +27,7 @@ interface Player {
     ears: string;
     fluff: string;
     tail: string;
+    body: string;
   };
 }
 

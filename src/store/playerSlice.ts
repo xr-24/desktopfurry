@@ -13,6 +13,7 @@ interface PlayerState {
     ears: string;
     fluff: string;
     tail: string;
+    body: string;
   };
 }
 
@@ -23,7 +24,7 @@ const initialState: PlayerState = {
   position: { x: 100, y: 100 }, // Default starting position
   isGaming: false,
   gamingInputDirection: null,
-  appearance: { hue: 0, eyes: 'default', ears: 'none', fluff: 'none', tail: 'none' },
+  appearance: { hue: 0, eyes: 'Eyes1', ears: 'none', fluff: 'none', tail: 'none', body: 'CustomBase' } as any,
 };
 
 const playerSlice = createSlice({
@@ -45,8 +46,8 @@ const playerSlice = createSlice({
       state.isGaming = action.payload.isGaming;
       state.gamingInputDirection = action.payload.inputDirection || null;
     },
-    setAppearance: (state, action: PayloadAction<{ hue: number; eyes: string; ears: string; fluff: string; tail: string }>) => {
-      state.appearance = action.payload;
+    setAppearance: (state, action: PayloadAction<{ hue: number; eyes: string; ears: string; fluff: string; tail: string; body?: string }>) => {
+      state.appearance = { body: 'CustomBase', ...action.payload } as any;
     },
     resetPlayer: (state) => {
       state.id = null;

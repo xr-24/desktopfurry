@@ -54,7 +54,8 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
     eyes: EYES[eyesIdx],
     ears: EARS[earsIdx],
     fluff: FLUFF[fluffIdx],
-    tail: TAIL[tailIdx]
+    tail: TAIL[tailIdx],
+    body: 'CustomBase'
   }), [hue, eyesIdx, earsIdx, fluffIdx, tailIdx]);
 
   const cycle = (arr: string[], idx: number, dir: number) => (idx + dir + arr.length) % arr.length;
