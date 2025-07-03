@@ -38,6 +38,27 @@ const Desktop: React.FC = () => {
   // Initialize movement controls for current player
   const { position: currentPlayerPosition, isMoving, movementDirection, walkFrame, nearbyIcon, desktopIcons, facingDirection, isGrabbing, isResizing } = useMovement();
 
+  const programsState = useAppSelector((state:any)=> state.programs);
+  // Debounced persistence when programs or background change
+  const lastSavedRef = useRef<any>(null);
+  useEffect(()=>{
+    if(!authService.isAuthenticated()) return;
+    const state=programsState;
+    if(!state) return;
+    // shallow compare
+    if(JSON.stringify(state)===JSON.stringify(lastSavedRef.current)) return;
+    lastSavedRef.current=state;
+    const timer=setTimeout(()=>{
+      // Save background
+      authService.updateBackground(state.backgroundId);
+      // Save each program window
+      Object.values(state.openPrograms).forEach((p:any)=>{
+        authService.saveProgramState(p.type,p.position,p.size,p.zIndex,p.isMinimized,p.state||{});
+      });
+    },1000); // wait 1s debounce
+    return ()=>clearTimeout(timer);
+  },[programsState]);
+
   // Animation recovery system for remote players
   useEffect(() => {
     // Track animation health of remote players

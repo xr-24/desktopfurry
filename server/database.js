@@ -54,12 +54,27 @@ const db = {
 
   // Dextop functions
   async getUserDextop(userId) {
-    const result = await pool.query(`
+    let result = await pool.query(`
       SELECT d.*, aa.hue, aa.eyes, aa.ears, aa.fluff, aa.tail, aa.body
       FROM dextops d
       LEFT JOIN avatar_appearances aa ON d.user_id = aa.user_id
       WHERE d.user_id = $1
     `, [userId]);
+
+    // Auto-create a basic dextop row if none exists
+    if (result.rows.length === 0) {
+      const insert = await pool.query(`
+        INSERT INTO dextops (user_id, name, background_id, is_public, allow_visitors, allow_visitor_interaction, visit_count, created_at, updated_at)
+        VALUES ($1, $2, 'sandstone', false, true, true, 0, NOW(), NOW())
+        RETURNING *
+      `, [userId, 'My Dextop']);
+      result = await pool.query(`
+        SELECT d.*, aa.hue, aa.eyes, aa.ears, aa.fluff, aa.tail, aa.body
+        FROM dextops d
+        LEFT JOIN avatar_appearances aa ON d.user_id = aa.user_id
+        WHERE d.user_id = $1
+      `, [userId]);
+    }
     return result.rows[0];
   },
 

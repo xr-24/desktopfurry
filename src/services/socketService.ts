@@ -68,12 +68,15 @@ class SocketService {
     this.socket.on('roomJoined', (data: { roomId: string; playerId: string; username: string; quadrant: number }) => {
       store.dispatch(joinRoom(data.roomId));
       store.dispatch(setPlayer({ id: data.playerId, username: data.username, quadrant: data.quadrant }));
-
-      // After Redux slices are set up, broadcast saved avatar appearance to the room
       const appearance = store.getState().player.appearance;
-      if (appearance) {
-        // Slight delay ensures player slice dispatch finishes before we emit
-        setTimeout(() => this.updateAppearance(appearance), 0);
+      if (appearance) setTimeout(() => this.updateAppearance(appearance), 0);
+
+      // After joining, push current desktop state (persisted layout) to server
+      const desktopState = store.getState().programs;
+      if (this.socket) {
+        this.socket.emit('desktopStateUpdate', { roomId: data.roomId, desktopState });
+        // Update internal cache so subsequent diffs compare correctly
+        this.lastDesktopState = desktopState;
       }
     });
 
@@ -87,16 +90,30 @@ class SocketService {
 
     // Receive full desktop state from server
     this.socket.on('desktopState', (desktopState: any) => {
-      // remove any characterEditor windows before syncing local store
+      // Sanitize incoming state (remove CharacterEditor sessions)
       for (const id of Object.keys(desktopState.openPrograms || {})) {
         if (desktopState.openPrograms[id].type === 'characterEditor') {
           delete desktopState.openPrograms[id];
         }
       }
+
+      const localState = store.getState().programs;
+      const localHasLayout = Object.keys(localState.openPrograms || {}).length > 0;
+      const incomingIsEmpty = Object.keys(desktopState.openPrograms || {}).length === 0;
+
+      if (localHasLayout && incomingIsEmpty) {
+        // Our persisted layout exists; ignore empty payload and push ours back to server
+        if (this.socket) {
+          const roomId = store.getState().game.roomId;
+          this.socket.emit('desktopStateUpdate', { roomId, desktopState: localState });
+          this.lastDesktopState = localState;
+        }
+        return; // don't overwrite local layout
+      }
+
       this.ignoreNextDesktopUpdate = true;
       this.lastDesktopState = desktopState;
       store.dispatch(syncDesktop(desktopState));
-      // reset flag after current tick
       setTimeout(() => { this.ignoreNextDesktopUpdate = false; }, 0);
     });
 
