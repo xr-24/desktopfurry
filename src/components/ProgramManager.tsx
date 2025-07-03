@@ -4,6 +4,7 @@ import { ProgramWindow } from '../store/programSlice';
 import Notepad from './programs/Notepad';
 import Winamp from './programs/Winamp';
 import Snake from './programs/Snake';
+import CharacterEditor from './programs/CharacterEditor';
 // Import other programs as they're created
 // import Paint from './programs/Paint';
 // import Checkers from './programs/Checkers';
@@ -80,6 +81,14 @@ const ProgramManager: React.FC = () => {
       case 'snake':
         return (
           <Snake
+            key={program.id}
+            {...commonProps}
+          />
+        );
+      
+      case 'characterEditor':
+        return (
+          <CharacterEditor
             key={program.id}
             {...commonProps}
           />

@@ -61,6 +61,7 @@ io.on('connection', (socket) => {
           facingDirection: 'left',
           isGaming: false,
           gamingInputDirection: null,
+          appearance: { hue: 0, eyes: 'default', ears: 'none', fluff: 'none', tail: 'none' },
         }
       },
       maxPlayers: 4,
@@ -104,6 +105,7 @@ io.on('connection', (socket) => {
       facingDirection: 'left',
       isGaming: false,
       gamingInputDirection: null,
+      appearance: { hue: 0, eyes: 'default', ears: 'none', fluff: 'none', tail: 'none' },
     };
 
     socket.join(roomId);
@@ -159,6 +161,14 @@ io.on('connection', (socket) => {
     room.players[playerId].isGaming = isGaming;
     room.players[playerId].gamingInputDirection = gamingInputDirection;
     // Broadcast updated players list
+    io.to(roomId).emit('playersUpdate', room.players);
+  });
+
+  // Receive appearance updates
+  socket.on('appearanceUpdate', ({ roomId, playerId, appearance }) => {
+    const room = rooms.get(roomId);
+    if (!room || !room.players[playerId]) return;
+    room.players[playerId].appearance = appearance;
     io.to(roomId).emit('playersUpdate', room.players);
   });
 

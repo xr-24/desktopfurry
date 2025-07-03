@@ -254,6 +254,7 @@ const useMovement = () => {
       y: program.position.y - playerCenterY
     };
     setGrabOffset(offset);
+    grabOffsetRef.current = offset;
 
     // Notify others
     socketService.movePlayer({
@@ -276,6 +277,7 @@ const useMovement = () => {
     setResizeAnchor({ x: 0, y: 0, width: 0, height: 0 });
     setResizeStartPosition({ x: 0, y: 0 });
     setResizeSide({ horizontal: 'left', vertical: 'top' });
+    grabOffsetRef.current = { x: 0, y: 0 };
     
     socketService.movePlayer({
       position: positionRef.current,

@@ -91,14 +91,13 @@ const Winamp: React.FC<WinampProps> = ({
   const [urlInput, setUrlInput] = useState('');
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [visualizerBars, setVisualizerBars] = useState<number[]>([]);
+  const [localVolume, setLocalVolume] = useState<number>(programState.volume);
   
   const isHost = controllerId === currentPlayerId;
   const currentSong = programState.playlist[programState.currentTrack];
 
-  // Initialize YouTube player
+  // Initialize / re-initialize YouTube player (all clients create a player)
   useEffect(() => {
-    if (!isHost) return; // Only host needs the actual player
-    
     loadYouTubeAPI().then(() => {
       if (currentSong) {
         // Destroy existing player if it exists
@@ -106,7 +105,7 @@ const Winamp: React.FC<WinampProps> = ({
           playerRef.current.destroy();
         }
         
-        // Create new player with current song
+        // Create new player with current song for everyone
         playerRef.current = new window.YT.Player(`youtube-player-${windowId}`, {
           height: '0',
           width: '0',
@@ -119,9 +118,9 @@ const Winamp: React.FC<WinampProps> = ({
           },
           events: {
             onReady: (event: any) => {
-              // Set volume to match state
+              // Set volume to local preference
               if (playerRef.current) {
-                playerRef.current.setVolume(programState.volume);
+                playerRef.current.setVolume(localVolume);
               }
               
               // Get initial state and try to update title
@@ -131,13 +130,16 @@ const Winamp: React.FC<WinampProps> = ({
             },
             onStateChange: (event: any) => {
               const isPlaying = event.data === window.YT.PlayerState.PLAYING;
-              dispatch(updateProgramState({
-                windowId,
-                newState: { isPlaying }
-              }));
+              // Only the host should broadcast play/pause state changes
+              if (isHost) {
+                dispatch(updateProgramState({
+                  windowId,
+                  newState: { isPlaying }
+                }));
+              }
               
-              // Auto-advance to next track when current one ends
-              if (event.data === window.YT.PlayerState.ENDED) {
+              // Auto-advance to next track when current one ends (host only)
+              if (isHost && event.data === window.YT.PlayerState.ENDED) {
                 nextTrack();
               }
             },
@@ -179,6 +181,33 @@ const Winamp: React.FC<WinampProps> = ({
 
     return () => clearInterval(interval);
   }, [programState.isPlaying]);
+
+  // Sync remote state to local player for non-host spectators (but works for host too)
+  useEffect(() => {
+    if (!playerRef.current || !currentSong) return;
+
+    // Load the correct video if mismatch
+    const currentId = playerRef.current.getVideoData()?.video_id;
+    if (currentId !== currentSong.youtubeId) {
+      playerRef.current.loadVideoById(currentSong.youtubeId, programState.currentTime);
+    }
+
+    // Ensure play / pause state matches
+    if (programState.isPlaying) {
+      playerRef.current.playVideo();
+    } else {
+      playerRef.current.pauseVideo();
+    }
+
+    // Keep time roughly in sync (seek if drift >2s)
+    try {
+      const diff = Math.abs(playerRef.current.getCurrentTime() - programState.currentTime);
+      if (diff > 2) {
+        playerRef.current.seekTo(programState.currentTime, true);
+      }
+    } catch {}
+
+  }, [currentSong?.youtubeId, programState.isPlaying, programState.currentTime]);
 
   const updateStateFromPlayer = () => {
     if (!playerRef.current || !isHost) return;
@@ -290,13 +319,10 @@ const Winamp: React.FC<WinampProps> = ({
   };
 
   const setVolume = (volume: number) => {
-    if (!isHost || !playerRef.current) return;
-    
-    playerRef.current.setVolume(volume);
-    dispatch(updateProgramState({
-      windowId,
-      newState: { volume }
-    }));
+    setLocalVolume(volume);
+    if (playerRef.current) {
+      playerRef.current.setVolume(volume);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -322,8 +348,8 @@ const Winamp: React.FC<WinampProps> = ({
       isResizable={true}
     >
       <div className="winamp-player">
-        {/* Hidden YouTube player for host */}
-        {isHost && <div id={`youtube-player-${windowId}`} style={{ display: 'none' }} />}
+        {/* Hidden YouTube player (now for every client) */}
+        <div id={`youtube-player-${windowId}`} style={{ display: 'none' }} />
         
         {/* Main Display */}
         <div className="winamp-display">
@@ -384,9 +410,8 @@ const Winamp: React.FC<WinampProps> = ({
               type="range"
               min="0"
               max="100"
-              value={programState.volume}
+              value={localVolume}
               onChange={(e) => setVolume(parseInt(e.target.value))}
-              disabled={!isHost}
               className="volume-slider"
             />
           </div>
@@ -434,12 +459,6 @@ const Winamp: React.FC<WinampProps> = ({
                 </div>
               ))
             )}
-          </div>
-        )}
-
-        {!isHost && (
-          <div className="listener-notice">
-            🎧 You're listening to {controllerId}'s playlist
           </div>
         )}
       </div>

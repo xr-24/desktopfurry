@@ -21,6 +21,13 @@ interface Player {
   movementDirection?: string | null;
   walkFrame?: number;
   facingDirection?: 'left' | 'right';
+  appearance?: {
+    hue: number;
+    eyes: string;
+    ears: string;
+    fluff: string;
+    tail: string;
+  };
 }
 
 const initialState: GameState = {

@@ -1,4 +1,6 @@
 import React from 'react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { openProgram } from '../store/programSlice';
 // Dynamically load all pattern images from assets/patterns
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const patternsContext = (require as any).context('../assets/patterns', false, /\.(png|jpe?g|gif)$/);
@@ -21,6 +23,9 @@ const RETRO_BACKGROUNDS: Background[] = patternsContext.keys().map((file: string
 });
 
 const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackground, currentBackground }) => {
+  const dispatch = useAppDispatch();
+  const { id: currentPlayerId } = useAppSelector((state: any) => state.player || {});
+
   if (!isOpen) return null;
 
   const handleBackgroundChange = (backgroundId: string) => {
@@ -85,6 +90,16 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
           <div className="start-menu-item" onClick={() => {}}>
             <span>⚙️</span>
             <span>Settings</span>
+          </div>
+          
+          <div className="start-menu-item" onClick={() => {
+            if (currentPlayerId) {
+              dispatch(openProgram({ type: 'characterEditor', controllerId: currentPlayerId }));
+              onClose();
+            }
+          }}>
+            <span>🖌️</span>
+            <span>Character Editor</span>
           </div>
           
           <div className="start-menu-item" onClick={() => {}}>

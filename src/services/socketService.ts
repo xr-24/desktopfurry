@@ -126,6 +126,14 @@ class SocketService {
     }
   }
 
+  updateAppearance(appearance: { hue: number; eyes: string; ears: string; fluff: string; tail: string }) {
+    const roomId = store.getState().game.roomId;
+    const playerId = store.getState().player.id;
+    if (this.socket && roomId && playerId) {
+      this.socket.emit('appearanceUpdate', { roomId, playerId, appearance });
+    }
+  }
+
   disconnect() {
     if (this.socket) {
       this.socket.disconnect();

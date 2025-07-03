@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface ProgramWindow {
   id: string;
-  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake';
+  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'characterEditor';
   isOpen: boolean;
   position: { x: number; y: number };
   size: { width: number; height: number };
@@ -46,6 +46,7 @@ const programSlice = createSlice({
         winamp: { width: 300, height: 200, isMultiplayer: false },
         checkers: { width: 450, height: 450, isMultiplayer: true },
         snake: { width: 400, height: 450, isMultiplayer: true },
+        characterEditor: { width: 420, height: 500, isMultiplayer: false },
       };
       
       const config = programConfigs[type];
@@ -184,6 +185,8 @@ function getProgramInitialState(type: ProgramWindow['type']) {
         speed: 150, // milliseconds between moves
         gridSize: 20, // pixels per grid cell
       };
+    case 'characterEditor':
+      return {};
     default:
       return {};
   }

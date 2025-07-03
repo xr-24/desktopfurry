@@ -5,13 +5,14 @@ interface Player {
   username: string;
   position: { x: number; y: number };
   quadrant: number;
-  characterParts?: {
-    body?: string;
-    eyes?: string;
-    ears?: string;
-    fluff?: string;
-    tail?: string;
+  appearance?: {
+    hue: number;
+    eyes: string;
+    ears: string;
+    fluff: string;
+    tail: string;
   };
+  characterParts?: never; // deprecated
 }
 
 interface CharacterProps {
@@ -78,16 +79,16 @@ const Character: React.FC<CharacterProps> = ({
         }}
       >
         {/* Character layers rendered in order: tail, body, fluff, ears, eyes */}
-        {player.characterParts?.tail && (
+        {player.appearance?.tail && player.appearance.tail !== 'none' && (
           <img 
-            src={`/assets/characters/tail/${player.characterParts.tail}.png`} 
+            src={`/assets/characters/tail/${player.appearance.tail}.png`} 
             alt="tail"
             className="sprite-layer"
-            style={{ zIndex: 1 }}
+            style={{ zIndex: 1, filter: `hue-rotate(${player.appearance?.hue || 0}deg)` }}
           />
         )}
         <img 
-          src={`/assets/characters/body/${player.characterParts?.body || 'base'}${
+          src={`/assets/characters/body/base${
             isGaming 
               ? gamingInputDirection 
                 ? `-sit-${gamingInputDirection}` 
@@ -102,27 +103,27 @@ const Character: React.FC<CharacterProps> = ({
           }.png`} 
           alt={player.username}
           className="sprite-layer"
-          style={{ zIndex: 2 }}
+          style={{ zIndex: 2, filter: `hue-rotate(${player.appearance?.hue || 0}deg)` }}
         />
-        {player.characterParts?.fluff && (
+        {player.appearance?.fluff && player.appearance.fluff !== 'none' && (
           <img 
-            src={`/assets/characters/fluff/${player.characterParts.fluff}.png`} 
+            src={`/assets/characters/fluff/${player.appearance.fluff}.png`} 
             alt="fluff"
             className="sprite-layer"
-            style={{ zIndex: 3 }}
+            style={{ zIndex: 3, filter: `hue-rotate(${player.appearance?.hue || 0}deg)` }}
           />
         )}
-        {player.characterParts?.ears && (
+        {player.appearance?.ears && player.appearance.ears !== 'none' && (
           <img 
-            src={`/assets/characters/ears/${player.characterParts.ears}.png`} 
+            src={`/assets/characters/ears/${player.appearance.ears}.png`} 
             alt="ears"
             className="sprite-layer"
-            style={{ zIndex: 4 }}
+            style={{ zIndex: 4, filter: `hue-rotate(${player.appearance?.hue || 0}deg)` }}
           />
         )}
-        {player.characterParts?.eyes && (
+        {player.appearance?.eyes && (
           <img 
-            src={`/assets/characters/eyes/${player.characterParts.eyes}.png`} 
+            src={`/assets/characters/eyes/${player.appearance.eyes}.png`} 
             alt="eyes"
             className="sprite-layer"
             style={{ zIndex: 5 }}

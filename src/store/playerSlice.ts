@@ -7,6 +7,13 @@ interface PlayerState {
   position: { x: number; y: number };
   isGaming: boolean;
   gamingInputDirection: 'up' | 'down' | 'left' | 'right' | null;
+  appearance: {
+    hue: number;
+    eyes: string;
+    ears: string;
+    fluff: string;
+    tail: string;
+  };
 }
 
 const initialState: PlayerState = {
@@ -16,6 +23,7 @@ const initialState: PlayerState = {
   position: { x: 100, y: 100 }, // Default starting position
   isGaming: false,
   gamingInputDirection: null,
+  appearance: { hue: 0, eyes: 'default', ears: 'none', fluff: 'none', tail: 'none' },
 };
 
 const playerSlice = createSlice({
@@ -37,6 +45,9 @@ const playerSlice = createSlice({
       state.isGaming = action.payload.isGaming;
       state.gamingInputDirection = action.payload.inputDirection || null;
     },
+    setAppearance: (state, action: PayloadAction<{ hue: number; eyes: string; ears: string; fluff: string; tail: string }>) => {
+      state.appearance = action.payload;
+    },
     resetPlayer: (state) => {
       state.id = null;
       state.username = '';
@@ -48,5 +59,5 @@ const playerSlice = createSlice({
   },
 });
 
-export const { setPlayer, setUsername, setPosition, setGamingState, resetPlayer } = playerSlice.actions;
+export const { setPlayer, setUsername, setPosition, setGamingState, setAppearance, resetPlayer } = playerSlice.actions;
 export default playerSlice.reducer; 
