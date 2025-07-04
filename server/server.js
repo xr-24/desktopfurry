@@ -374,6 +374,41 @@ io.on('connection', (socket) => {
     socket.to(dextopId).emit('dextopState', desktopState);
   });
 
+  // Handle visitor gaming state updates (sitting/joystick)
+  socket.on('visitorStateUpdate', ({ dextopId, userId, isGaming, gamingInputDirection }) => {
+    const session = activeDextops.get(dextopId);
+    if (!session) return;
+
+    // Update or create visitor entry
+    let player = session.visitors.get(userId);
+    if (!player) {
+      player = {
+        id: userId,
+        username: 'unknown',
+        position: { x: 200, y: 200 },
+        isMoving: false,
+        movementDirection: null,
+        walkFrame: 1,
+        facingDirection: 'left',
+        appearance: {},
+        socketId: socket.id,
+      };
+      session.visitors.set(userId, player);
+    }
+
+    player.isGaming = isGaming;
+    player.gamingInputDirection = gamingInputDirection;
+    player.lastSeen = Date.now();
+
+    // Broadcast to all sockets in this dextop (including sender)
+    const payload = { userId, isGaming, gamingInputDirection };
+    for (const v of session.visitors.values()) {
+      if (v.socketId) {
+        io.to(v.socketId).emit('visitorStateUpdate', payload);
+      }
+    }
+  });
+
   // Social feature handlers
   socket.on('dextopMessage', ({ dextopId, message }) => {
     if (!activeDextops.has(dextopId)) return;

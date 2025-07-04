@@ -173,8 +173,25 @@ class SocketService {
       const player = store.getState().player;
       // Only care about gaming state fields changing
       if (player && !jsonEqual({ isGaming: player.isGaming, dir: player.gamingInputDirection }, { isGaming: this.lastPlayerState?.isGaming, dir: this.lastPlayerState?.gamingInputDirection })) {
-        const roomId = store.getState().game.roomId;
+        // Determine context: legacy room or dextop session (owner or visitor)
+        const state = store.getState();
+        const dextopId = state.dextop.visitedId || state.dextop.current?.id;
+
+        if (dextopId && this.socket) {
+          // In dextop context broadcast via dedicated visitor channel
+          this.socket.emit('visitorStateUpdate', {
+            dextopId,
+            userId: player.id,
+            isGaming: player.isGaming,
+            gamingInputDirection: player.gamingInputDirection,
+          });
+          this.lastPlayerState = player;
+          return; // Done for dextop sessions
+        }
+
+        const roomId = state.game.roomId;
         if (roomId && this.socket) {
+          // Legacy room broadcasting
           this.socket.emit('playerStateUpdate', {
             roomId,
             playerId: player.id,
@@ -338,6 +355,14 @@ class SocketService {
       store.dispatch(updateVisitorPosition({
         userId,
         ...rest
+      }));
+    });
+
+    this.socket.on('visitorStateUpdate', (payload: any) => {
+      const { userId, ...rest } = payload;
+      store.dispatch(updateVisitorPosition({
+        userId,
+        ...rest,
       }));
     });
 
