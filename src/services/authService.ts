@@ -309,6 +309,17 @@ class AuthService {
       return [];
     }
   }
+
+  // Visit someone else's dextop
+  async visitDextop(dextopId: string): Promise<DextopData | null> {
+    try {
+      const response = await axios.get(`/dextop/visit/${dextopId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to visit dextop:', error);
+      return null;
+    }
+  }
 }
 
 export const authService = new AuthService(); 

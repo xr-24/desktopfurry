@@ -5,6 +5,7 @@ import { setPlayer } from '../store/playerSlice';
 import { syncDesktop } from '../store/programSlice';
 import { v4 as uuidv4 } from 'uuid';
 import { authService } from './authService';
+import { loadDextopSuccess, updateVisitors, addVisitor, removeVisitor } from '../store/dextopSlice';
 
 // Utility to deep compare objects by JSON stringify (cheap & ok for small state)
 function jsonEqual(a: any, b: any) {
@@ -234,6 +235,55 @@ class SocketService {
       if (tk2 && this.socket) {
         this.socket.emit('joinDextop', { token: tk2, dextopId: code });
       }
+    });
+
+    // Handle dextop visitor system
+    this.socket.on('dextopJoined', async ({ dextopId }) => {
+      console.log('Joined dextop', dextopId);
+      const data = await authService.visitDextop(dextopId);
+      if (data) {
+        // Update dextop slice
+        store.dispatch(loadDextopSuccess({
+          dextop: { ...data.dextop, isOwner: false },
+          achievements: [],
+          unlockedPrograms: data.unlockedPrograms || []
+        }));
+        // Update programs to match visited dextop layout
+        const openPrograms: any = {};
+        let highestZ = 100;
+        for (const p of data.programs) {
+          const windowId = p.id || `${p.type}-${Date.now()}`;
+          openPrograms[windowId] = {
+            id: windowId,
+            type: p.type,
+            isOpen: true,
+            position: p.position,
+            size: p.size,
+            isMinimized: p.isMinimized,
+            zIndex: p.zIndex,
+            controllerId: '',
+            isMultiplayer: true,
+            state: p.state || {},
+          };
+          if (p.zIndex > highestZ) highestZ = p.zIndex;
+        }
+        store.dispatch(syncDesktop({
+          openPrograms,
+          highestZIndex: highestZ,
+          interactionRange: 80,
+          backgroundId: data.dextop.backgroundId || 'sandstone',
+        }));
+      }
+    });
+
+    this.socket.on('visitorsUpdate', (visitors:any)=>{
+      store.dispatch(updateVisitors(visitors.reduce((acc:any,v:any)=>{acc[v.id]=v;return acc;},{})));
+    });
+    this.socket.on('visitorJoined', (visitor:any)=>{
+      store.dispatch(addVisitor(visitor));
+    });
+    this.socket.on('visitorLeft', ({userId}:any)=>{
+      store.dispatch(removeVisitor({userId}));
     });
   }
 

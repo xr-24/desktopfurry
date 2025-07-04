@@ -237,16 +237,17 @@ io.on('connection', (socket) => {
       const inputId = dextopId || dextop.id;
       let targetDextopId = inputId;
 
-      // Allow short codes (userId) as dextop identifiers
-      if (inputId && inputId.length !== 36) {
-        try {
+      // If the provided UUID is not a dextop row, treat it as user id
+      try {
+        const exists = await db.query('SELECT 1 FROM dextops WHERE id=$1 LIMIT 1', [inputId]);
+        if (exists.rows.length === 0) {
           const ownerDextop = await db.getUserDextop(inputId);
           if (ownerDextop) {
             targetDextopId = ownerDextop.id;
           }
-        } catch (err) {
-          console.error('Failed to translate dextop code', inputId, err);
         }
+      } catch (err) {
+        console.error('Failed dextop id translation', err);
       }
       
       // Initialize active dextop if needed
@@ -308,9 +309,14 @@ io.on('connection', (socket) => {
       console.log(`${user.username} joined dextop ${targetDextopId}`);
 
       // Update onlineUsers entry with current dextop id
-      if (onlineUsers.has(user.id)) {
-        onlineUsers.get(user.id).currentDextop = targetDextopId;
+      let selfDextopId = decoded.userId;
+      try {
+        const selfDex = await db.getUserDextop(decoded.userId);
+        if (selfDex && selfDex.id) selfDextopId = selfDex.id;
+      } catch (e) {
+        console.warn('Could not fetch self dextop id for', decoded.userId);
       }
+      onlineUsers.set(user.id, { socketId: socket.id, currentDextop: selfDextopId });
 
       // Notify friends of updated dextop location
       const userFriendsList2 = userFriends.get(user.id);
@@ -323,7 +329,7 @@ io.on('connection', (socket) => {
                 id: user.id,
                 username: user.username,
                 isOnline: true,
-                currentDextop: targetDextopId
+                currentDextop: selfDextopId
               }
             });
           }
@@ -585,7 +591,14 @@ io.on('connection', (socket) => {
 
       // Store socket mapping
       userSockets.set(decoded.userId, socket.id);
-      onlineUsers.set(decoded.userId, { socketId: socket.id, currentDextop: decoded.userId });
+      let selfDextopId = decoded.userId;
+      try {
+        const selfDex = await db.getUserDextop(decoded.userId);
+        if (selfDex && selfDex.id) selfDextopId = selfDex.id;
+      } catch (e) {
+        console.warn('Could not fetch self dextop id for', decoded.userId);
+      }
+      onlineUsers.set(decoded.userId, { socketId: socket.id, currentDextop: selfDextopId });
 
       // NEW: Hydrate in-memory friends list for this user so future
       // handlers (e.g. joinFriendDextop) know who they're friends with.
