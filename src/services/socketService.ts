@@ -340,6 +340,7 @@ class SocketService {
     const message = {
       id: uuidv4(),
       sender: store.getState().auth.user?.username,
+      senderId: store.getState().auth.user?.id,
       content,
       timestamp: Date.now(),
       type: 'private',

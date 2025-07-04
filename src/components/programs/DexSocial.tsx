@@ -10,6 +10,7 @@ import { store } from '../../store/store';
 interface Message {
   id: string;
   sender: string;
+  senderId?: string;
   content: string;
   timestamp: number;
   type: 'local' | 'private';
@@ -86,9 +87,9 @@ const DexSocial: React.FC<DexSocialProps> = ({
       if (message.type === 'local') {
         updatedState.localMessages = [...(updatedState.localMessages || []), message];
       } else if (message.type === 'private') {
-        const friendId = message.recipientId === currentUser?.id 
-          ? message.sender 
-          : message.recipientId;
+        const friendId = message.senderId === currentUser?.id 
+          ? message.recipientId 
+          : message.senderId;
         if (friendId) {
           updatedState.privateMessages[friendId] = [
             ...(updatedState.privateMessages[friendId] || []),

@@ -293,6 +293,29 @@ io.on('connection', (socket) => {
       }
 
       console.log(`${user.username} joined dextop ${targetDextopId}`);
+
+      // Update onlineUsers entry with current dextop id
+      if (onlineUsers.has(user.id)) {
+        onlineUsers.get(user.id).currentDextop = targetDextopId;
+      }
+
+      // Notify friends of updated dextop location
+      const userFriendsList2 = userFriends.get(user.id);
+      if (userFriendsList2) {
+        for (const fid of userFriendsList2) {
+          const fSockId = userSockets.get(fid);
+          if (fSockId) {
+            io.to(fSockId).emit('friendStatusUpdate', {
+              [user.id]: {
+                id: user.id,
+                username: user.username,
+                isOnline: true,
+                currentDextop: targetDextopId
+              }
+            });
+          }
+        }
+      }
     } catch (error) {
       console.error('Error joining dextop:', error);
       socket.emit('error', { message: 'Failed to join dextop' });
@@ -549,7 +572,7 @@ io.on('connection', (socket) => {
 
       // Store socket mapping
       userSockets.set(decoded.userId, socket.id);
-      onlineUsers.set(decoded.userId, { socketId: socket.id, currentDextop: decoded.userId });
+      onlineUsers.set(decoded.userId, { socketId: socket.id, currentDextop: null });
 
       // NEW: Hydrate in-memory friends list for this user so future
       // handlers (e.g. joinFriendDextop) know who they're friends with.
@@ -574,7 +597,7 @@ io.on('connection', (socket) => {
                 id: decoded.userId,
                 username: decoded.username,
                 isOnline: true,
-                currentDextop: decoded.userId
+                currentDextop: null
               }
             });
           }
