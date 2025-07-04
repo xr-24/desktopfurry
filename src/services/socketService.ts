@@ -61,6 +61,11 @@ class SocketService {
       const tk = authService.getToken();
       if (tk) {
         this.socket!.emit('authenticate', tk);
+        // Automatically join my own dextop as the main room
+        const me = authService.getStoredUser();
+        if (me && me.id) {
+          this.socket!.emit('joinDextop', { token: tk, dextopId: me.id });
+        }
       }
     });
 
@@ -242,7 +247,7 @@ class SocketService {
     });
 
     // Handle dextop visitor system
-    this.socket.on('dextopJoined', async ({ dextopId }) => {
+    this.socket.on('dextopJoined', async ({ dextopId, userId, username }) => {
       console.log('Joined dextop', dextopId);
 
       // Determine if this is my own dextop
@@ -263,6 +268,7 @@ class SocketService {
         }
         store.dispatch(clearVisitedDextop());
         store.dispatch(joinRoom(dextopId));
+        store.dispatch(setPlayer({ id: userId, username, quadrant: 0 }));
         return;
       }
 
@@ -308,6 +314,7 @@ class SocketService {
       }));
 
       store.dispatch(joinRoom(dextopId));
+      store.dispatch(setPlayer({ id: userId, username, quadrant: 0 }));
     });
 
     this.socket.on('visitorsUpdate', (visitors:any)=>{
@@ -354,9 +361,9 @@ class SocketService {
 
     const timestampedData = { ...data, timestamp: Date.now() };
 
-    const visitedId = store.getState().dextop.visitedId;
-    if (visitedId) {
-      // In visitor mode use dextopPlayerMove
+    // If we've joined a dextop (either our own or visiting), use dextopPlayerMove
+    const inDextop = !!store.getState().dextop.current;
+    if (inDextop) {
       this.socket.emit('dextopPlayerMove', timestampedData);
     } else {
       this.socket.emit('playerMove', timestampedData);

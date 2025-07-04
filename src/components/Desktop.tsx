@@ -26,13 +26,14 @@ const Desktop: React.FC = () => {
   const { id: currentPlayerId, isGaming, gamingInputDirection } = useAppSelector((state: any) => state.player || {});
   const visitedId = useAppSelector((state: any) => state.dextop.visitedId);
   const backgroundId = useAppSelector((state: any) => state.programs.backgroundId);
+  const visitors = useAppSelector((state:any)=> state.dextop.visitors);
   const dispatch = useAppDispatch();
   
   // Desktop customization state
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
   const [isRoomInfoOpen, setIsRoomInfoOpen] = useState(false);
   
-  // Animation recovery for remote players
+  // Animation recovery for remote players/visitors
   const lastPlayerUpdate = useRef<{ [playerId: string]: number }>({});
   const animationRecoveryInterval = useRef<NodeJS.Timeout | null>(null);
   
@@ -61,15 +62,16 @@ const Desktop: React.FC = () => {
     return ()=>clearTimeout(timer);
   },[programsState]);
 
-  // Animation recovery system for remote players
+  // Animation recovery system for remote players/visitors
   useEffect(() => {
-    // Track animation health of remote players
+    // Track animation health of remote entities
     animationRecoveryInterval.current = setInterval(() => {
       const now = Date.now();
-      Object.keys(players).forEach(playerId => {
+      const entityMap = getEntityMap();
+      Object.keys(entityMap).forEach(playerId => {
         if (playerId === currentPlayerId) return; // Skip current player
         
-        const player = players[playerId];
+        const player = entityMap[playerId];
         const lastUpdate = lastPlayerUpdate.current[playerId] || 0;
         
         // If a player hasn't updated in 5 seconds and appears to be moving, they might be stuck
@@ -91,16 +93,17 @@ const Desktop: React.FC = () => {
         clearInterval(animationRecoveryInterval.current);
       }
     };
-  }, [players, currentPlayerId, dispatch]);
+  }, [players, visitors, visitedId, currentPlayerId, dispatch]);
 
   // Track when players update to detect stale animations
   useEffect(() => {
-    Object.keys(players).forEach(playerId => {
+    const entityMap = getEntityMap();
+    Object.keys(entityMap).forEach(playerId => {
       if (playerId !== currentPlayerId) {
         lastPlayerUpdate.current[playerId] = Date.now();
       }
     });
-  }, [players, currentPlayerId]);
+  }, [players, visitors, visitedId, currentPlayerId]);
 
   // Background pattern mapping (dynamic)
   const getBackgroundPattern = (bgId: string) => {
@@ -140,6 +143,9 @@ const Desktop: React.FC = () => {
     };
   }, []);
 
+  // Helper to get combined entity map (players + visitors) for owners
+  const getEntityMap = () => (visitedId ? visitors : { ...players, ...visitors });
+
   if (!roomId) {
     return null; // Don't show desktop if not in a room
   }
@@ -154,7 +160,7 @@ const Desktop: React.FC = () => {
       }}
     >
       {/* Render all player characters */}
-      {Object.values(players || {}).map((player: any) => {
+      {Object.values(getEntityMap()).map((player: any) => {
         // Use local position for current player, server position for others
         const displayPlayer = player.id === currentPlayerId 
           ? { ...player, position: currentPlayerPosition }
@@ -178,7 +184,7 @@ const Desktop: React.FC = () => {
       })}
       
       {/* Show current player even if not in players list yet */}
-      {currentPlayerId && (!players || !players[currentPlayerId]) && (
+      {currentPlayerId && !getEntityMap()[currentPlayerId] && (
         <Character
           key="current-player-temp"
           player={{
@@ -241,7 +247,7 @@ const Desktop: React.FC = () => {
             </div>
             <div className="room-info-content">
               <div className="room-id">Room: {roomId}</div>
-              <div className="player-count">Players: {Object.keys(players || {}).length}/4</div>
+              <div className="player-count">Players: {Object.keys(getEntityMap()).length}/4</div>
               <div className="controls-hint">Use WASD to move</div>
               <div className="interaction-hint">
                 {nearbyIcon ? `💡 Press E to open ${nearbyIcon}` : '💡 Walk close to icons and press E'}
