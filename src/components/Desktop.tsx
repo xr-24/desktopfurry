@@ -24,6 +24,7 @@ const patternsMap: { [key: string]: string } = patternsContext.keys().reduce((ac
 const Desktop: React.FC = () => {
   const { roomId, players } = useAppSelector((state: any) => state.game || {});
   const { id: currentPlayerId, isGaming, gamingInputDirection } = useAppSelector((state: any) => state.player || {});
+  const visitedId = useAppSelector((state: any) => state.dextop.visitedId);
   const backgroundId = useAppSelector((state: any) => state.programs.backgroundId);
   const dispatch = useAppDispatch();
   
@@ -43,6 +44,7 @@ const Desktop: React.FC = () => {
   const lastSavedRef = useRef<any>(null);
   useEffect(()=>{
     if(!authService.isAuthenticated()) return;
+    if(visitedId) return; // Do NOT persist when visiting someone else's dextop
     const state=programsState;
     if(!state) return;
     // shallow compare
@@ -108,6 +110,9 @@ const Desktop: React.FC = () => {
   // Persist desktop state and background on unload (refresh / close)
   useEffect(() => {
     const handleSave = () => {
+      // Skip saving if currently visiting another dextop
+      if (store.getState().dextop.visitedId) return;
+
       const state = store.getState().programs as any;
       const user = authService.getStoredUser();
       if (!user) return;

@@ -52,6 +52,7 @@ interface DextopState {
   unlockedPrograms: string[];
   isLoading: boolean;
   error: string | null;
+  visitedId?: string | null;
 }
 
 const initialState: DextopState = {
@@ -61,6 +62,7 @@ const initialState: DextopState = {
   unlockedPrograms: ['paint', 'notepad', 'winamp', 'bdemediaplayer', 'checkers', 'snake', 'characterEditor'],
   isLoading: false,
   error: null,
+  visitedId: null,
 };
 
 const dextopSlice = createSlice({
@@ -144,6 +146,12 @@ const dextopSlice = createSlice({
       state.unlockedPrograms = ['paint', 'notepad', 'winamp', 'bdemediaplayer', 'checkers', 'snake', 'characterEditor'];
       state.error = null;
     },
+    setVisitedDextop: (state, action: PayloadAction<string>) => {
+      state.visitedId = action.payload;
+    },
+    clearVisitedDextop: (state) => {
+      state.visitedId = null;
+    },
   },
 });
 
@@ -158,6 +166,8 @@ export const {
   updateVisitorPosition,
   unlockAchievement,
   clearDextop,
+  setVisitedDextop,
+  clearVisitedDextop,
 } = dextopSlice.actions;
 
 export default dextopSlice.reducer; 

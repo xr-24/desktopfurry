@@ -5,7 +5,7 @@ import { setPlayer } from '../store/playerSlice';
 import { syncDesktop } from '../store/programSlice';
 import { v4 as uuidv4 } from 'uuid';
 import { authService } from './authService';
-import { loadDextopSuccess, updateVisitors, addVisitor, removeVisitor } from '../store/dextopSlice';
+import { loadDextopSuccess, updateVisitors, addVisitor, removeVisitor, setVisitedDextop, clearVisitedDextop, updateVisitorPosition } from '../store/dextopSlice';
 
 // Utility to deep compare objects by JSON stringify (cheap & ok for small state)
 function jsonEqual(a: any, b: any) {
@@ -29,6 +29,10 @@ class SocketService {
   // Message handlers
   private messageHandlers: { [windowId: string]: (message: any) => void } = {};
   private friendStatusHandlers: { [windowId: string]: (friends: any) => void } = {};
+
+  // Cache of owner desktop state
+  private ownerDesktopCache: any = null;
+  private selfDextopId: string | null = null;
 
   connect() {
     // Use env variable in production, fallback to localhost during development
@@ -240,40 +244,70 @@ class SocketService {
     // Handle dextop visitor system
     this.socket.on('dextopJoined', async ({ dextopId }) => {
       console.log('Joined dextop', dextopId);
-      const data = await authService.visitDextop(dextopId);
-      if (data) {
-        // Update dextop slice
-        store.dispatch(loadDextopSuccess({
-          dextop: { ...data.dextop, isOwner: false },
-          achievements: [],
-          unlockedPrograms: data.unlockedPrograms || []
-        }));
-        // Update programs to match visited dextop layout
-        const openPrograms: any = {};
-        let highestZ = 100;
-        for (const p of data.programs) {
-          const windowId = p.id || `${p.type}-${Date.now()}`;
-          openPrograms[windowId] = {
-            id: windowId,
-            type: p.type,
-            isOpen: true,
-            position: p.position,
-            size: p.size,
-            isMinimized: p.isMinimized,
-            zIndex: p.zIndex,
-            controllerId: '',
-            isMultiplayer: true,
-            state: p.state || {},
-          };
-          if (p.zIndex > highestZ) highestZ = p.zIndex;
+
+      // Determine if this is my own dextop
+      if (!this.selfDextopId) {
+        const curDex = store.getState().dextop.current;
+        if (curDex) {
+          this.selfDextopId = curDex.id;
         }
-        store.dispatch(syncDesktop({
-          openPrograms,
-          highestZIndex: highestZ,
-          interactionRange: 80,
-          backgroundId: data.dextop.backgroundId || 'sandstone',
-        }));
       }
+
+      const isOwn = this.selfDextopId === dextopId;
+
+      if (isOwn) {
+        // Returning home
+        if (this.ownerDesktopCache) {
+          store.dispatch(syncDesktop(this.ownerDesktopCache));
+          this.ownerDesktopCache = null;
+        }
+        store.dispatch(clearVisitedDextop());
+        store.dispatch(joinRoom(dextopId));
+        return;
+      }
+
+      // Visiting someone else
+      // Cache current owner desktop once
+      if (!this.ownerDesktopCache) {
+        this.ownerDesktopCache = store.getState().programs;
+      }
+
+      const data = await authService.visitDextop(dextopId);
+      if (!data) return;
+
+      store.dispatch(setVisitedDextop(dextopId));
+      store.dispatch(loadDextopSuccess({
+        dextop: { ...data.dextop, isOwner: false },
+        achievements: [],
+        unlockedPrograms: data.unlockedPrograms || []
+      }));
+
+      const openPrograms: any = {};
+      let highestZ = 100;
+      for (const p of data.programs) {
+        const windowId = p.id || `${p.type}-${Date.now()}`;
+        openPrograms[windowId] = {
+          id: windowId,
+          type: p.type,
+          isOpen: true,
+          position: p.position,
+          size: p.size,
+          isMinimized: p.isMinimized,
+          zIndex: p.zIndex,
+          controllerId: '',
+          isMultiplayer: true,
+          state: p.state || {},
+        };
+        if (p.zIndex > highestZ) highestZ = p.zIndex;
+      }
+      store.dispatch(syncDesktop({
+        openPrograms,
+        highestZIndex: highestZ,
+        interactionRange: 80,
+        backgroundId: data.dextop.backgroundId || 'sandstone',
+      }));
+
+      store.dispatch(joinRoom(dextopId));
     });
 
     this.socket.on('visitorsUpdate', (visitors:any)=>{
@@ -284,6 +318,14 @@ class SocketService {
     });
     this.socket.on('visitorLeft', ({userId}:any)=>{
       store.dispatch(removeVisitor({userId}));
+    });
+
+    this.socket.on('visitorMoved', (payload: any) => {
+      const { userId, ...rest } = payload;
+      store.dispatch(updateVisitorPosition({
+        userId,
+        ...rest
+      }));
     });
   }
 
@@ -308,12 +350,15 @@ class SocketService {
     isGrabbing?: boolean;
     isResizing?: boolean;
   }) {
-    if (this.socket && this.socket.connected) {
-      // Add timestamp for animation sync
-      const timestampedData = {
-        ...data,
-        timestamp: Date.now()
-      };
+    if (!this.socket || !this.socket.connected) return;
+
+    const timestampedData = { ...data, timestamp: Date.now() };
+
+    const visitedId = store.getState().dextop.visitedId;
+    if (visitedId) {
+      // In visitor mode use dextopPlayerMove
+      this.socket.emit('dextopPlayerMove', timestampedData);
+    } else {
       this.socket.emit('playerMove', timestampedData);
     }
   }

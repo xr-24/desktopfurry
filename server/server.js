@@ -308,15 +308,8 @@ io.on('connection', (socket) => {
 
       console.log(`${user.username} joined dextop ${targetDextopId}`);
 
-      // Update onlineUsers entry with current dextop id
-      let selfDextopId = decoded.userId;
-      try {
-        const selfDex = await db.getUserDextop(decoded.userId);
-        if (selfDex && selfDex.id) selfDextopId = selfDex.id;
-      } catch (e) {
-        console.warn('Could not fetch self dextop id for', decoded.userId);
-      }
-      onlineUsers.set(user.id, { socketId: socket.id, currentDextop: selfDextopId });
+      // Update onlineUsers entry with the ACTUAL dextop the user just joined
+      onlineUsers.set(user.id, { socketId: socket.id, currentDextop: targetDextopId });
 
       // Notify friends of updated dextop location
       const userFriendsList2 = userFriends.get(user.id);
@@ -329,7 +322,7 @@ io.on('connection', (socket) => {
                 id: user.id,
                 username: user.username,
                 isOnline: true,
-                currentDextop: selfDextopId
+                currentDextop: targetDextopId
               }
             });
           }
