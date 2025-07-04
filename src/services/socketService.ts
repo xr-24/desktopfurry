@@ -1,11 +1,11 @@
 import { io, Socket } from 'socket.io-client';
 import { store } from '../store/store';
-import { setConnected, joinRoom, updatePlayers, updatePlayerPosition } from '../store/gameSlice';
+import { setConnected, joinRoom, updatePlayers, updatePlayerPosition, leaveRoom } from '../store/gameSlice';
 import { setPlayer } from '../store/playerSlice';
 import { syncDesktop } from '../store/programSlice';
 import { v4 as uuidv4 } from 'uuid';
 import { authService } from './authService';
-import { loadDextopSuccess, updateVisitors, addVisitor, removeVisitor, setVisitedDextop, clearVisitedDextop, updateVisitorPosition } from '../store/dextopSlice';
+import { loadDextopSuccess, updateVisitors, addVisitor, removeVisitor, setVisitedDextop, clearVisitedDextop, updateVisitorPosition, updateDextopInfo, clearDextop } from '../store/dextopSlice';
 
 // Utility to deep compare objects by JSON stringify (cheap & ok for small state)
 function jsonEqual(a: any, b: any) {
@@ -32,6 +32,8 @@ class SocketService {
 
   // Cache of owner desktop state
   private ownerDesktopCache: any = null;
+  // Cache of owner dextop info (metadata)
+  private ownerDextopInfoCache: any = null;
   private selfDextopId: string | null = null;
 
   connect() {
@@ -187,6 +189,9 @@ class SocketService {
     store.subscribe(sendPlayerState);
 
     // Add new socket event handlers for social features
+    this.socket.on('dextopMessage', (message: any) => {
+      Object.values(this.messageHandlers).forEach(handler => handler(message));
+    });
     this.socket.on('localMessage', (message: any) => {
       Object.values(this.messageHandlers).forEach(handler => handler(message));
     });
@@ -244,6 +249,12 @@ class SocketService {
           store.dispatch(syncDesktop(this.ownerDesktopCache));
           this.ownerDesktopCache = null;
         }
+        if (this.ownerDextopInfoCache) {
+          store.dispatch(updateDextopInfo({ ...this.ownerDextopInfoCache, isOwner: true }));
+          this.ownerDextopInfoCache = null;
+        } else {
+          store.dispatch(updateDextopInfo({ id: dextopId, isOwner: true }));
+        }
         store.dispatch(clearVisitedDextop());
         store.dispatch(joinRoom(dextopId));
         store.dispatch(setPlayer({ id: userId, username, quadrant: 0 }));
@@ -270,6 +281,7 @@ class SocketService {
       // Cache current owner desktop once
       if (!this.ownerDesktopCache) {
         this.ownerDesktopCache = store.getState().programs;
+        this.ownerDextopInfoCache = store.getState().dextop.current;
       }
 
       const data = await authService.visitDextop(dextopId);
@@ -452,15 +464,28 @@ class SocketService {
     const message = {
       id: uuidv4(),
       sender: store.getState().auth.user?.username,
+      senderId: store.getState().auth.user?.id,
       content,
       timestamp: Date.now(),
       type: 'local'
     };
 
-    this.socket.emit('localMessage', {
-      roomId: store.getState().game.roomId,
-      message
-    });
+    const state = store.getState();
+    const dextopId = (state.dextop.current as any)?.id || state.dextop.visitedId;
+
+    if (dextopId) {
+      // In dextop session, broadcast via dedicated channel
+      this.socket.emit('dextopMessage', {
+        dextopId,
+        message
+      });
+    } else {
+      // Legacy room chat
+      this.socket.emit('localMessage', {
+        roomId: state.game.roomId,
+        message
+      });
+    }
   }
 
   sendPrivateMessage(recipientId: string, content: string) {
@@ -508,9 +533,12 @@ class SocketService {
   }
 
   leaveDextop() {
-    if (!this.socket) return;
-    const userId = store.getState().auth.user?.id;
-    this.socket.emit('joinDextopByCode', { code: userId }); // Join own dextop
+    // Graceful disconnect then reload page to ensure completely fresh state
+    try {
+      this.disconnect();
+    } finally {
+      window.location.reload();
+    }
   }
 
   authenticate() {

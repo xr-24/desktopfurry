@@ -375,6 +375,13 @@ io.on('connection', (socket) => {
   });
 
   // Social feature handlers
+  socket.on('dextopMessage', ({ dextopId, message }) => {
+    if (!activeDextops.has(dextopId)) return;
+
+    // Broadcast message to all visitors (including owner) of this dextop
+    io.to(dextopId).emit('dextopMessage', message);
+  });
+
   socket.on('localMessage', ({ roomId, message }) => {
     const room = rooms.get(roomId);
     if (!room) return;

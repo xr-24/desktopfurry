@@ -33,7 +33,7 @@ const AuthScreen: React.FC = () => {
             dispatch(loginSuccess(userData));
             await loadUserDextop();
             socketService.authenticate();
-            socketService.createRoom(userData.username);
+            // socketService.createRoom(userData.username); // removed to avoid legacy room duplication
           }
         }
       }
@@ -105,7 +105,7 @@ const AuthScreen: React.FC = () => {
       dispatch(loginSuccess(result.user));
       await loadUserDextop();
       socketService.authenticate();
-      socketService.createRoom(result.user.username);
+      // socketService.createRoom(result.user.username); // removed
     } else {
       dispatch(loginFailure(result.error || 'Failed to create guest account'));
       setFormError(result.error || 'Failed to create guest account');
@@ -129,7 +129,7 @@ const AuthScreen: React.FC = () => {
       dispatch(loginSuccess(result.user));
       await loadUserDextop();
       socketService.authenticate();
-      socketService.createRoom(result.user.username);
+      // socketService.createRoom(result.user.username); // removed
     } else {
       dispatch(loginFailure(result.error || 'Login failed'));
       setFormError(result.error || 'Login failed');
@@ -167,7 +167,7 @@ const AuthScreen: React.FC = () => {
       dispatch(loginSuccess(result.user));
       await loadUserDextop();
       socketService.authenticate();
-      socketService.createRoom(result.user.username);
+      // socketService.createRoom(result.user.username); // removed
     } else {
       dispatch(loginFailure(result.error || 'Registration failed'));
       setFormError(result.error || 'Registration failed');
@@ -200,23 +200,13 @@ const AuthScreen: React.FC = () => {
       dispatch(loginSuccess(result.user));
       await loadUserDextop();
       socketService.authenticate();
-      socketService.createRoom(result.user.username);
+      // socketService.createRoom(result.user.username); // removed
     } else {
       dispatch(loginFailure(result.error || 'Migration failed'));
       setFormError(result.error || 'Migration failed');
     }
     
     setIsSubmitting(false);
-  };
-
-  // Helper to ensure room creation only fires once socket is connected
-  const createRoomSafe = (username: string) => {
-    const sock: any = (socketService as any).socket;
-    if (sock && sock.connected) {
-      socketService.createRoom(username);
-    } else {
-      sock?.once('connect', () => socketService.createRoom(username));
-    }
   };
 
   // Don't show auth screen if already authenticated

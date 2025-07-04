@@ -4,6 +4,7 @@ import playerSlice from './playerSlice';
 import programSlice from './programSlice';
 import authSlice from './authSlice';
 import dextopSlice from './dextopSlice';
+import socialSlice from './socialSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     programs: programSlice,
     auth: authSlice,
     dextop: dextopSlice,
+    social: socialSlice,
   },
 });
 

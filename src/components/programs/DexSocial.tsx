@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { updateProgramState } from '../../store/programSlice';
-import ProgramWindow from '../ProgramWindow';
+import { setActiveTab, addLocalMessage, addPrivateMessage, updateFriends, setSelectedFriend } from '../../store/socialSlice';
 import { socketService } from '../../services/socketService';
 import { authService } from '../../services/authService';
 import './DexSocial.css';
-import { store } from '../../store/store';
 
 interface Message {
   id: string;
@@ -37,6 +35,7 @@ interface DexSocialProps {
     friends: Friend[];
     selectedFriend?: string;
   };
+  onClose?: () => void; // Callback to hide the widget
 }
 
 const DexSocial: React.FC<DexSocialProps> = ({
@@ -45,16 +44,17 @@ const DexSocial: React.FC<DexSocialProps> = ({
   size,
   zIndex,
   isMinimized,
-  programState
+  programState,
+  onClose
 }) => {
   const dispatch = useAppDispatch();
-  const [activeTab, setActiveTab] = useState<'friends' | 'local' | 'private' | 'dextop'>(
+  const [activeTab, setActiveTabLocal] = useState<'friends' | 'local' | 'private' | 'dextop'>(
     programState.activeTab || 'local'
   );
   const [messageInput, setMessageInput] = useState('');
   const [friendSearchInput, setFriendSearchInput] = useState('');
   const [dextopCodeInput, setDextopCodeInput] = useState('');
-  const [selectedFriend, setSelectedFriend] = useState<string | undefined>(
+  const [selectedFriend, setSelectedFriendLocal] = useState<string | undefined>(
     programState.selectedFriend
   );
   const [searchResults, setSearchResults] = useState<Friend[]>([]);
@@ -77,41 +77,15 @@ const DexSocial: React.FC<DexSocialProps> = ({
   // Register message handlers
   useEffect(() => {
     socketService.registerMessageHandler(windowId, (message: Message) => {
-      // Fetch the freshest state from Redux to avoid closure staleness
-      const currentProg = store.getState().programs.openPrograms[windowId];
-      const updatedState = currentProg ? { ...currentProg.state } : { ...programState };
-
-      updatedState.localMessages = [...(updatedState.localMessages || [])];
-      updatedState.privateMessages = { ...(updatedState.privateMessages || {}) };
-
       if (message.type === 'local') {
-        updatedState.localMessages = [...(updatedState.localMessages || []), message];
+        dispatch(addLocalMessage(message));
       } else if (message.type === 'private') {
-        const friendId = message.senderId === currentUser?.id 
-          ? message.recipientId 
-          : message.senderId;
-        if (friendId) {
-          updatedState.privateMessages[friendId] = [
-            ...(updatedState.privateMessages[friendId] || []),
-            message
-          ];
-        }
+        dispatch(addPrivateMessage({ message, currentUserId: currentUser?.id || '' }));
       }
-
-      dispatch(updateProgramState({
-        windowId,
-        newState: updatedState
-      }));
     });
 
     socketService.registerFriendStatusHandler(windowId, (friends: { [id: string]: Friend }) => {
-      dispatch(updateProgramState({
-        windowId,
-        newState: {
-          ...programState,
-          friends: Object.values(friends)
-        }
-      }));
+      dispatch(updateFriends(Object.values(friends)));
     });
 
     // Initial friends list fetch
@@ -121,22 +95,19 @@ const DexSocial: React.FC<DexSocialProps> = ({
       socketService.unregisterMessageHandler(windowId);
       socketService.unregisterFriendStatusHandler(windowId);
     };
-  }, [windowId, currentUser]);
+  }, [windowId, dispatch, currentUser?.id]);
 
-  // Update program state when tab changes
+  // Update Redux state when local state changes
   useEffect(() => {
-    dispatch(updateProgramState({
-      windowId,
-      newState: {
-        ...programState,
-        activeTab,
-        selectedFriend
-      }
-    }));
-  }, [activeTab, selectedFriend]);
+    dispatch(setActiveTab(activeTab));
+  }, [activeTab, dispatch]);
+
+  useEffect(() => {
+    dispatch(setSelectedFriend(selectedFriend));
+  }, [selectedFriend, dispatch]);
 
   const handleTabChange = (tab: 'friends' | 'local' | 'private' | 'dextop') => {
-    setActiveTab(tab);
+    setActiveTabLocal(tab);
   };
 
   const handleSendMessage = () => {
@@ -293,7 +264,7 @@ const DexSocial: React.FC<DexSocialProps> = ({
                   <div
                     key={friend.id}
                     className={`friend-item ${selectedFriend === friend.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedFriend(friend.id)}
+                    onClick={() => setSelectedFriendLocal(friend.id)}
                   >
                     <span className="status-dot online" />
                     <span className="friend-name">{friend.username}</span>
@@ -385,16 +356,66 @@ const DexSocial: React.FC<DexSocialProps> = ({
   };
 
   return (
-    <ProgramWindow
-      windowId={windowId}
-      title="Dex Social"
-      icon="💬"
-      position={position}
-      size={size}
-      zIndex={zIndex}
-      isMinimized={isMinimized}
+    <div
+      className="dex-social-window"
+      style={{
+        position: 'relative',
+        left: 0,
+        top: 0,
+        width: size.width,
+        height: size.height,
+        zIndex: 1,
+        background: '#c0c0c0',
+        border: '2px outset #c0c0c0',
+        display: isMinimized ? 'none' : 'block'
+      }}
     >
-      <div className="dex-social-container">
+      {/* Custom Title Bar */}
+      <div 
+        className="dex-social-title-bar"
+        style={{
+          background: 'linear-gradient(90deg, #0080ff 0%, #0040ff 100%)',
+          color: 'white',
+          padding: '4px 8px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '11px',
+          fontFamily: '"Better VCR", "MS Sans Serif", sans-serif',
+          fontWeight: 'bold'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span>💬</span>
+          <span>Dex Social</span>
+        </div>
+        <div>
+          <button 
+            style={{
+              background: '#c0c0c0',
+              border: '1px outset #c0c0c0',
+              width: '16px',
+              height: '14px',
+              cursor: 'pointer',
+              fontSize: '9px',
+              fontFamily: '"Better VCR", "MS Sans Serif", sans-serif'
+            }}
+            onClick={onClose}
+            title="Minimize to taskbar"
+          >
+            _
+          </button>
+        </div>
+      </div>
+
+      {/* Window Content */}
+      <div 
+        className="dex-social-container"
+        style={{
+          height: 'calc(100% - 22px)', // Subtract title bar height
+          overflow: 'hidden'
+        }}
+      >
         <div className="dex-social-tabs">
           <button
             className={`tab-button ${activeTab === 'friends' ? 'active' : ''}`}
@@ -425,7 +446,7 @@ const DexSocial: React.FC<DexSocialProps> = ({
           {renderTabContent()}
         </div>
       </div>
-    </ProgramWindow>
+    </div>
   );
 };
 

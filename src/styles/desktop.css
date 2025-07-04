@@ -407,4 +407,19 @@
   background: #c0c0c0;
   border: 1px solid #404040;
   cursor: pointer;
+}
+
+/* DexSocial Widget Styles */
+.dex-social-widget {
+  position: fixed;
+  bottom: 35px;
+  right: 10px;
+  z-index: 10000;
+  box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dex-social-widget .program-window {
+  position: relative !important;
+  left: 0 !important;
+  top: 0 !important;
 } 

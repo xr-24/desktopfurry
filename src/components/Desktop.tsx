@@ -4,8 +4,10 @@ import Character from './Character';
 import SystemClock from './SystemClock';
 import StartMenu from './StartMenu';
 import ProgramManager from './ProgramManager';
+import DexSocial from './programs/DexSocial';
 import useMovement from '../hooks/useMovement';
 import { setBackground } from '../store/programSlice';
+import { restoreFromProgramState } from '../store/socialSlice';
 import { updatePlayerPosition } from '../store/gameSlice';
 import '../styles/desktop.css';
 import { authService } from '../services/authService';
@@ -24,16 +26,34 @@ const patternsMap: { [key: string]: string } = patternsContext.keys().reduce((ac
 const Desktop: React.FC = () => {
   const { roomId, players } = useAppSelector((state: any) => state.game || {});
   const { id: currentPlayerId, isGaming, gamingInputDirection } = useAppSelector((state: any) => state.player || {});
+  const selfPlayerData = useAppSelector((state:any)=> state.player);
   const visitedId = useAppSelector((state: any) => state.dextop.visitedId);
   const currentDextop = useAppSelector((state: any) => state.dextop.current);
   const currentUserId = useAppSelector((state:any)=> state.auth.user?.id);
   const backgroundId = useAppSelector((state: any) => state.programs.backgroundId);
   const visitors = useAppSelector((state:any)=> state.dextop.visitors);
+  const socialState = useAppSelector((state: any) => state.social);
   const dispatch = useAppDispatch();
   
   // Desktop customization state
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
   const [isRoomInfoOpen, setIsRoomInfoOpen] = useState(false);
+  const [isDexSocialOpen, setIsDexSocialOpen] = useState(false);
+  
+  // Migration: Try to restore DexSocial data from old program state
+  useEffect(() => {
+    const migrateExistingData = () => {
+      const currentPrograms = store.getState().programs.openPrograms;
+      // Look for any existing dexsocial program window data
+      const dexSocialProgram = Object.values(currentPrograms).find((p: any) => p.type === 'dexsocial');
+      if (dexSocialProgram && dexSocialProgram.state) {
+        console.log('🔄 Migrating existing DexSocial data from program state');
+        dispatch(restoreFromProgramState(dexSocialProgram.state));
+      }
+    };
+    
+    migrateExistingData();
+  }, []); // Run once on mount
   
   // Animation recovery for remote players/visitors
   const lastPlayerUpdate = useRef<{ [playerId: string]: number }>({});
@@ -176,6 +196,24 @@ const Desktop: React.FC = () => {
         merged[id] = v;
       }
     });
+    // Ensure our own player data is present with full appearance
+    if (selfPlayerData?.id && !merged[selfPlayerData.id]) {
+      merged[selfPlayerData.id] = {
+        id: selfPlayerData.id,
+        username: selfPlayerData.username || 'You',
+        position: selfPlayerData.position,
+        quadrant: selfPlayerData.quadrant,
+        isGaming: selfPlayerData.isGaming,
+        gamingInputDirection: selfPlayerData.gamingInputDirection,
+        appearance: selfPlayerData.appearance,
+        isMoving: isMoving,
+        movementDirection: movementDirection,
+        walkFrame: walkFrame,
+        facingDirection: facingDirection,
+        isGrabbing: isGrabbing,
+        isResizing: isResizing,
+      };
+    }
     return merged;
   };
 
@@ -216,28 +254,6 @@ const Desktop: React.FC = () => {
         );
       })}
       
-      {/* Show current player even if not in players list yet */}
-      {currentPlayerId && !getEntityMap()[currentPlayerId] && (
-        <Character
-          key="current-player-temp"
-          player={{
-            id: currentPlayerId,
-            username: "You",
-            position: currentPlayerPosition,
-            quadrant: 0
-          }}
-          isCurrentPlayer={true}
-          isMoving={isMoving}
-          movementDirection={movementDirection}
-          walkFrame={walkFrame}
-          facingDirection={facingDirection}
-          isGrabbing={isGrabbing}
-          isResizing={isResizing}
-          isGaming={isGaming}
-          gamingInputDirection={gamingInputDirection}
-        />
-      )}
-
       {/* Desktop Icons with proximity feedback */}
       {desktopIcons.map((iconData) => (
         <div 
@@ -261,6 +277,27 @@ const Desktop: React.FC = () => {
       {/* All open program windows */}
       <ProgramManager />
 
+      {/* DexSocial widget (only visible to current player) */}
+      {isDexSocialOpen && (
+        <>
+          <div 
+            className="room-info-backdrop" 
+            onClick={() => setIsDexSocialOpen(false)}
+          />
+          <div className="dex-social-widget">
+            <DexSocial
+              windowId="dex-social-widget"
+              position={{ x: 0, y: 0 }}
+              size={{ width: 600, height: 500 }}
+              zIndex={10000}
+              isMinimized={false}
+              programState={socialState}
+              onClose={() => setIsDexSocialOpen(false)}
+            />
+          </div>
+        </>
+      )}
+      
       {/* Room info popup (only when opened) */}
       {isRoomInfoOpen && (
         <>
@@ -303,6 +340,13 @@ const Desktop: React.FC = () => {
         </div>
         
         <div className="taskbar-right">
+          <button 
+            className="room-info-button"
+            onClick={() => setIsDexSocialOpen(!isDexSocialOpen)}
+            title="Dex Social"
+          >
+            💬
+          </button>
           <button 
             className="room-info-button"
             onClick={() => setIsRoomInfoOpen(!isRoomInfoOpen)}
