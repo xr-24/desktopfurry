@@ -701,9 +701,10 @@ io.on('connection', (socket) => {
       const currentInfo = onlineUsers.get(decoded.userId);
       if (currentInfo && currentInfo.currentDextop === code) return;
 
-      // Leave all existing dextop rooms
+      // Leave only dextops the user is VISITING (never remove them from their own)
       for (const [dextopId, session] of activeDextops.entries()) {
-        if (session.visitors.has(decoded.userId)) {
+        const isVisiting = dextopId !== decoded.userId; // own dextop id equals user id
+        if (isVisiting && session.visitors.has(decoded.userId)) {
           session.visitors.delete(decoded.userId);
           socket.leave(dextopId);
           socket.to(dextopId).emit('visitorLeft', { userId: decoded.userId });

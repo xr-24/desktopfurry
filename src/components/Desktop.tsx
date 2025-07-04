@@ -26,6 +26,7 @@ const Desktop: React.FC = () => {
   const { id: currentPlayerId, isGaming, gamingInputDirection } = useAppSelector((state: any) => state.player || {});
   const visitedId = useAppSelector((state: any) => state.dextop.visitedId);
   const currentDextop = useAppSelector((state: any) => state.dextop.current);
+  const currentUserId = useAppSelector((state:any)=> state.auth.user?.id);
   const backgroundId = useAppSelector((state: any) => state.programs.backgroundId);
   const visitors = useAppSelector((state:any)=> state.dextop.visitors);
   const dispatch = useAppDispatch();
@@ -46,7 +47,7 @@ const Desktop: React.FC = () => {
   const lastSavedRef = useRef<any>(null);
   useEffect(() => {
     if (!authService.isAuthenticated()) return;
-    if (visitedId && !(currentDextop?.isOwner)) return;
+    if (visitedId && visitedId !== currentUserId) return;
     const state = programsState;
     if (!state) return;
 
