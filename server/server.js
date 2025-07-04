@@ -551,6 +551,18 @@ io.on('connection', (socket) => {
       userSockets.set(decoded.userId, socket.id);
       onlineUsers.set(decoded.userId, { socketId: socket.id, currentDextop: decoded.userId });
 
+      // NEW: Hydrate in-memory friends list for this user so future
+      // handlers (e.g. joinFriendDextop) know who they're friends with.
+      if (!userFriends.has(decoded.userId)) {
+        try {
+          const friends = await db.getUserFriends(decoded.userId);
+          const friendSet = new Set(friends.map((f) => f.id));
+          userFriends.set(decoded.userId, friendSet);
+        } catch (err) {
+          console.error('Failed to load friends for', decoded.userId, err);
+        }
+      }
+
       // Notify friends that user is online
       const userFriendsList = userFriends.get(decoded.userId);
       if (userFriendsList) {
