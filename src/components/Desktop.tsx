@@ -143,8 +143,17 @@ const Desktop: React.FC = () => {
     };
   }, []);
 
-  // Helper to get combined entity map (players + visitors) for owners
-  const getEntityMap = () => (visitedId ? visitors : { ...players, ...visitors });
+  // Helper to provide entity map depending on context (dextop vs legacy room)
+  const getEntityMap = () => {
+    if (visitedId) return visitors;
+    const merged: any = { ...players };
+    Object.entries(visitors).forEach(([id, v]: any) => {
+      if (id !== currentPlayerId) {
+        merged[id] = v;
+      }
+    });
+    return merged;
+  };
 
   if (!roomId) {
     return null; // Don't show desktop if not in a room

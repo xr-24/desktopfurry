@@ -128,35 +128,6 @@ class SocketService {
       store.dispatch(updatePlayerPosition(data));
     });
 
-    // Receive full desktop state from server
-    this.socket.on('desktopState', (desktopState: any) => {
-      // Sanitize incoming state (remove CharacterEditor sessions)
-      for (const id of Object.keys(desktopState.openPrograms || {})) {
-        if (desktopState.openPrograms[id].type === 'characterEditor') {
-          delete desktopState.openPrograms[id];
-        }
-      }
-
-      const localState = store.getState().programs;
-      const localHasLayout = Object.keys(localState.openPrograms || {}).length > 0;
-      const incomingIsEmpty = Object.keys(desktopState.openPrograms || {}).length === 0;
-
-      if (localHasLayout && incomingIsEmpty) {
-        // Our persisted layout exists; ignore empty payload and push ours back to server
-        if (this.socket) {
-          const roomId = store.getState().game.roomId;
-          this.socket.emit('desktopStateUpdate', { roomId, desktopState: localState });
-          this.lastDesktopState = localState;
-        }
-        return; // don't overwrite local layout
-      }
-
-      this.ignoreNextDesktopUpdate = true;
-      this.lastDesktopState = desktopState;
-      store.dispatch(syncDesktop(desktopState));
-      setTimeout(() => { this.ignoreNextDesktopUpdate = false; }, 0);
-    });
-
     // Prime lastDesktopState with current slice
     this.lastDesktopState = store.getState().programs;
 
@@ -178,13 +149,19 @@ class SocketService {
       if (this.ignoreNextDesktopUpdate) return;
       const raw = store.getState().programs;
       const state = sanitize(raw);
-      if (!jsonEqual(state, sanitize(this.lastDesktopState))) {
+      if (jsonEqual(state, sanitize(this.lastDesktopState))) return;
+
+      if (!this.socket) return;
+
+      const dextopCurrent = store.getState().dextop.current;
+      if (dextopCurrent) {
+        // In dextop mode broadcast via dedicated channel
+        this.socket.emit('dextopStateUpdate', { dextopId: dextopCurrent.id, desktopState: state });
+      } else {
         const roomId = store.getState().game.roomId;
-        if (roomId && this.socket) {
-          this.socket.emit('desktopStateUpdate', { roomId, desktopState: state });
-          this.lastDesktopState = state;
-        }
+        if (roomId) this.socket.emit('desktopStateUpdate', { roomId, desktopState: state });
       }
+      this.lastDesktopState = state;
     };
 
     store.subscribe(sendDesktopState);
@@ -250,15 +227,12 @@ class SocketService {
     this.socket.on('dextopJoined', async ({ dextopId, userId, username }) => {
       console.log('Joined dextop', dextopId);
 
-      // Determine if this is my own dextop
-      if (!this.selfDextopId) {
-        const curDex = store.getState().dextop.current;
-        if (curDex) {
-          this.selfDextopId = curDex.id;
-        }
+      // Determine if the joined dextop belongs to *me*
+      const myUserId = authService.getStoredUser()?.id;
+      const isOwn = userId === myUserId;
+      if (isOwn) {
+        this.selfDextopId = dextopId; // remember my dextop id
       }
-
-      const isOwn = this.selfDextopId === dextopId;
 
       if (isOwn) {
         // Returning home
@@ -269,6 +243,22 @@ class SocketService {
         store.dispatch(clearVisitedDextop());
         store.dispatch(joinRoom(dextopId));
         store.dispatch(setPlayer({ id: userId, username, quadrant: 0 }));
+        // Ensure all program windows have correct controllerId
+        const progSliceOwner = store.getState().programs;
+        const patchedOpenOwner: any = {};
+        let needsPatchOwner = false;
+        Object.values(progSliceOwner.openPrograms).forEach((p: any) => {
+          if (p.controllerId !== userId) {
+            needsPatchOwner = true;
+            patchedOpenOwner[p.id] = { ...p, controllerId: userId };
+          } else {
+            patchedOpenOwner[p.id] = p;
+          }
+        });
+        if (needsPatchOwner) {
+          const patchedStateOwner = { ...progSliceOwner, openPrograms: patchedOpenOwner };
+          store.dispatch(syncDesktop(patchedStateOwner));
+        }
         return;
       }
 
@@ -334,6 +324,37 @@ class SocketService {
         ...rest
       }));
     });
+
+    // Receive full desktop state from server (legacy rooms)
+    const handleIncomingDesktop = (desktopState:any) => {
+      // Sanitize incoming state (remove CharacterEditor sessions)
+      for (const id of Object.keys(desktopState.openPrograms || {})) {
+        if (desktopState.openPrograms[id].type === 'characterEditor') {
+          delete desktopState.openPrograms[id];
+        }
+      }
+
+      const localState = store.getState().programs;
+      const localHasLayout = Object.keys(localState.openPrograms || {}).length > 0;
+      const incomingIsEmpty = Object.keys(desktopState.openPrograms || {}).length === 0;
+
+      if (localHasLayout && incomingIsEmpty) {
+        // Our persisted layout exists; ignore empty payload and push ours back to server
+        if (this.socket) {
+          const roomId = store.getState().game.roomId;
+          if (roomId) this.socket.emit('desktopStateUpdate', { roomId, desktopState: localState });
+        }
+        return; // don't overwrite local layout
+      }
+
+      this.ignoreNextDesktopUpdate = true;
+      this.lastDesktopState = desktopState;
+      store.dispatch(syncDesktop(desktopState));
+      setTimeout(() => { this.ignoreNextDesktopUpdate = false; }, 0);
+    };
+
+    this.socket.on('desktopState', handleIncomingDesktop);
+    this.socket.on('dextopState', handleIncomingDesktop);
   }
 
   createRoom(username: string) {

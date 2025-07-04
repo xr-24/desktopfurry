@@ -643,6 +643,16 @@ io.on('connection', (socket) => {
         userSockets.delete(userId);
         onlineUsers.delete(userId);
         
+        // Remove from any active dextop visitor lists
+        for (const [dexId, session] of activeDextops.entries()) {
+          for (const [uid, player] of session.visitors.entries()) {
+            if (player.socketId === socket.id) {
+              session.visitors.delete(uid);
+              io.to(dexId).emit('visitorLeft', { userId: uid });
+            }
+          }
+        }
+
         // Notify friends that user is offline
         const userFriendsList = userFriends.get(userId);
         if (userFriendsList) {
