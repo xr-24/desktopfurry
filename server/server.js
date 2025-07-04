@@ -220,6 +220,10 @@ io.on('connection', (socket) => {
         return;
       }
 
+      // Patch handshake so future handlers can access the token
+      socket.handshake.auth = socket.handshake.auth || {};
+      socket.handshake.auth.token = token;
+
       // Get user from database
       const user = await db.findUserById(decoded.userId);
       if (!user) {
@@ -538,6 +542,10 @@ io.on('connection', (socket) => {
     try {
       const decoded = authService.verifyJWT(token);
       if (!decoded) return;
+
+      // Patch handshake so future handlers can access the token
+      socket.handshake.auth = socket.handshake.auth || {};
+      socket.handshake.auth.token = token;
 
       // Store socket mapping
       userSockets.set(decoded.userId, socket.id);
