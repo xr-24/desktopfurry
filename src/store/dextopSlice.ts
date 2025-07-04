@@ -102,30 +102,18 @@ const dextopSlice = createSlice({
     removeVisitor: (state, action: PayloadAction<{ userId: string }>) => {
       delete state.visitors[action.payload.userId];
     },
-    updateVisitorPosition: (state, action: PayloadAction<{
-      userId: string;
-      position: { x: number; y: number };
-      isMoving?: boolean;
-      movementDirection?: string | null;
-      walkFrame?: number;
-      facingDirection?: 'left' | 'right';
-      isGaming?: boolean;
-      gamingInputDirection?: 'up' | 'down' | 'left' | 'right' | null;
-      isGrabbing?: boolean;
-      isResizing?: boolean;
-    }>) => {
-      const visitor = state.visitors[action.payload.userId];
-      if (visitor) {
-        visitor.position = action.payload.position;
-        if (action.payload.isMoving !== undefined) visitor.isMoving = action.payload.isMoving;
-        if (action.payload.movementDirection !== undefined) visitor.movementDirection = action.payload.movementDirection;
-        if (action.payload.walkFrame !== undefined) visitor.walkFrame = action.payload.walkFrame;
-        if (action.payload.facingDirection !== undefined) visitor.facingDirection = action.payload.facingDirection;
-        if (action.payload.isGaming !== undefined) visitor.isGaming = action.payload.isGaming;
-        if (action.payload.gamingInputDirection !== undefined) visitor.gamingInputDirection = action.payload.gamingInputDirection;
-        if (action.payload.isGrabbing !== undefined) visitor.isGrabbing = action.payload.isGrabbing;
-        if (action.payload.isResizing !== undefined) visitor.isResizing = action.payload.isResizing;
-      }
+    updateVisitorPosition: (state, action: PayloadAction<any>) => {
+      const id = action.payload.userId || action.payload.id;
+      if (!id) return;
+      const prev = state.visitors[id] || {};
+      state.visitors = {
+        ...state.visitors,
+        [id]: {
+          ...prev,
+          ...action.payload,
+          position: { ...(action.payload.position || prev.position) },
+        },
+      } as any;
     },
     unlockAchievement: (state, action: PayloadAction<Achievement>) => {
       // Check if achievement is already unlocked

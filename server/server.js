@@ -351,12 +351,18 @@ io.on('connection', (socket) => {
             lastSeen: Date.now()
           });
           
-          // Broadcast to other visitors in the same dextop
-          socket.to(dextopId).emit('visitorMoved', {
+          // Broadcast movement to every other active visitor (including host)
+          const payload = {
             userId,
             ...data,
-            timestamp: Date.now()
-          });
+            timestamp: Date.now(),
+          };
+
+          for (const v of session.visitors.values()) {
+            if (v.socketId && v.socketId !== socket.id) {
+              io.to(v.socketId).emit('visitorMoved', payload);
+            }
+          }
           return;
         }
       }

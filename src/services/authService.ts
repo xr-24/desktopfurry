@@ -320,6 +320,17 @@ class AuthService {
       return null;
     }
   }
+
+  // Delete a program's persisted state so closed windows do not re-appear on refresh
+  async deleteProgramState(programType: string): Promise<boolean> {
+    try {
+      await axios.delete(`/dextop/program/${encodeURIComponent(programType)}`);
+      return true;
+    } catch (error) {
+      console.error('Failed to delete program state:', error);
+      return false;
+    }
+  }
 }
 
 export const authService = new AuthService(); 

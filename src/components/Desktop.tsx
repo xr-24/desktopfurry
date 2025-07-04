@@ -25,6 +25,7 @@ const Desktop: React.FC = () => {
   const { roomId, players } = useAppSelector((state: any) => state.game || {});
   const { id: currentPlayerId, isGaming, gamingInputDirection } = useAppSelector((state: any) => state.player || {});
   const visitedId = useAppSelector((state: any) => state.dextop.visitedId);
+  const currentDextop = useAppSelector((state: any) => state.dextop.current);
   const backgroundId = useAppSelector((state: any) => state.programs.backgroundId);
   const visitors = useAppSelector((state:any)=> state.dextop.visitors);
   const dispatch = useAppDispatch();
@@ -43,24 +44,45 @@ const Desktop: React.FC = () => {
   const programsState = useAppSelector((state:any)=> state.programs);
   // Debounced persistence when programs or background change
   const lastSavedRef = useRef<any>(null);
-  useEffect(()=>{
-    if(!authService.isAuthenticated()) return;
-    if(visitedId) return; // Do NOT persist when visiting someone else's dextop
-    const state=programsState;
-    if(!state) return;
-    // shallow compare
-    if(JSON.stringify(state)===JSON.stringify(lastSavedRef.current)) return;
-    lastSavedRef.current=state;
-    const timer=setTimeout(()=>{
+  useEffect(() => {
+    if (!authService.isAuthenticated()) return;
+    if (visitedId && !(currentDextop?.isOwner)) return;
+    const state = programsState;
+    if (!state) return;
+
+    const prevState = lastSavedRef.current;
+
+    // Detect program types that disappeared (all windows of that type closed)
+    if (prevState && prevState.openPrograms) {
+      const prevTypes = new Set(Object.values(prevState.openPrograms).map((p: any) => p.type));
+      const currTypes = new Set(Object.values(state.openPrograms).map((p: any) => p.type));
+      const removedTypes = Array.from(prevTypes).filter((t) => !currTypes.has(t));
+      removedTypes.forEach((t) => authService.deleteProgramState(t));
+    }
+
+    // Skip save if nothing changed compared with last snapshot
+    if (prevState && JSON.stringify(state) === JSON.stringify(prevState)) return;
+
+    lastSavedRef.current = state;
+
+    const timer = setTimeout(() => {
       // Save background
       authService.updateBackground(state.backgroundId);
-      // Save each program window
-      Object.values(state.openPrograms).forEach((p:any)=>{
-        authService.saveProgramState(p.type,p.position,p.size,p.zIndex,p.isMinimized,p.state||{});
+      // Persist each open program window
+      Object.values(state.openPrograms).forEach((p: any) => {
+        authService.saveProgramState(
+          p.type,
+          p.position,
+          p.size,
+          p.zIndex,
+          p.isMinimized,
+          p.state || {}
+        );
       });
-    },1000); // wait 1s debounce
-    return ()=>clearTimeout(timer);
-  },[programsState]);
+    }, 1000); // debounce 1 s
+
+    return () => clearTimeout(timer);
+  }, [programsState, visitedId]);
 
   // Animation recovery system for remote players/visitors
   useEffect(() => {
@@ -147,8 +169,9 @@ const Desktop: React.FC = () => {
   const getEntityMap = () => {
     if (visitedId) return visitors;
     const merged: any = { ...players };
+    const selfUserId = authService.getStoredUser()?.id;
     Object.entries(visitors).forEach(([id, v]: any) => {
-      if (id !== currentPlayerId) {
+      if (id !== currentPlayerId && id !== selfUserId) {
         merged[id] = v;
       }
     });

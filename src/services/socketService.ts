@@ -227,14 +227,18 @@ class SocketService {
     this.socket.on('dextopJoined', async ({ dextopId, userId, username }) => {
       console.log('Joined dextop', dextopId);
 
-      // Determine if the joined dextop belongs to *me*
       const myUserId = authService.getStoredUser()?.id;
-      const isOwn = userId === myUserId;
-      if (isOwn) {
-        this.selfDextopId = dextopId; // remember my dextop id
+      const isMe = userId === myUserId; // Whether the socket event refers to the current logged-in user
+
+      // Record my personal dextop id the FIRST time I hear about it so we can differentiate later
+      if (isMe && !this.selfDextopId) {
+        this.selfDextopId = dextopId;
       }
 
-      if (isOwn) {
+      // Am I (the current user) returning to my OWN dextop?
+      const isReturningHome = dextopId === this.selfDextopId;
+
+      if (isReturningHome) {
         // Returning home
         if (this.ownerDesktopCache) {
           store.dispatch(syncDesktop(this.ownerDesktopCache));
@@ -382,8 +386,10 @@ class SocketService {
 
     const timestampedData = { ...data, timestamp: Date.now() };
 
-    // If we've joined a dextop (either our own or visiting), use dextopPlayerMove
-    const inDextop = !!store.getState().dextop.current;
+    // Treat both owners (current) and visitors (visitedId) as being in a dextop
+    const dextopState = store.getState().dextop;
+    const inDextop = !!dextopState.current || !!dextopState.visitedId;
+
     if (inDextop) {
       this.socket.emit('dextopPlayerMove', timestampedData);
     } else {
@@ -515,4 +521,9 @@ class SocketService {
   }
 }
 
-export const socketService = new SocketService(); 
+export const socketService = new SocketService();
+
+// Expose for debugging in browser console
+if (typeof window !== 'undefined') {
+  (window as any).socketService = socketService;
+} 

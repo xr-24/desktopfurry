@@ -15,5 +15,8 @@ export const store = configureStore({
   },
 });
 
+// Expose store globally for quick debugging
+(window as any).store = store;
+
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch; 
