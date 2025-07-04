@@ -585,7 +585,7 @@ io.on('connection', (socket) => {
 
       // Store socket mapping
       userSockets.set(decoded.userId, socket.id);
-      onlineUsers.set(decoded.userId, { socketId: socket.id, currentDextop: null });
+      onlineUsers.set(decoded.userId, { socketId: socket.id, currentDextop: decoded.userId });
 
       // NEW: Hydrate in-memory friends list for this user so future
       // handlers (e.g. joinFriendDextop) know who they're friends with.
@@ -660,7 +660,39 @@ io.on('connection', (socket) => {
 
   // Allow clients to request joining a dextop by code (user ID)
   socket.on('joinDextopByCode', async ({ code }) => {
-    // Currently handled client-side by emitting joinDextop with token. Reserved for future server-side implementation.
+    try {
+      if (!code) return;
+      const token = socket.handshake.auth.token;
+      if (!token) return;
+
+      // Reuse joinDextop logic by emitting the event locally
+      // but avoid hitting client again; instead call the same
+      // handler function contents inline (simplified).
+
+      const decoded = authService.verifyJWT(token);
+      if (!decoded) {
+        socket.emit('error', { message: 'Invalid token' });
+        return;
+      }
+
+      // If already in desired dextop, ignore
+      const currentInfo = onlineUsers.get(decoded.userId);
+      if (currentInfo && currentInfo.currentDextop === code) return;
+
+      // Leave all existing dextop rooms
+      for (const [dextopId, session] of activeDextops.entries()) {
+        if (session.visitors.has(decoded.userId)) {
+          session.visitors.delete(decoded.userId);
+          socket.leave(dextopId);
+          socket.to(dextopId).emit('visitorLeft', { userId: decoded.userId });
+        }
+      }
+
+      // Finally call joinDextop by emitting internally (reuse existing handler)
+      socket.emit('joinDextop', { token, dextopId: code });
+    } catch (err) {
+      console.error('joinDextopByCode error', err);
+    }
   });
 });
 
