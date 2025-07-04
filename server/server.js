@@ -234,7 +234,20 @@ io.on('connection', (socket) => {
       // Get dextop and avatar
       const dextop = await db.getUserDextop(user.id);
       
-      const targetDextopId = dextopId || dextop.id; // Use provided dextop or user's own
+      const inputId = dextopId || dextop.id;
+      let targetDextopId = inputId;
+
+      // Allow short codes (userId) as dextop identifiers
+      if (inputId && inputId.length !== 36) {
+        try {
+          const ownerDextop = await db.getUserDextop(inputId);
+          if (ownerDextop) {
+            targetDextopId = ownerDextop.id;
+          }
+        } catch (err) {
+          console.error('Failed to translate dextop code', inputId, err);
+        }
+      }
       
       // Initialize active dextop if needed
       if (!activeDextops.has(targetDextopId)) {
