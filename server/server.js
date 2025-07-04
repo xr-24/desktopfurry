@@ -604,18 +604,7 @@ io.on('connection', (socket) => {
 
   // Allow clients to request joining a dextop by code (user ID)
   socket.on('joinDextopByCode', async ({ code }) => {
-    try {
-      const token = socket.handshake.auth.token;
-      if (!token) {
-        socket.emit('error', { message: 'Not authenticated' });
-        return;
-      }
-      // Reuse existing joinDextop logic
-      socket.emit('joinDextop', { token, dextopId: code });
-    } catch (err) {
-      console.error('Error in joinDextopByCode:', err);
-      socket.emit('error', { message: 'Failed to join dextop' });
-    }
+    // Currently handled client-side by emitting joinDextop with token. Reserved for future server-side implementation.
   });
 });
 

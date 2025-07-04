@@ -230,7 +230,10 @@ class SocketService {
 
     this.socket.on('joinDextopByCode', ({ code }) => {
       console.log('Server instructed to join dextop', code);
-      this.joinDextopByCode(code);
+      const tk2 = authService.getToken();
+      if (tk2 && this.socket) {
+        this.socket.emit('joinDextop', { token: tk2, dextopId: code });
+      }
     });
   }
 
@@ -372,11 +375,6 @@ class SocketService {
   joinFriendDextop(friendId: string) {
     if (!this.socket) return;
     this.socket.emit('joinFriendDextop', { friendId });
-  }
-
-  joinDextopByCode(code: string) {
-    if (!this.socket) return;
-    this.socket.emit('joinDextopByCode', { code });
   }
 
   leaveDextop() {

@@ -80,6 +80,9 @@ const DexSocial: React.FC<DexSocialProps> = ({
       const currentProg = store.getState().programs.openPrograms[windowId];
       const updatedState = currentProg ? { ...currentProg.state } : { ...programState };
 
+      updatedState.localMessages = [...(updatedState.localMessages || [])];
+      updatedState.privateMessages = { ...(updatedState.privateMessages || {}) };
+
       if (message.type === 'local') {
         updatedState.localMessages = [...(updatedState.localMessages || []), message];
       } else if (message.type === 'private') {
@@ -172,8 +175,10 @@ const DexSocial: React.FC<DexSocialProps> = ({
   };
 
   const handleJoinDextopByCode = () => {
-    if (!dextopCodeInput.trim()) return;
-    socketService.joinDextopByCode(dextopCodeInput);
+    const tk = authService.getToken();
+    if (tk && socketService['socket']) {
+      (socketService as any)['socket'].emit('joinDextop', { token: tk, dextopId: dextopCodeInput });
+    }
     setDextopCodeInput('');
   };
 
