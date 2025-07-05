@@ -588,6 +588,14 @@ class SocketService {
     const tk = authService.getToken();
     if (this.socket && tk) {
       this.socket.emit('authenticate', tk);
+
+      // Ensure we (re)join our own dextop after late authentication.
+      // This covers the case where the socket connected before the user logged in
+      // (no token yet), so the initial automatic joinDextop never fired.
+      const me = authService.getStoredUser();
+      if (me && me.id) {
+        this.socket.emit('joinDextop', { token: tk, dextopId: me.id });
+      }
     }
   }
 }
