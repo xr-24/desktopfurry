@@ -6,6 +6,8 @@ import { syncDesktop } from '../store/programSlice';
 import { v4 as uuidv4 } from 'uuid';
 import { authService } from './authService';
 import { loadDextopSuccess, updateVisitors, addVisitor, removeVisitor, setVisitedDextop, clearVisitedDextop, updateVisitorPosition, updateDextopInfo, clearDextop } from '../store/dextopSlice';
+import { addLocalMessage, addPrivateMessage, addFriendRequest } from '../store/socialSlice';
+import { audioService } from './audioService';
 
 // Utility to deep compare objects by JSON stringify (cheap & ok for small state)
 function jsonEqual(a: any, b: any) {
@@ -59,6 +61,10 @@ class SocketService {
       store.dispatch(setConnected(true));
       this.reconnectAttempts = 0;
       this.startHeartbeat();
+
+      // Preload notification sound
+      audioService.initialize();
+      audioService.loadSound('notif', '/assets/sounds/notif.wav');
 
       const tk = authService.getToken();
       if (tk) {
@@ -155,11 +161,15 @@ class SocketService {
 
       if (!this.socket) return;
 
-      const dextopCurrent = store.getState().dextop.current;
-      if (dextopCurrent) {
-        // In dextop mode broadcast via dedicated channel
-        this.socket.emit('dextopStateUpdate', { dextopId: dextopCurrent.id, desktopState: state });
+      // Determine if we are owner or visitor in a dextop session
+      const dextopState = store.getState().dextop;
+      const dextopId = dextopState.current?.id || dextopState.visitedId;
+
+      if (dextopId) {
+        // Send via unified dextop channel regardless of owner/visitor
+        this.socket.emit('dextopStateUpdate', { dextopId, desktopState: state });
       } else {
+        // Legacy room fallback
         const roomId = store.getState().game.roomId;
         if (roomId) this.socket.emit('desktopStateUpdate', { roomId, desktopState: state });
       }
@@ -207,14 +217,33 @@ class SocketService {
 
     // Add new socket event handlers for social features
     this.socket.on('dextopMessage', (message: any) => {
+      const currentUserId = authService.getStoredUser()?.id || '';
+      store.dispatch(addLocalMessage({ message, currentUserId }));
       Object.values(this.messageHandlers).forEach(handler => handler(message));
+      if (message.senderId !== currentUserId) {
+        audioService.resume();
+        audioService.playSound('notif');
+      }
     });
+
     this.socket.on('localMessage', (message: any) => {
+      const currentUserId = authService.getStoredUser()?.id || '';
+      store.dispatch(addLocalMessage({ message, currentUserId }));
       Object.values(this.messageHandlers).forEach(handler => handler(message));
+      if (message.senderId !== currentUserId) {
+        audioService.resume();
+        audioService.playSound('notif');
+      }
     });
 
     this.socket.on('privateMessage', (message: any) => {
+      const currentUserId = authService.getStoredUser()?.id || '';
+      store.dispatch(addPrivateMessage({ message, currentUserId }));
       Object.values(this.messageHandlers).forEach(handler => handler(message));
+      if (message.senderId !== currentUserId) {
+        audioService.resume();
+        audioService.playSound('notif');
+      }
     });
 
     this.socket.on('friendStatusUpdate', (friends: any) => {
@@ -222,12 +251,10 @@ class SocketService {
     });
 
     this.socket.on('friendRequest', (data: { requestId: string; from: string; username: string }) => {
-      const accept = window.confirm(`${data.username} wants to add you as a friend. Accept?`);
-      if (accept) {
-        this.acceptFriendRequest(data.requestId);
-      } else {
-        this.rejectFriendRequest(data.requestId);
-      }
+      // Store request and notify
+      store.dispatch(addFriendRequest({ id: data.requestId, from: data.from, username: data.username }));
+      audioService.resume();
+      audioService.playSound('notif');
     });
 
     this.socket.on('friendRequestAccepted', (data: { friend: any }) => {
@@ -375,19 +402,6 @@ class SocketService {
         }
       }
 
-      const localState = store.getState().programs;
-      const localHasLayout = Object.keys(localState.openPrograms || {}).length > 0;
-      const incomingIsEmpty = Object.keys(desktopState.openPrograms || {}).length === 0;
-
-      if (localHasLayout && incomingIsEmpty) {
-        // Our persisted layout exists; ignore empty payload and push ours back to server
-        if (this.socket) {
-          const roomId = store.getState().game.roomId;
-          if (roomId) this.socket.emit('desktopStateUpdate', { roomId, desktopState: localState });
-        }
-        return; // don't overwrite local layout
-      }
-
       this.ignoreNextDesktopUpdate = true;
       this.lastDesktopState = desktopState;
       store.dispatch(syncDesktop(desktopState));
@@ -418,6 +432,7 @@ class SocketService {
     facingDirection: 'left' | 'right';
     isGrabbing?: boolean;
     isResizing?: boolean;
+    isSitting?: boolean;
   }) {
     if (!this.socket || !this.socket.connected) return;
 
@@ -486,17 +501,18 @@ class SocketService {
   sendLocalMessage(content: string) {
     if (!this.socket) return;
     
+    const stateRoot = store.getState();
     const message = {
       id: uuidv4(),
-      sender: store.getState().auth.user?.username,
-      senderId: store.getState().auth.user?.id,
+      sender: stateRoot.auth.user?.username,
+      senderId: stateRoot.auth.user?.id,
       content,
       timestamp: Date.now(),
-      type: 'local'
+      type: 'local' as const,
+      color: stateRoot.player.chatColorHue,
     };
 
-    const state = store.getState();
-    const dextopId = (state.dextop.current as any)?.id || state.dextop.visitedId;
+    const dextopId = (stateRoot.dextop.current as any)?.id || stateRoot.dextop.visitedId;
 
     if (dextopId) {
       // In dextop session, broadcast via dedicated channel
@@ -507,7 +523,7 @@ class SocketService {
     } else {
       // Legacy room chat
       this.socket.emit('localMessage', {
-        roomId: state.game.roomId,
+        roomId: stateRoot.game.roomId,
         message
       });
     }
@@ -516,14 +532,16 @@ class SocketService {
   sendPrivateMessage(recipientId: string, content: string) {
     if (!this.socket) return;
 
+    const stateRoot = store.getState();
     const message = {
       id: uuidv4(),
-      sender: store.getState().auth.user?.username,
-      senderId: store.getState().auth.user?.id,
+      sender: stateRoot.auth.user?.username,
+      senderId: stateRoot.auth.user?.id,
       content,
       timestamp: Date.now(),
-      type: 'private',
-      recipientId
+      type: 'private' as const,
+      recipientId,
+      color: stateRoot.player.chatColorHue,
     };
 
     this.socket.emit('privateMessage', {

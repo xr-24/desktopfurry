@@ -94,6 +94,7 @@ io.on('connection', (socket) => {
           facingDirection: 'left',
           isGaming: false,
           gamingInputDirection: null,
+          isSitting: false,
           appearance: { hue: 0, eyes: 'none', ears: 'none', fluff: 'none', tail: 'none', body: 'CustomBase' },
           lastSeen: Date.now(),
         }
@@ -139,6 +140,7 @@ io.on('connection', (socket) => {
       facingDirection: 'left',
       isGaming: false,
       gamingInputDirection: null,
+      isSitting: false,
       appearance: { hue: 0, eyes: 'none', ears: 'none', fluff: 'none', tail: 'none', body: 'CustomBase' },
       lastSeen: Date.now(),
     };
@@ -154,7 +156,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('playerMove', (data) => {
-    const { position, isMoving, movementDirection, walkFrame, facingDirection, isGrabbing, isResizing, timestamp } = data;
+    const { position, isMoving, movementDirection, walkFrame, facingDirection, isGrabbing, isResizing, isSitting, timestamp } = data;
     // Find the room this player is in
     for (const [roomId, room] of rooms.entries()) {
       if (room.players[socket.id]) {
@@ -165,6 +167,7 @@ io.on('connection', (socket) => {
         room.players[socket.id].facingDirection = facingDirection;
         room.players[socket.id].isGrabbing = isGrabbing;
         room.players[socket.id].isResizing = isResizing;
+        room.players[socket.id].isSitting = isSitting;
         room.players[socket.id].lastSeen = Date.now();
         
         // Broadcast the movement to other players in the room
@@ -177,6 +180,7 @@ io.on('connection', (socket) => {
           facingDirection,
           isGrabbing,
           isResizing,
+          isSitting,
           timestamp,
         });
         break;
@@ -268,6 +272,7 @@ io.on('connection', (socket) => {
         facingDirection: 'left',
         isGaming: false,
         gamingInputDirection: null,
+        isSitting: false,
         appearance: {
           hue: dextop.hue || 0,
           eyes: dextop.eyes || 'none',
@@ -348,6 +353,7 @@ io.on('connection', (socket) => {
             facingDirection: data.facingDirection,
             isGrabbing: data.isGrabbing,
             isResizing: data.isResizing,
+            isSitting: data.isSitting,
             lastSeen: Date.now()
           });
           
@@ -355,6 +361,7 @@ io.on('connection', (socket) => {
           const payload = {
             userId,
             ...data,
+            isSitting: data.isSitting,
             timestamp: Date.now(),
           };
 

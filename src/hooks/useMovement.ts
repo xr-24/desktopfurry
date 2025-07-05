@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { setPosition } from '../store/playerSlice';
+import { setPosition, setSittingState } from '../store/playerSlice';
 import { openProgram, updateProgramPosition, updateProgramSize } from '../store/programSlice';
 import { socketService } from '../services/socketService';
 
@@ -33,6 +33,7 @@ const useMovement = (): {
   facingDirection: 'left' | 'right';
   isGrabbing: boolean;
   isResizing: boolean;
+  isSitting: boolean;
 } => {
   const dispatch = useAppDispatch();
   const [localPosition, setLocalPosition] = useState({ x: 200, y: 200 });
@@ -84,6 +85,14 @@ const useMovement = (): {
   // Socket update throttling
   const lastSocketUpdate = useRef<number>(0);
   const SOCKET_UPDATE_INTERVAL = 50; // Send socket updates max every 50ms (20fps)
+
+  // Sitting state
+  const isSitting = useAppSelector((state: any) => state.player?.isSitting || false);
+  const isSittingRef = useRef<boolean>(isSitting);
+
+  useEffect(() => {
+    isSittingRef.current = isSitting;
+  }, [isSitting]);
 
   // Helper function to calculate distance between player and icon
   const getDistanceToIcon = (iconX: number, iconY: number, playerX: number, playerY: number) => {
@@ -473,7 +482,12 @@ const useMovement = (): {
       return;
     }
 
-
+    // Early exit if currently sitting (no movement)
+    if (isSittingRef.current) {
+      setIsMoving(false);
+      setMovementDirection(null);
+      return;
+    }
 
     let newX = positionRef.current.x;
     let newY = positionRef.current.y;
@@ -571,6 +585,7 @@ const useMovement = (): {
         facingDirection: facingDirectionRef.current,
         isGrabbing: isGrabbingRef.current,
         isResizing: isResizingRef.current,
+        isSitting: isSittingRef.current,
       });
     }
 
@@ -595,6 +610,7 @@ const useMovement = (): {
         facingDirection: facingDirectionRef.current,
         isGrabbing: isGrabbingRef.current,
         isResizing: isResizingRef.current,
+        isSitting: isSittingRef.current,
       });
       // Clean up animation frame
       if (animationFrameRef.current) {
@@ -713,6 +729,27 @@ const useMovement = (): {
           animationFrameRef.current = requestAnimationFrame(updatePosition);
         }
       }
+
+      // Handle C key for sitting toggle (but not when typing or grabbing)
+      if (key === 'c' && !isTyping && !isGrabbingRef.current) {
+        event.preventDefault();
+
+        const newSittingState = !isSittingRef.current;
+        dispatch(setSittingState(newSittingState));
+
+        // Notify others of sitting state change
+        socketService.movePlayer({
+          position: positionRef.current,
+          isMoving: false,
+          movementDirection: null,
+          walkFrame: walkFrameRef.current,
+          facingDirection: facingDirectionRef.current,
+          isGrabbing: isGrabbingRef.current,
+          isResizing: isResizingRef.current,
+          isSitting: newSittingState,
+        });
+        return;
+      }
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
@@ -745,6 +782,7 @@ const useMovement = (): {
             facingDirection: facingDirectionRef.current,
             isGrabbing: isGrabbingRef.current,
             isResizing: isResizingRef.current,
+            isSitting: isSittingRef.current,
           });
         }
       }
@@ -876,7 +914,8 @@ const useMovement = (): {
     desktopIcons: DESKTOP_ICONS,
     facingDirection,
     isGrabbing,
-    isResizing
+    isResizing,
+    isSitting
   };
 };
 

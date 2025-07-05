@@ -16,6 +16,7 @@ interface Player {
   gamingInputDirection?: 'up' | 'down' | 'left' | 'right' | null;
   isGrabbing?: boolean;
   isResizing?: boolean;
+  isSitting?: boolean;
   // movement / animation extras
   isMoving?: boolean;
   movementDirection?: string | null;
@@ -55,7 +56,7 @@ const gameSlice = createSlice({
     updatePlayers: (state, action: PayloadAction<{ [playerId: string]: Player }>) => {
       state.players = action.payload;
     },
-    updatePlayerPosition: (state, action: PayloadAction<{ playerId: string; position: { x: number; y: number }; isMoving?: boolean; movementDirection?: string | null; walkFrame?: number; facingDirection?: 'left' | 'right'; isGaming?: boolean; gamingInputDirection?: 'up' | 'down' | 'left' | 'right' | null; isGrabbing?: boolean; isResizing?: boolean }>) => {
+    updatePlayerPosition: (state, action: PayloadAction<{ playerId: string; position: { x: number; y: number }; isMoving?: boolean; movementDirection?: string | null; walkFrame?: number; facingDirection?: 'left' | 'right'; isGaming?: boolean; gamingInputDirection?: 'up' | 'down' | 'left' | 'right' | null; isGrabbing?: boolean; isResizing?: boolean; isSitting?: boolean }>) => {
       const player = state.players[action.payload.playerId];
       if (player) {
         player.position = action.payload.position;
@@ -67,6 +68,7 @@ const gameSlice = createSlice({
         if (action.payload.gamingInputDirection !== undefined) player.gamingInputDirection = action.payload.gamingInputDirection;
         if (action.payload.isGrabbing !== undefined) player.isGrabbing = action.payload.isGrabbing;
         if (action.payload.isResizing !== undefined) player.isResizing = action.payload.isResizing;
+        if (action.payload.isSitting !== undefined) player.isSitting = action.payload.isSitting;
       }
     },
   },

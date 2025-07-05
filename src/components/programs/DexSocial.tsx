@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setActiveTab, addLocalMessage, addPrivateMessage, updateFriends, setSelectedFriend } from '../../store/socialSlice';
+import { setActiveTab, updateFriends, setSelectedFriend, clearUnreadMessages, clearFriendRequestNotifications, removeFriendRequest } from '../../store/socialSlice';
 import { socketService } from '../../services/socketService';
 import { authService } from '../../services/authService';
 import './DexSocial.css';
@@ -10,6 +10,7 @@ interface Message {
   sender: string;
   senderId?: string;
   content: string;
+  color?: number; // hue value 0-359 provided by sender preference
   timestamp: number;
   type: 'local' | 'private';
   recipientId?: string;
@@ -34,6 +35,7 @@ interface DexSocialProps {
     privateMessages: { [friendId: string]: Message[] };
     friends: Friend[];
     selectedFriend?: string;
+    friendRequests?: any[];
   };
   onClose?: () => void; // Callback to hide the widget
 }
@@ -74,16 +76,8 @@ const DexSocial: React.FC<DexSocialProps> = ({
     scrollToBottom();
   }, [programState.localMessages, programState.privateMessages]);
 
-  // Register message handlers
+  // Register friend status handler only (messages handled globally)
   useEffect(() => {
-    socketService.registerMessageHandler(windowId, (message: Message) => {
-      if (message.type === 'local') {
-        dispatch(addLocalMessage(message));
-      } else if (message.type === 'private') {
-        dispatch(addPrivateMessage({ message, currentUserId: currentUser?.id || '' }));
-      }
-    });
-
     socketService.registerFriendStatusHandler(windowId, (friends: { [id: string]: Friend }) => {
       dispatch(updateFriends(Object.values(friends)));
     });
@@ -92,10 +86,9 @@ const DexSocial: React.FC<DexSocialProps> = ({
     socketService.getFriendsList();
 
     return () => {
-      socketService.unregisterMessageHandler(windowId);
       socketService.unregisterFriendStatusHandler(windowId);
     };
-  }, [windowId, dispatch, currentUser?.id]);
+  }, [windowId, dispatch]);
 
   // Update Redux state when local state changes
   useEffect(() => {
@@ -105,6 +98,16 @@ const DexSocial: React.FC<DexSocialProps> = ({
   useEffect(() => {
     dispatch(setSelectedFriend(selectedFriend));
   }, [selectedFriend, dispatch]);
+
+  // Clear unread counts when viewing specific tabs
+  useEffect(() => {
+    if (activeTab === 'local' || activeTab === 'private') {
+      dispatch(clearUnreadMessages());
+    }
+    if (activeTab === 'friends') {
+      dispatch(clearFriendRequestNotifications());
+    }
+  }, [activeTab, dispatch]);
 
   const handleTabChange = (tab: 'friends' | 'local' | 'private' | 'dextop') => {
     setActiveTabLocal(tab);
@@ -158,11 +161,35 @@ const DexSocial: React.FC<DexSocialProps> = ({
     socketService.leaveDextop();
   };
 
+  // Friend request handlers
+  const handleAcceptRequest = (requestId: string) => {
+    socketService.acceptFriendRequest(requestId);
+    dispatch(removeFriendRequest(requestId));
+  };
+
+  const handleRejectRequest = (requestId: string) => {
+    socketService.rejectFriendRequest(requestId);
+    dispatch(removeFriendRequest(requestId));
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'friends':
         return (
           <div className="dex-social-friends">
+            {/* Pending Friend Requests */}
+            {programState.friendRequests && programState.friendRequests.length > 0 && (
+              <div className="friend-requests-section">
+                <h4>Friend Requests</h4>
+                {programState.friendRequests.map((req: any) => (
+                  <div key={req.id} className="friend-request-item">
+                    <span className="username">{req.username}</span>
+                    <button className="win98-button small" onClick={() => handleAcceptRequest(req.id)}>Accept</button>
+                    <button className="win98-button small" onClick={() => handleRejectRequest(req.id)}>Deny</button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="friend-search">
               <input
                 type="text"
@@ -223,8 +250,18 @@ const DexSocial: React.FC<DexSocialProps> = ({
             <div className="messages-container">
               {programState.localMessages.map((msg) => (
                 <div key={msg.id} className="message-item">
-                  <span className="message-sender">{msg.sender}:</span>
-                  <span className="message-content">{msg.content}</span>
+                  <span 
+                    className="message-sender" 
+                    style={{ color: msg.color !== undefined ? `hsl(${msg.color}, 100%, 50%)` : undefined }}
+                  >
+                    {msg.sender}:
+                  </span>
+                  <span 
+                    className="message-content" 
+                    style={{ color: msg.color !== undefined ? `hsl(${msg.color}, 100%, 50%)` : undefined }}
+                  >
+                    {msg.content}
+                  </span>
                   <span className="message-time">
                     {new Date(msg.timestamp).toLocaleTimeString()}
                   </span>
@@ -277,8 +314,18 @@ const DexSocial: React.FC<DexSocialProps> = ({
                   <div className="messages-container">
                     {programState.privateMessages[selectedFriend]?.map((msg) => (
                       <div key={msg.id} className="message-item">
-                        <span className="message-sender">{msg.sender}:</span>
-                        <span className="message-content">{msg.content}</span>
+                        <span 
+                          className="message-sender" 
+                          style={{ color: msg.color !== undefined ? `hsl(${msg.color}, 100%, 50%)` : undefined }}
+                        >
+                          {msg.sender}:
+                        </span>
+                        <span 
+                          className="message-content" 
+                          style={{ color: msg.color !== undefined ? `hsl(${msg.color}, 100%, 50%)` : undefined }}
+                        >
+                          {msg.content}
+                        </span>
                         <span className="message-time">
                           {new Date(msg.timestamp).toLocaleTimeString()}
                         </span>

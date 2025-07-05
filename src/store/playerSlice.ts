@@ -7,6 +7,7 @@ interface PlayerState {
   position: { x: number; y: number };
   isGaming: boolean;
   gamingInputDirection: 'up' | 'down' | 'left' | 'right' | null;
+  isSitting: boolean;
   appearance: {
     hue: number;
     eyes: string;
@@ -15,6 +16,7 @@ interface PlayerState {
     tail: string;
     body: string;
   };
+  chatColorHue: number;
 }
 
 const initialState: PlayerState = {
@@ -24,7 +26,15 @@ const initialState: PlayerState = {
   position: { x: 100, y: 100 }, // Default starting position
   isGaming: false,
   gamingInputDirection: null,
+  isSitting: false,
   appearance: { hue: 0, eyes: 'none', ears: 'none', fluff: 'none', tail: 'none', body: 'CustomBase' } as any,
+  chatColorHue: (() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('chat_color_hue');
+      return stored ? parseInt(stored, 10) : 0;
+    }
+    return 0;
+  })(),
 };
 
 const playerSlice = createSlice({
@@ -46,8 +56,17 @@ const playerSlice = createSlice({
       state.isGaming = action.payload.isGaming;
       state.gamingInputDirection = action.payload.inputDirection || null;
     },
+    setSittingState: (state, action: PayloadAction<boolean>) => {
+      state.isSitting = action.payload;
+    },
     setAppearance: (state, action: PayloadAction<{ hue: number; eyes: string; ears: string; fluff: string; tail: string; body?: string }>) => {
       state.appearance = { body: 'CustomBase', ...action.payload } as any;
+    },
+    setChatColorHue: (state, action: PayloadAction<number>) => {
+      state.chatColorHue = action.payload;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('chat_color_hue', String(action.payload));
+      }
     },
     resetPlayer: (state) => {
       state.id = null;
@@ -56,9 +75,11 @@ const playerSlice = createSlice({
       state.position = { x: 100, y: 100 };
       state.isGaming = false;
       state.gamingInputDirection = null;
+      state.isSitting = false;
+      state.chatColorHue = 0;
     },
   },
 });
 
-export const { setPlayer, setUsername, setPosition, setGamingState, setAppearance, resetPlayer } = playerSlice.actions;
+export const { setPlayer, setUsername, setPosition, setGamingState, setSittingState, setAppearance, setChatColorHue, resetPlayer } = playerSlice.actions;
 export default playerSlice.reducer; 

@@ -7,7 +7,7 @@ import ProgramManager from './ProgramManager';
 import DexSocial from './programs/DexSocial';
 import useMovement from '../hooks/useMovement';
 import { setBackground } from '../store/programSlice';
-import { restoreFromProgramState } from '../store/socialSlice';
+import { restoreFromProgramState, setActiveTab, setSelectedFriend } from '../store/socialSlice';
 import { updatePlayerPosition } from '../store/gameSlice';
 import '../styles/desktop.css';
 import { authService } from '../services/authService';
@@ -60,7 +60,7 @@ const Desktop: React.FC = () => {
   const animationRecoveryInterval = useRef<NodeJS.Timeout | null>(null);
   
   // Initialize movement controls for current player
-  const { position: currentPlayerPosition, isMoving, movementDirection, walkFrame, nearbyIcon, desktopIcons, facingDirection, isGrabbing, isResizing } = useMovement();
+  const { position: currentPlayerPosition, isMoving, movementDirection, walkFrame, nearbyIcon, desktopIcons, facingDirection, isGrabbing, isResizing, isSitting } = useMovement();
 
   const programsState = useAppSelector((state:any)=> state.programs);
   // Debounced persistence when programs or background change
@@ -212,9 +212,27 @@ const Desktop: React.FC = () => {
         facingDirection: facingDirection,
         isGrabbing: isGrabbing,
         isResizing: isResizing,
+        isSitting: isSitting,
       };
     }
     return merged;
+  };
+
+  const socialNotifications = useAppSelector((state:any)=> state.social);
+  const hasDexNotification = (socialNotifications.unreadMessages || socialNotifications.unreadFriendRequests) > 0;
+  const notificationTarget = socialNotifications.lastNotification;
+
+  const handleDexSocialToggle = () => {
+    if (!isDexSocialOpen) {
+      // About to open
+      if (hasDexNotification && notificationTarget) {
+        if (notificationTarget.tab === 'private' && notificationTarget.friendId) {
+          dispatch(setSelectedFriend(notificationTarget.friendId));
+        }
+        dispatch(setActiveTab(notificationTarget.tab));
+      }
+    }
+    setIsDexSocialOpen(!isDexSocialOpen);
   };
 
   if (!roomId) {
@@ -248,6 +266,7 @@ const Desktop: React.FC = () => {
             facingDirection={player.id === currentPlayerId ? facingDirection : player.facingDirection || 'left'}
             isGrabbing={player.id === currentPlayerId ? isGrabbing : player.isGrabbing || false}
             isResizing={player.id === currentPlayerId ? isResizing : player.isResizing || false}
+            isSitting={player.id === currentPlayerId ? isSitting : player.isSitting || false}
             isGaming={player.id === currentPlayerId ? isGaming : player.isGaming || false}
             gamingInputDirection={player.id === currentPlayerId ? gamingInputDirection : player.gamingInputDirection || null}
           />
@@ -341,11 +360,11 @@ const Desktop: React.FC = () => {
         
         <div className="taskbar-right">
           <button 
-            className="room-info-button"
-            onClick={() => setIsDexSocialOpen(!isDexSocialOpen)}
+            className={`room-info-button${hasDexNotification ? ' notify' : ''}`}
+            onClick={handleDexSocialToggle}
             title="Dex Social"
           >
-            💬
+            {hasDexNotification ? '💬*' : '💬'}
           </button>
           <button 
             className="room-info-button"

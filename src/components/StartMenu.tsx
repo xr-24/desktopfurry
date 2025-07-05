@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { openProgram } from '../store/programSlice';
+import { setChatColorHue } from '../store/playerSlice';
 // Dynamically load all pattern images from assets/patterns
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const patternsContext = (require as any).context('../assets/patterns', false, /\.(png|jpe?g|gif)$/);
@@ -25,12 +26,23 @@ const RETRO_BACKGROUNDS: Background[] = patternsContext.keys().map((file: string
 const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackground, currentBackground }) => {
   const dispatch = useAppDispatch();
   const { id: currentPlayerId } = useAppSelector((state: any) => state.player || {});
+  const chatColorHue = useAppSelector((state:any)=> state.player.chatColorHue);
+
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
 
   if (!isOpen) return null;
+
+  const toggleSettings = () => {
+    setIsSettingsOpen(prev => !prev);
+  };
 
   const handleBackgroundChange = (backgroundId: string) => {
     onChangeBackground(backgroundId);
     onClose();
+  };
+
+  const handleHueChange = (hue:number)=>{
+    dispatch(setChatColorHue(hue));
   };
 
   return (
@@ -87,9 +99,34 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
           
           <div className="start-menu-separator"></div>
           
-          <div className="start-menu-item" onClick={() => {}}>
+          <div className={`start-menu-item settings-item ${isSettingsOpen ? 'active' : ''}`} onClick={toggleSettings}>
             <span>⚙️</span>
             <span>Settings</span>
+            <span className="arrow">▶</span>
+            {isSettingsOpen && (
+              <div className="settings-submenu">
+                <div style={{padding:'8px', fontFamily:'Better VCR, monospace', fontSize:'11px'}}>
+                  <div style={{marginBottom:'8px', fontWeight:'bold'}}>Chat Color</div>
+                  <div style={{display:'flex', flexDirection:'column', gap:'6px'}}>
+                    <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                      <input
+                        type="range"
+                        min={0}
+                        max={359}
+                        value={chatColorHue}
+                        onChange={e => handleHueChange(parseInt(e.target.value))}
+                        style={{flex:1}}
+                      />
+                      <div style={{width:'24px', height:'16px', background:`hsl(${chatColorHue},100%,50%)`, border:'1px solid #000'}} />
+                      <span style={{minWidth:'40px'}}>{chatColorHue}°</span>
+                    </div>
+                    <div style={{fontSize:'10px', color:'#000080'}}>
+                      Preview: <span style={{color:`hsl(${chatColorHue},100%,50%)`}}>Hello World!</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="start-menu-item" onClick={() => {

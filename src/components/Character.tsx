@@ -25,6 +25,7 @@ interface CharacterProps {
   facingDirection?: 'left' | 'right';
   isGrabbing?: boolean;
   isResizing?: boolean;
+  isSitting?: boolean;
   isGaming?: boolean;
   gamingInputDirection?: 'up' | 'down' | 'left' | 'right' | null;
 }
@@ -38,6 +39,7 @@ const Character: React.FC<CharacterProps> = ({
   facingDirection = 'left',
   isGrabbing = false,
   isResizing = false,
+  isSitting = false,
   isGaming = false,
   gamingInputDirection = null
 }) => {
@@ -101,6 +103,7 @@ const Character: React.FC<CharacterProps> = ({
     isCurrentPlayer ? 'current-player' : 'other-player',
     isMoving ? 'moving' : '',
     isResizing ? 'resizing' : '',
+    isSitting ? 'sitting' : '',
     movementDirection ? `moving-${movementDirection}` : ''
   ].filter(Boolean).join(' ');
 
@@ -118,6 +121,11 @@ const Character: React.FC<CharacterProps> = ({
     if (isGaming) {
       const dir = gamingInputDirection ? `-${gamingInputDirection.charAt(0).toUpperCase()}${gamingInputDirection.slice(1)}` : '';
       return `${prefix}Sit${dir}`;
+    }
+
+    // Regular sitting (not gaming)
+    if (isSitting) {
+      return `${prefix}Sit-NoGame`;
     }
 
     // Grabbing
