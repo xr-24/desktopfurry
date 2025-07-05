@@ -777,6 +777,23 @@ io.on('connection', (socket) => {
   });
 });
 
+// -----------------------------------------------------------
+// DEBUG: periodic dump of active dextop rooms and their sockets
+// Lists every active visitor/owner socket in each dextop room so we can
+// verify that hosts stay joined and see when sockets leave.
+// This runs every 5 seconds in development.
+if (process.env.NODE_ENV !== 'production') {
+  setInterval(() => {
+    activeDextops.forEach((_session, dexId) => {
+      io.in(dexId).fetchSockets().then(socks => {
+        const ids = socks.map(s => s.id);
+        console.log('[watch] room', dexId, 'sockets', ids);
+      }).catch(() => {/* ignore */});
+    });
+  }, 5000);
+}
+// -----------------------------------------------------------
+
 // Add cleanup interval for stale player states
 setInterval(() => {
   const now = Date.now();
