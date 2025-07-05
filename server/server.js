@@ -365,11 +365,9 @@ io.on('connection', (socket) => {
             timestamp: Date.now(),
           };
 
-          for (const v of session.visitors.values()) {
-            if (v.socketId && v.socketId !== socket.id) {
-              io.to(v.socketId).emit('visitorMoved', payload);
-            }
-          }
+          // Emit to the entire dextop room so **everyone** – owner and all visitors – is guaranteed to get the update.
+          // This avoids edge-cases where the owner might not be stored in `session.visitors` (or may be missing `socketId`).
+          io.to(dextopId).emit('visitorMoved', payload);
           return;
         }
       }

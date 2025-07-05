@@ -1,0 +1,114 @@
+.paint-container {
+  background: #c0c0c0;
+  font-family: 'Better VCR', monospace;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.paint-toolbar {
+  display: flex;
+  padding: 4px;
+  background: #c0c0c0;
+  border-bottom: 1px solid #858585;
+  gap: 8px;
+}
+
+.tool-group {
+  display: flex;
+  gap: 4px;
+  padding: 2px;
+  border: 1px solid #858585;
+  background: #ffffff;
+  box-shadow: inset 1px 1px #dfdfdf, inset -1px -1px #0a0a0a;
+}
+
+.tool-group button {
+  width: 28px !important;
+  height: 28px !important;
+  padding: 2px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tool-group button.active {
+  background: #c0c0c0 !important;
+  border: 1px solid #0a0a0a !important;
+  box-shadow: inset 1px 1px #0a0a0a, inset -1px -1px #dfdfdf !important;
+}
+
+.color-group {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #858585;
+  background: #ffffff;
+  box-shadow: inset 1px 1px #dfdfdf, inset -1px -1px #0a0a0a;
+}
+
+.color-group button {
+  width: 20px !important;
+  height: 20px !important;
+  padding: 0 !important;
+  border: 1px solid #858585;
+}
+
+.color-group button.active {
+  border: 2px solid #000000 !important;
+}
+
+.size-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid #858585;
+  background: #ffffff;
+  box-shadow: inset 1px 1px #dfdfdf, inset -1px -1px #0a0a0a;
+}
+
+.size-group input[type="range"] {
+  -webkit-appearance: none;
+  width: 100px;
+  height: 20px;
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #858585 #dfdfdf #dfdfdf #858585;
+  outline: none;
+}
+
+.size-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 20px;
+  background: #c0c0c0;
+  border: 2px solid;
+  border-color: #dfdfdf #858585 #858585 #dfdfdf;
+  cursor: pointer;
+}
+
+.size-group span {
+  font-size: 12px;
+  color: #000000;
+  min-width: 40px;
+  text-align: right;
+}
+
+.paint-canvas-container {
+  flex: 1;
+  background: #ffffff;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid;
+  border-color: #858585 #dfdfdf #dfdfdf #858585;
+}
+
+.paint-canvas-container canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  cursor: crosshair;
+} 

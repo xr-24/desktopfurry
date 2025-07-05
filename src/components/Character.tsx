@@ -145,12 +145,15 @@ const Character: React.FC<CharacterProps> = ({
     return baseName; // CustomBase
   };
 
+  // Offset sprite downward when sitting (but not gaming)
+  const yOffset = (!isGaming && isSitting) ? 40 : 0;
+
   return (
     <div
       className={characterClasses}
       style={{
         left: player.position.x,
-        top: player.position.y,
+        top: player.position.y + yOffset,
       }}
     >
       <div className="character-username">

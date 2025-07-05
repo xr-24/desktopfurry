@@ -7,10 +7,10 @@ import Winamp from './programs/Winamp';
 import Snake from './programs/Snake';
 import CharacterEditor from './programs/CharacterEditor';
 import BDEMediaPlayer from './programs/BDEMediaPlayer';
+import Paint from './programs/Paint';
 // DexSocial moved to taskbar widget
 // import DexSocial from './programs/DexSocial';
 // Import other programs as they're created
-// import Paint from './programs/Paint';
 // import Checkers from './programs/Checkers';
 
 const ProgramManager: React.FC = () => {
@@ -39,36 +39,11 @@ const ProgramManager: React.FC = () => {
         );
       
       case 'paint':
-        // Placeholder for Paint program with proper window controls
         return (
-          <ProgramWindow
+          <Paint
             key={program.id}
-            windowId={program.id}
-            title="Paint"
-            icon="🎨"
-            position={program.position}
-            size={program.size}
-            zIndex={program.zIndex}
-            isMinimized={program.isMinimized}
-          >
-            <div style={{ 
-              padding: '20px',
-              textAlign: 'center',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              background: '#f0f0f0'
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎨</div>
-              <h3 style={{ margin: '0 0 10px 0', fontFamily: 'Better VCR, monospace' }}>Paint Program</h3>
-              <p style={{ margin: '0', fontFamily: 'Better VCR, monospace', fontSize: '12px' }}>Coming Soon!</p>
-              <p style={{ margin: '10px 0 0 0', fontFamily: 'Better VCR, monospace', fontSize: '10px', color: '#666' }}>
-                Controlled by: {program.controllerId}
-              </p>
-            </div>
-          </ProgramWindow>
+            {...commonProps}
+          />
         );
       
       case 'winamp':

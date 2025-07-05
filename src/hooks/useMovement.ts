@@ -750,6 +750,25 @@ const useMovement = (): {
         });
         return;
       }
+
+      // Allow changing facing direction while sitting using A/D keys
+      if (isSittingRef.current && !isTyping && (key === 'a' || key === 'd')) {
+        event.preventDefault();
+        const newFacing: 'left' | 'right' = key === 'a' ? 'left' : 'right';
+        setFacingDirection(newFacing);
+        // Immediately notify others of facing change
+        socketService.movePlayer({
+          position: positionRef.current,
+          isMoving: false,
+          movementDirection: null,
+          walkFrame: walkFrameRef.current,
+          facingDirection: newFacing,
+          isGrabbing: isGrabbingRef.current,
+          isResizing: isResizingRef.current,
+          isSitting: true,
+        });
+        return;
+      }
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
