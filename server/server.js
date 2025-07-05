@@ -371,6 +371,12 @@ io.on('connection', (socket) => {
           // This avoids edge-cases where the owner might not be stored in `session.visitors` (or may be missing `socketId`).
           console.log('[srv]  → visitorMoved to room', dextopId, payload.position);
           io.to(dextopId).emit('visitorMoved', payload);
+
+          // DEBUG: list sockets currently in the room so we can verify the owner is actually joined
+          io.in(dextopId).fetchSockets().then(socks => {
+            const ids = socks.map(s => s.id);
+            console.log('[srv]  members in', dextopId, ids);
+          });
           return;
         }
       }
