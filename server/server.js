@@ -255,9 +255,17 @@ io.on('connection', (socket) => {
         console.error('Failed dextop id translation', err);
       }
       
-      // Initialize active dextop if needed
-      if (!activeDextops.has(targetDextopId)) {
-        activeDextops.set(targetDextopId, { visitors: new Map() });
+      // Ensure the user is removed from any other dextop sessions they were VISITING
+      for (const [dexId, session] of activeDextops.entries()) {
+        // Never remove them from their own personal dextop (dexId === user.id)
+        if (dexId !== targetDextopId && dexId !== user.id) {
+          if (session.visitors.has(user.id)) {
+            session.visitors.delete(user.id);
+            socket.leave(dexId);
+            io.to(dexId).emit('visitorLeft', { userId: user.id });
+            console.log('[srv]   removed visitor', user.id, 'from previous dextop', dexId);
+          }
+        }
       }
 
       const dextopSession = activeDextops.get(targetDextopId);
