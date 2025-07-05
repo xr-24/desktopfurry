@@ -340,6 +340,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('dextopPlayerMove', (data) => {
+    // DEBUG: log every visitor movement received from a socket
+    console.log('[srv] dextopPlayerMove from', socket.id, data.position);
     // Find which dextop this socket is in
     for (const [dextopId, session] of activeDextops.entries()) {
       for (const [userId, player] of session.visitors.entries()) {
@@ -367,6 +369,7 @@ io.on('connection', (socket) => {
 
           // Emit to the entire dextop room so **everyone** – owner and all visitors – is guaranteed to get the update.
           // This avoids edge-cases where the owner might not be stored in `session.visitors` (or may be missing `socketId`).
+          console.log('[srv]  → visitorMoved to room', dextopId, payload.position);
           io.to(dextopId).emit('visitorMoved', payload);
           return;
         }
