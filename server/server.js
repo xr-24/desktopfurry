@@ -216,6 +216,7 @@ io.on('connection', (socket) => {
 
   // New dextop-based socket handlers
   socket.on('joinDextop', async ({ token, dextopId }) => {
+    console.log('[srv] joinDextop from', socket.id, 'param', dextopId);
     try {
       // Verify user token
       const decoded = authService.verifyJWT(token);
@@ -291,6 +292,7 @@ io.on('connection', (socket) => {
       
       // Join socket room
       socket.join(targetDextopId);
+      console.log('[srv]   socket', socket.id, 'joined room', targetDextopId);
       
       // Send success response
       socket.emit('dextopJoined', { 
