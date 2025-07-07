@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import Character from './Character';
 import SystemClock from './SystemClock';
+import MoneyDisplay from './MoneyDisplay';
 import StartMenu from './StartMenu';
 import ProgramManager from './ProgramManager';
 import DexSocial from './programs/DexSocial';
@@ -213,6 +214,7 @@ const Desktop: React.FC = () => {
         isGrabbing: isGrabbing,
         isResizing: isResizing,
         isSitting: isSitting,
+        vehicle: selfPlayerData.vehicle,
       };
     }
     return merged;
@@ -373,6 +375,7 @@ const Desktop: React.FC = () => {
           >
             ℹ️
           </button>
+          <MoneyDisplay />
           <SystemClock />
         </div>
       </div>

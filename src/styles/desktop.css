@@ -53,6 +53,23 @@
 
 /* Walking Animation - Sprite based */
 
+.character-title {
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 8px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #00ff00;
+  padding: 1px 4px;
+  border-radius: 2px;
+  transform: translateY(-28px);
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
 .character-username {
   font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
   font-size: 9px;
@@ -224,6 +241,31 @@
 .clock-date {
   font-size: 9px;
   line-height: 10px;
+}
+
+/* Money Display Styles */
+.money-display-taskbar {
+  background-color: var(--win98-gray);
+  border: 1px inset var(--win98-gray);
+  padding: 4px 8px;
+  font-family: 'Better VCR', 'MS Sans Serif', sans-serif;
+  font-size: 11px;
+  text-align: center;
+  min-width: 60px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 2px;
+}
+
+.money-display-taskbar .money-icon {
+  font-size: 12px;
+}
+
+.money-display-taskbar .money-value {
+  font-weight: bold;
+  color: #0080ff;
+  line-height: 12px;
 }
 
 /* Start Menu Styles */

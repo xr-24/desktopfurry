@@ -182,7 +182,7 @@ class SocketService {
     const sendPlayerState = () => {
       const player = store.getState().player;
       // Only care about gaming state fields changing
-      if (player && !jsonEqual({ isGaming: player.isGaming, dir: player.gamingInputDirection }, { isGaming: this.lastPlayerState?.isGaming, dir: this.lastPlayerState?.gamingInputDirection })) {
+      if (player && !jsonEqual({ isGaming: player.isGaming, dir: player.gamingInputDirection, veh: player.vehicle, spd: player.speedMultiplier }, { isGaming: this.lastPlayerState?.isGaming, dir: this.lastPlayerState?.gamingInputDirection, veh: this.lastPlayerState?.vehicle, spd: this.lastPlayerState?.speedMultiplier })) {
         // Determine context: legacy room or dextop session (owner or visitor)
         const state = store.getState();
         const dextopId = state.dextop.visitedId || state.dextop.current?.id;
@@ -194,6 +194,8 @@ class SocketService {
             userId: player.id,
             isGaming: player.isGaming,
             gamingInputDirection: player.gamingInputDirection,
+            vehicle: player.vehicle,
+            speedMultiplier: player.speedMultiplier,
           });
           this.lastPlayerState = player;
           return; // Done for dextop sessions
@@ -207,6 +209,8 @@ class SocketService {
             playerId: player.id,
             isGaming: player.isGaming,
             gamingInputDirection: player.gamingInputDirection,
+            vehicle: player.vehicle,
+            speedMultiplier: player.speedMultiplier,
           });
           this.lastPlayerState = player;
         }
@@ -433,6 +437,8 @@ class SocketService {
     isGrabbing?: boolean;
     isResizing?: boolean;
     isSitting?: boolean;
+    vehicle?: 'none' | 'ufo';
+    speedMultiplier?: number;
   }) {
     if (!this.socket || !this.socket.connected) return;
 

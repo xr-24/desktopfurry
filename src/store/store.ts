@@ -5,6 +5,7 @@ import programSlice from './programSlice';
 import authSlice from './authSlice';
 import dextopSlice from './dextopSlice';
 import socialSlice from './socialSlice';
+import inventorySlice from './inventorySlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     auth: authSlice,
     dextop: dextopSlice,
     social: socialSlice,
+    inventory: inventorySlice,
   },
 });
 

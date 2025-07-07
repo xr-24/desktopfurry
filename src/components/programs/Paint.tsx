@@ -457,52 +457,73 @@ const Paint: React.FC<PaintProps> = ({
       <div className="paint-container">
         {/* Toolbar */}
         <div className="paint-toolbar">
-          {/* Tools */}
           <div className="tool-group">
-            {['brush', 'eraser', 'fill', 'line', 'rectangle', 'circle'].map((tool) => (
-              <button
-                key={tool}
-                className={`win98-btn ${selectedTool === tool ? 'active' : ''}`}
-                onClick={() => handleToolSelect(tool as typeof programState.tool)}
-              >
-                {tool === 'brush' && '✏️'}
-                {tool === 'eraser' && '🧹'}
-                {tool === 'fill' && '🪣'}
-                {tool === 'line' && '📏'}
-                {tool === 'rectangle' && '⬜'}
-                {tool === 'circle' && '⭕'}
-              </button>
-            ))}
+            <button
+              className={`win98-btn ${selectedTool === 'brush' ? 'active' : ''}`}
+              onClick={() => handleToolSelect('brush')}
+              title="Brush"
+            >
+              🖌️
+            </button>
+            <button
+              className={`win98-btn ${selectedTool === 'eraser' ? 'active' : ''}`}
+              onClick={() => handleToolSelect('eraser')}
+              title="Eraser"
+            >
+              ⌫
+            </button>
+            <button
+              className={`win98-btn ${selectedTool === 'fill' ? 'active' : ''}`}
+              onClick={() => handleToolSelect('fill')}
+              title="Fill"
+            >
+              🪣
+            </button>
+            <button
+              className={`win98-btn ${selectedTool === 'line' ? 'active' : ''}`}
+              onClick={() => handleToolSelect('line')}
+              title="Line"
+            >
+              /
+            </button>
+            <button
+              className={`win98-btn ${selectedTool === 'rectangle' ? 'active' : ''}`}
+              onClick={() => handleToolSelect('rectangle')}
+              title="Rectangle"
+            >
+              □
+            </button>
+            <button
+              className={`win98-btn ${selectedTool === 'circle' ? 'active' : ''}`}
+              onClick={() => handleToolSelect('circle')}
+              title="Circle"
+            >
+              ○
+            </button>
+            <button className="win98-btn" onClick={handleReset} title="Reset Canvas">↺</button>
           </div>
 
-          {/* Color palette */}
           <div className="color-group">
             {WIN98_COLORS.map((color) => (
               <button
                 key={color}
                 className={`win98-btn ${selectedColor === color ? 'active' : ''}`}
-                onClick={() => handleColorSelect(color)}
                 style={{ background: color }}
+                onClick={() => handleColorSelect(color)}
+                title={color}
               />
             ))}
           </div>
 
-          {/* Brush size */}
           <div className="size-group">
             <input
               type="range"
               min="1"
-              max="20"
+              max="32"
               value={brushSize}
-              onChange={(e) => handleBrushSize(Number(e.target.value))}
-              className="win98-range"
+              onChange={(e) => handleBrushSize(parseInt(e.target.value))}
             />
             <span>{brushSize}px</span>
-          </div>
-
-          {/* Reset */}
-          <div className="tool-group">
-            <button className="win98-btn" onClick={handleReset} title="Reset Canvas">↺</button>
           </div>
         </div>
 

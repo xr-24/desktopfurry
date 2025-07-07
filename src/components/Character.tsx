@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useAppSelector } from '../store/hooks';
 
 interface Player {
   id: string;
@@ -13,6 +14,9 @@ interface Player {
     tail: string;
     body: string;
   };
+  vehicle?: 'none' | 'ufo';
+  currentTitleId?: string | null;
+  currentItemIds?: string[];
   characterParts?: never; // deprecated
 }
 
@@ -148,6 +152,26 @@ const Character: React.FC<CharacterProps> = ({
   // Offset sprite downward when sitting (but not gaming)
   const yOffset = (!isGaming && isSitting) ? 40 : 0;
 
+  // Get inventory data for titles and items
+  const { titles, items } = useAppSelector((state: any) => state.inventory);
+  
+  // Get current title for this player
+  const getCurrentTitle = () => {
+    if (!player.currentTitleId) return null;
+    return titles.find((title: any) => title.id === player.currentTitleId);
+  };
+
+  // Get current items for this player
+  const getCurrentItems = () => {
+    if (!player.currentItemIds?.length) return [];
+    return player.currentItemIds
+      .map((itemId: string) => items.find((item: any) => item.id === itemId))
+      .filter(Boolean);
+  };
+
+  const currentTitle = getCurrentTitle();
+  const currentItems = getCurrentItems();
+
   return (
     <div
       className={characterClasses}
@@ -156,6 +180,16 @@ const Character: React.FC<CharacterProps> = ({
         top: player.position.y + yOffset,
       }}
     >
+      {/* Title above username */}
+      {currentTitle && (
+        <div 
+          className="character-title"
+          style={currentTitle.style_config}
+        >
+          {currentTitle.name}
+        </div>
+      )}
+      
       <div className="character-username">
         {player.username}
       </div>
@@ -183,12 +217,13 @@ const Character: React.FC<CharacterProps> = ({
           className="sprite-layer"
           style={{ zIndex: 2, filter: `hue-rotate(${player.appearance?.hue || 0}deg)` }}
         />
+
         {player.appearance?.fluff && player.appearance.fluff !== 'none' && (
           <img 
             src={`/assets/characters/fluff/${player.appearance.fluff}.png`} 
             alt="fluff"
             className="sprite-layer"
-            style={{ zIndex: 3, filter: `hue-rotate(${player.appearance?.hue || 0}deg)` }}
+            style={{ zIndex: 4, filter: `hue-rotate(${player.appearance?.hue || 0}deg)` }}
           />
         )}
         {player.appearance?.ears && player.appearance.ears !== 'none' && (
@@ -196,7 +231,7 @@ const Character: React.FC<CharacterProps> = ({
             src={`/assets/characters/ears/${player.appearance.ears}.png`} 
             alt="ears"
             className="sprite-layer"
-            style={{ zIndex: 4, filter: `hue-rotate(${player.appearance?.hue || 0}deg)` }}
+            style={{ zIndex: 5, filter: `hue-rotate(${player.appearance?.hue || 0}deg)` }}
           />
         )}
         {player.appearance?.eyes && player.appearance.eyes !== 'none' && (
@@ -204,9 +239,33 @@ const Character: React.FC<CharacterProps> = ({
             src={`/assets/characters/eyes/${player.appearance.eyes}.png`} 
             alt="eyes"
             className="sprite-layer"
-            style={{ zIndex: 5 }}
+            style={{ zIndex: 6 }}
           />
         )}
+
+        {/* Vehicle overlay (e.g., UFO) */}
+        {player.vehicle === 'ufo' && (
+          <img
+            src="/assets/characters/items/vehicles/ufo.png"
+            alt="ufo"
+            className="sprite-layer"
+            style={{ zIndex: 10 }}
+          />
+        )}
+
+        {/* Item overlays - highest z-index */}
+        {currentItems.map((item: any, index: number) => (
+          <img
+            key={item.id}
+            src={item.asset_path}
+            alt={item.name}
+            className="sprite-layer item-overlay"
+            style={{ 
+              zIndex: 15 + index, // Ensure items are on top of everything
+              imageRendering: 'pixelated'
+            }}
+          />
+        ))}
       </div>
     </div>
   );

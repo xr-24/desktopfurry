@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface ProgramWindow {
   id: string;
-  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'characterEditor' | 'bdemediaplayer';
+  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'pong' | 'characterEditor' | 'bdemediaplayer' | 'browser98' | 'terminal' | 'inventory';
   isOpen: boolean;
   position: { x: number; y: number };
   size: { width: number; height: number };
@@ -48,6 +48,10 @@ const programSlice = createSlice({
         checkers: { width: 450, height: 450, isMultiplayer: true },
         snake: { width: 400, height: 450, isMultiplayer: true },
         characterEditor: { width: 520, height: 500, isMultiplayer: false },
+        browser98: { width: 800, height: 600, isMultiplayer: false },
+        pong: { width: 500, height: 400, isMultiplayer: true },
+        terminal: { width: 500, height: 300, isMultiplayer: false },
+        inventory: { width: 550, height: 450, isMultiplayer: false },
       };
       
       const config = programConfigs[type];
@@ -216,6 +220,34 @@ function getProgramInitialState(type: ProgramWindow['type']) {
       };
     case 'characterEditor':
       return {};
+    case 'browser98':
+      return {
+        currentUrl: 'https://www.gameinformer.com',
+        history: [],
+        historyIndex: -1,
+        snapshotTimestamp: null,
+      };
+    case 'pong':
+      return {
+        gameState: 'title', // 'title', 'menu', 'waiting', 'countdown', 'playing', 'gameOver'
+        mode: 'single', // or 'multiplayer'
+        countdown: 3,
+        paddles: { left: 50, right: 50 }, // percentage positions
+        ball: { x: 250, y: 200, vx: 2, vy: 2 },
+        score: { left: 0, right: 0 },
+      };
+    case 'terminal':
+      return {
+        history: [],
+      };
+    case 'inventory':
+      return {
+        activeTab: 'titles', // 'titles' or 'items'
+        showTitleModal: false,
+        showItemModal: false,
+        selectedTitle: null,
+        selectedItem: null,
+      };
     default:
       return {};
   }

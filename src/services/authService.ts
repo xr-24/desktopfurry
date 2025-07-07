@@ -331,6 +331,39 @@ class AuthService {
       return false;
     }
   }
+
+  // Update current title
+  async updateCurrentTitle(titleId: string | null): Promise<boolean> {
+    try {
+      await axios.post('/inventory/title', { titleId });
+      return true;
+    } catch (error) {
+      console.error('Failed to update current title:', error);
+      return false;
+    }
+  }
+
+  // Update current items
+  async updateCurrentItems(itemIds: string[]): Promise<boolean> {
+    try {
+      await axios.post('/inventory/items', { itemIds });
+      return true;
+    } catch (error) {
+      console.error('Failed to update current items:', error);
+      return false;
+    }
+  }
+
+  // Load inventory data
+  async loadInventory(): Promise<any> {
+    try {
+      const response = await axios.get('/inventory');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to load inventory:', error);
+      return null;
+    }
+  }
 }
 
 export const authService = new AuthService(); 

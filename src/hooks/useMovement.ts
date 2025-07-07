@@ -4,7 +4,8 @@ import { setPosition, setSittingState } from '../store/playerSlice';
 import { openProgram, updateProgramPosition, updateProgramSize } from '../store/programSlice';
 import { socketService } from '../services/socketService';
 
-const MOVEMENT_SPEED = 8;
+// Movement speed in pixels per second (was 8 px per 60 fps frame → 480 px/s)
+const BASE_SPEED_PER_SEC = 480;
 const INTERACTION_RANGE = 60;
 const DESKTOP_BOUNDS = {
   minX: 10,
@@ -21,6 +22,8 @@ const DESKTOP_ICONS = [
   { id: 'bdemediaplayer', label: 'BDE Media Player', icon: '🚧', x: 50, y: 360, type: 'bdemediaplayer' as const },
   { id: 'checkers', label: 'Checkers', icon: '🔴', x: 50, y: 460, type: 'checkers' as const },
   { id: 'snake', label: 'SNEK', icon: '🐍', x: 150, y: 60, type: 'snake' as const },
+  { id: 'browser98', label: 'Web', icon: '🌐', x: 150, y: 160, type: 'browser98' as const },
+  { id: 'pong', label: 'Pong', icon: '🏓', x: 150, y: 260, type: 'pong' as const },
 ];
 
 const useMovement = (): {
@@ -73,7 +76,6 @@ const useMovement = (): {
   
   const keysPressed = useRef<Set<string>>(new Set());
   const animationFrameRef = useRef<number | null>(null);
-  const isAnimationRunningRef = useRef(false);
   const positionRef = useRef({ x: 200, y: 200 });
   const nearbyIconRef = useRef<string | null>(null);
 
@@ -89,10 +91,28 @@ const useMovement = (): {
   // Sitting state
   const isSitting = useAppSelector((state: any) => state.player?.isSitting || false);
   const isSittingRef = useRef<boolean>(isSitting);
+  const speedMultiplier = useAppSelector((state: any) => state.player?.speedMultiplier || 1);
+  const vehicle = useAppSelector((state:any)=> state.player?.vehicle || 'none');
+
+  const vehicleRef = useRef<'none' | 'ufo'>(vehicle);
+
+  // Ref to keep latest multiplier inside updatePosition
+  const speedMultiplierRef = useRef<number>(speedMultiplier);
+
+  // Track time between frames for frame-rate-independent motion
+  const lastFrameTimeRef = useRef<number>(performance.now());
 
   useEffect(() => {
     isSittingRef.current = isSitting;
   }, [isSitting]);
+
+  useEffect(() => {
+    speedMultiplierRef.current = speedMultiplier;
+  }, [speedMultiplier]);
+
+  useEffect(() => {
+    vehicleRef.current = vehicle;
+  }, [vehicle]);
 
   // Helper function to calculate distance between player and icon
   const getDistanceToIcon = (iconX: number, iconY: number, playerX: number, playerY: number) => {
@@ -294,6 +314,8 @@ const useMovement = (): {
       facingDirection: facingDirectionRef.current,
       isGrabbing: true,
       isResizing: false,
+      vehicle: vehicleRef.current,
+      speedMultiplier: speedMultiplierRef.current,
     });
   };
 
@@ -316,6 +338,8 @@ const useMovement = (): {
       facingDirection: facingDirectionRef.current,
       isGrabbing: false,
       isResizing: false,
+      vehicle: vehicleRef.current,
+      speedMultiplier: speedMultiplierRef.current,
     });
   };
 
@@ -368,6 +392,8 @@ const useMovement = (): {
       facingDirection: facingDirectionRef.current,
       isGrabbing: true,
       isResizing: true,
+      vehicle: vehicleRef.current,
+      speedMultiplier: speedMultiplierRef.current,
     });
   };
 
@@ -386,6 +412,8 @@ const useMovement = (): {
       facingDirection: facingDirectionRef.current,
       isGrabbing: true,
       isResizing: false,
+      vehicle: vehicleRef.current,
+      speedMultiplier: speedMultiplierRef.current,
     });
   };
 
@@ -472,8 +500,8 @@ const useMovement = (): {
   const updatePosition = useCallback(() => {
     if (!roomId) return;
 
-    // Reset the running flag at the start of each frame
-    isAnimationRunningRef.current = false;
+    // Mark current frame as processed; no frame is now scheduled.
+    animationFrameRef.current = null;
 
     // Safety check: if no keys are pressed, don't continue
     if (keysPressed.current.size === 0) {
@@ -493,30 +521,40 @@ const useMovement = (): {
     let newY = positionRef.current.y;
     let currentDirection = null;
 
+    // Δ-time since last frame (seconds)
+    const frameNow = performance.now();
+    let dt = (frameNow - lastFrameTimeRef.current) / 1000;
+    lastFrameTimeRef.current = frameNow;
+    // Clamp to prevent huge jumps if tab was inactive
+    dt = Math.min(dt, 0.05); // max 50 ms
+
+    // Pixels to move this frame
+    const step = BASE_SPEED_PER_SEC * speedMultiplierRef.current * dt;
+
     // Check which keys are pressed and update position with collision detection
     if (keysPressed.current.has('w')) {
-      const testY = newY - MOVEMENT_SPEED;
+      const testY = newY - step;
       if (!checkWindowCollision(newX, testY)) {
         newY = testY;
         currentDirection = 'up';
       }
     }
     if (keysPressed.current.has('s')) {
-      const testY = newY + MOVEMENT_SPEED;
+      const testY = newY + step;
       if (!checkWindowCollision(newX, testY)) {
         newY = testY;
         currentDirection = 'down';
       }
     }
     if (keysPressed.current.has('a')) {
-      const testX = newX - MOVEMENT_SPEED;
+      const testX = newX - step;
       if (!checkWindowCollision(testX, newY)) {
         newX = testX;
         currentDirection = 'left';
       }
     }
     if (keysPressed.current.has('d')) {
-      const testX = newX + MOVEMENT_SPEED;
+      const testX = newX + step;
       if (!checkWindowCollision(testX, newY)) {
         newX = testX;
         currentDirection = 'right';
@@ -586,38 +624,19 @@ const useMovement = (): {
         isGrabbing: isGrabbingRef.current,
         isResizing: isResizingRef.current,
         isSitting: isSittingRef.current,
+        vehicle: vehicleRef.current,
+        speedMultiplier: speedMultiplierRef.current,
       });
     }
 
-    // Continue the animation loop if any keys are pressed
-    if (keysPressed.current.size > 0) {
-      // Only start new frame if one isn't already running
-      if (!isAnimationRunningRef.current) {
-        isAnimationRunningRef.current = true;
-        animationFrameRef.current = requestAnimationFrame(updatePosition);
-      }
-    } else {
-      // Stop moving when no keys pressed
-      setIsMoving(false);
-      setMovementDirection(null);
-      // Immediately notify server that movement has stopped (no throttling for stop events)
-      lastSocketUpdate.current = now; // Update throttle timer
-      socketService.movePlayer({
-        position: positionRef.current,
-        isMoving: false,
-        movementDirection: null,
-        walkFrame: 1,
-        facingDirection: facingDirectionRef.current,
-        isGrabbing: isGrabbingRef.current,
-        isResizing: isResizingRef.current,
-        isSitting: isSittingRef.current,
-      });
-      // Clean up animation frame
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      isAnimationRunningRef.current = false;
+    // Schedule next frame only if none is pending
+    if (animationFrameRef.current === null) {
+      animationFrameRef.current = requestAnimationFrame(updatePosition);
+    }
+
+    // Restart movement loop if keys are pressed and no frame is pending
+    if (keysPressed.current.size > 0 && animationFrameRef.current === null) {
+      animationFrameRef.current = requestAnimationFrame(updatePosition);
     }
   }, [roomId, dispatch]);
 
@@ -719,13 +738,8 @@ const useMovement = (): {
         const wasEmpty = keysPressed.current.size === 0;
         keysPressed.current.add(key);
         
-        // If this is the first key pressed, start the animation loop
-        if (wasEmpty && !isAnimationRunningRef.current) {
-          // Cancel any existing frame first (safety measure)
-          if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-          }
-          isAnimationRunningRef.current = true;
+        // Schedule next frame only if none is pending
+        if (animationFrameRef.current === null) {
           animationFrameRef.current = requestAnimationFrame(updatePosition);
         }
       }
@@ -747,6 +761,8 @@ const useMovement = (): {
           isGrabbing: isGrabbingRef.current,
           isResizing: isResizingRef.current,
           isSitting: newSittingState,
+          vehicle: vehicleRef.current,
+          speedMultiplier: speedMultiplierRef.current,
         });
         return;
       }
@@ -766,6 +782,8 @@ const useMovement = (): {
           isGrabbing: isGrabbingRef.current,
           isResizing: isResizingRef.current,
           isSitting: true,
+          vehicle: vehicleRef.current,
+          speedMultiplier: speedMultiplierRef.current,
         });
         return;
       }
@@ -802,6 +820,8 @@ const useMovement = (): {
             isGrabbing: isGrabbingRef.current,
             isResizing: isResizingRef.current,
             isSitting: isSittingRef.current,
+            vehicle: vehicleRef.current,
+            speedMultiplier: speedMultiplierRef.current,
           });
         }
       }
@@ -818,7 +838,6 @@ const useMovement = (): {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
-      isAnimationRunningRef.current = false;
       keysPressed.current.clear();
     };
       }, [updatePosition]);
@@ -860,9 +879,8 @@ const useMovement = (): {
              });
            }
            
-           // Restart movement loop if keys are pressed
-           if (keysPressed.current.size > 0 && !isAnimationRunningRef.current) {
-             isAnimationRunningRef.current = true;
+           // Restart movement loop if keys are pressed and no frame is pending
+           if (keysPressed.current.size > 0 && animationFrameRef.current === null) {
              animationFrameRef.current = requestAnimationFrame(updatePosition);
            }
          }, 100);

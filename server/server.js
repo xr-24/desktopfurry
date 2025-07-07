@@ -13,6 +13,7 @@ const authService = require('./auth');
 const authRoutes = require('./routes/auth');
 const dextopRoutes = require('./routes/dextop');
 const usersRoutes = require('./routes/users');
+const inventoryRoutes = require('./routes/inventory');
 
 const app = express();
 const server = http.createServer(app);
@@ -35,6 +36,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/dextop', dextopRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 // In-memory storage for active dextop sessions
 const activeDextops = new Map(); // dextopId -> { visitors: Map<userId, playerData> }

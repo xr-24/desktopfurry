@@ -17,6 +17,8 @@ interface PlayerState {
     body: string;
   };
   chatColorHue: number;
+  vehicle: 'none' | 'ufo';
+  speedMultiplier: number;
 }
 
 const initialState: PlayerState = {
@@ -28,6 +30,8 @@ const initialState: PlayerState = {
   gamingInputDirection: null,
   isSitting: false,
   appearance: { hue: 0, eyes: 'none', ears: 'none', fluff: 'none', tail: 'none', body: 'CustomBase' } as any,
+  vehicle: 'none',
+  speedMultiplier: 1,
   chatColorHue: (() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('chat_color_hue');
@@ -68,6 +72,12 @@ const playerSlice = createSlice({
         localStorage.setItem('chat_color_hue', String(action.payload));
       }
     },
+    setVehicle: (state, action: PayloadAction<'none' | 'ufo'>) => {
+      state.vehicle = action.payload;
+    },
+    setSpeedMultiplier: (state, action: PayloadAction<number>) => {
+      state.speedMultiplier = action.payload;
+    },
     resetPlayer: (state) => {
       state.id = null;
       state.username = '';
@@ -77,9 +87,11 @@ const playerSlice = createSlice({
       state.gamingInputDirection = null;
       state.isSitting = false;
       state.chatColorHue = 0;
+      state.vehicle = 'none';
+      state.speedMultiplier = 1;
     },
   },
 });
 
-export const { setPlayer, setUsername, setPosition, setGamingState, setSittingState, setAppearance, setChatColorHue, resetPlayer } = playerSlice.actions;
+export const { setPlayer, setUsername, setPosition, setGamingState, setSittingState, setAppearance, setChatColorHue, resetPlayer, setVehicle, setSpeedMultiplier } = playerSlice.actions;
 export default playerSlice.reducer; 

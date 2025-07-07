@@ -6,10 +6,38 @@ const authService = require('../auth');
 // Get user's dextop
 router.get('/my-dextop', authService.authenticateToken, async (req, res) => {
   try {
-    const dextop = await db.getUserDextop(req.user.userId);
+    const userId = req.user.userId;
+    const dextop = await db.getUserDextop(userId);
     const programs = await db.getDextopPrograms(dextop.id);
-    const achievements = await db.getUserAchievements(req.user.userId);
-    const unlockedPrograms = await db.getUnlockedPrograms(req.user.userId);
+    const achievements = await db.getUserAchievements(userId);
+    const unlockedPrograms = await db.getUnlockedPrograms(userId);
+    
+    // Get inventory data
+    const userResult = await db.query(`
+      SELECT money, current_title_id, current_item_ids 
+      FROM users 
+      WHERE id = $1
+    `, [userId]);
+    
+    const userData = userResult.rows[0] || {};
+    
+    // Get user's unlocked titles
+    const titlesResult = await db.query(`
+      SELECT t.*, ut.unlocked_at
+      FROM titles t
+      JOIN user_titles ut ON t.id = ut.title_id
+      WHERE ut.user_id = $1 AND t.is_active = true
+      ORDER BY ut.unlocked_at ASC
+    `, [userId]);
+    
+    // Get user's unlocked items
+    const itemsResult = await db.query(`
+      SELECT i.*, ui.unlocked_at
+      FROM items i
+      JOIN user_items ui ON i.id = ui.item_id
+      WHERE ui.user_id = $1 AND i.is_active = true
+      ORDER BY ui.unlocked_at ASC
+    `, [userId]);
     
     res.json({
       dextop: {
@@ -39,7 +67,14 @@ router.get('/my-dextop', authService.authenticateToken, async (req, res) => {
         body: dextop.body || 'CustomBase'
       },
       achievements,
-      unlockedPrograms: ['paint', 'notepad', 'winamp', 'bdemediaplayer', 'checkers', 'snake', 'characterEditor', ...unlockedPrograms]
+      unlockedPrograms: ['paint', 'notepad', 'winamp', 'bdemediaplayer', 'checkers', 'snake', 'characterEditor', 'inventory', ...unlockedPrograms],
+      inventory: {
+        money: userData.money || 1000,
+        currentTitleId: userData.current_title_id,
+        currentItemIds: userData.current_item_ids || [],
+        titles: titlesResult.rows,
+        items: itemsResult.rows
+      }
     });
   } catch (error) {
     console.error('Error fetching dextop:', error);

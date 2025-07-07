@@ -5,9 +5,13 @@ import ProgramWindow from './ProgramWindow';
 import Notepad from './programs/Notepad';
 import Winamp from './programs/Winamp';
 import Snake from './programs/Snake';
+import Pong from './programs/Pong';
 import CharacterEditor from './programs/CharacterEditor';
 import BDEMediaPlayer from './programs/BDEMediaPlayer';
 import Paint from './programs/Paint';
+import Browser98 from './programs/Browser98';
+import Terminal from './programs/Terminal';
+import Inventory from './programs/Inventory';
 // DexSocial moved to taskbar widget
 // import DexSocial from './programs/DexSocial';
 // Import other programs as they're created
@@ -87,6 +91,14 @@ const ProgramManager: React.FC = () => {
           </ProgramWindow>
         );
       
+      case 'pong':
+        return (
+          <Pong
+            key={program.id}
+            {...commonProps}
+          />
+        );
+      
       case 'snake':
         return (
           <Snake
@@ -106,6 +118,30 @@ const ProgramManager: React.FC = () => {
       case 'bdemediaplayer':
         return (
           <BDEMediaPlayer
+            key={program.id}
+            {...commonProps}
+          />
+        );
+      
+      case 'browser98':
+        return (
+          <Browser98
+            key={program.id}
+            {...commonProps}
+          />
+        );
+      
+      case 'terminal':
+        return (
+          <Terminal
+            key={program.id}
+            {...commonProps}
+          />
+        );
+      
+      case 'inventory':
+        return (
+          <Inventory
             key={program.id}
             {...commonProps}
           />

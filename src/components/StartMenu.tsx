@@ -139,6 +139,26 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
             <span>Character Editor</span>
           </div>
           
+          <div className="start-menu-item" onClick={() => {
+            if (currentPlayerId) {
+              dispatch(openProgram({ type: 'inventory', controllerId: currentPlayerId }));
+              onClose();
+            }
+          }}>
+            <span>🎒</span>
+            <span>Inventory</span>
+          </div>
+          
+          <div className="start-menu-item" onClick={() => {
+            if (currentPlayerId) {
+              dispatch(openProgram({ type: 'terminal', controllerId: currentPlayerId }));
+              onClose();
+            }
+          }}>
+            <span>🖥️</span>
+            <span>Terminal</span>
+          </div>
+          
           <div className="start-menu-item" onClick={() => {}}>
             <span>❓</span>
             <span>Help</span>
