@@ -136,15 +136,8 @@ class SocketService {
     // Prime lastDesktopState with current slice
     this.lastDesktopState = store.getState().programs;
 
-    // Prime lastPlayerState
-    this.lastPlayerState = {
-      isGaming: store.getState().player.isGaming,
-      dir: store.getState().player.gamingInputDirection,
-      veh: store.getState().player.vehicle,
-      spd: store.getState().player.speedMultiplier,
-      items: store.getState().inventory.currentItemIds,
-      title: store.getState().inventory.currentTitleId,
-    };
+    // Reset so first subscriber tick sends full state, guaranteeing others get cosmetics
+    this.lastPlayerState = null as any;
 
     // Subscribe once to program slice changes to broadcast
     const sanitize = (progState:any) => {
@@ -187,6 +180,10 @@ class SocketService {
       const rootState = store.getState();
       const player = rootState.player;
       const inventory = rootState.inventory;
+      const equippedItemsFull = inventory.currentItemIds.map((id:string)=>{
+        const itm = inventory.items.find((i:any)=>i.id===id);
+        return itm ? { id: itm.id, name: itm.name, asset_path: itm.asset_path } : { id } as any;
+      });
       // Build a minimal object representing the fields we care about broadcasting
       const payloadFingerprint = {
         isGaming: player.isGaming,
@@ -196,24 +193,24 @@ class SocketService {
         items: inventory.currentItemIds,
         title: inventory.currentTitleId,
       };
+      const commonPayloadFields = {
+        isGaming: player.isGaming,
+        gamingInputDirection: player.gamingInputDirection,
+        vehicle: player.vehicle,
+        speedMultiplier: player.speedMultiplier,
+        currentItemIds: inventory.currentItemIds,
+        currentTitleId: inventory.currentTitleId,
+        equippedItems: equippedItemsFull,
+      };
 
-      // If nothing relevant changed since last emit, bail out early
-      if (jsonEqual(payloadFingerprint, this.lastPlayerState)) return;
+      // Skip compare on very first run so initial state is broadcast
+      if (this.lastPlayerState && jsonEqual(payloadFingerprint, this.lastPlayerState)) return;
 
       // Determine context: legacy room or dextop session (owner or visitor)
       const dextopId = rootState.dextop.visitedId || rootState.dextop.current?.id;
       if (dextopId && this.socket) {
         // In dextop context broadcast via dedicated visitor channel
-        this.socket.emit('visitorStateUpdate', {
-          dextopId,
-          userId: player.id,
-          isGaming: player.isGaming,
-          gamingInputDirection: player.gamingInputDirection,
-          vehicle: player.vehicle,
-          speedMultiplier: player.speedMultiplier,
-          currentItemIds: inventory.currentItemIds,
-          currentTitleId: inventory.currentTitleId,
-        });
+        this.socket.emit('visitorStateUpdate', { dextopId, userId: player.id, ...commonPayloadFields });
         this.lastPlayerState = payloadFingerprint;
         return;
       }
@@ -221,16 +218,7 @@ class SocketService {
       // Legacy room context
       const roomId = rootState.game.roomId;
       if (roomId && this.socket) {
-        this.socket.emit('playerStateUpdate', {
-          roomId,
-          playerId: player.id,
-          isGaming: player.isGaming,
-          gamingInputDirection: player.gamingInputDirection,
-          vehicle: player.vehicle,
-          speedMultiplier: player.speedMultiplier,
-          currentItemIds: inventory.currentItemIds,
-          currentTitleId: inventory.currentTitleId,
-        });
+        this.socket.emit('playerStateUpdate', { roomId, playerId: player.id, ...commonPayloadFields });
         this.lastPlayerState = payloadFingerprint;
       }
     };

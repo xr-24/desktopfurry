@@ -17,6 +17,7 @@ interface Player {
   vehicle?: 'none' | 'ufo';
   currentTitleId?: string | null;
   currentItemIds?: string[];
+  equippedItems?: { id:string; name:string; asset_path:string }[];
   characterParts?: never; // deprecated
 }
 
@@ -178,19 +179,14 @@ const Character: React.FC<CharacterProps> = ({
 
   // Get current items for this player
   const getCurrentItems = () => {
-    const itemIds = isCurrentPlayer ? invItemIds : player.currentItemIds;
-    if (!itemIds?.length) return [];
-    return itemIds.map((itemId: string) => {
-      // Try to find full item record in current inventory slice (only populated for current player)
-      const found = items.find((item: any) => item.id === itemId);
-      if (found) return found;
-      // Fallback stub so we can still render something for remote players
-      return {
-        id: itemId,
-        name: itemId,
-        asset_path: `/assets/characters/items/misc/${itemId.replace(/\s+/g, '').toLowerCase()}.png`,
-      };
-    });
+    if (isCurrentPlayer) {
+      return invItemIds.map((id:string)=>items.find((i:any)=>i.id===id)).filter(Boolean);
+    }
+    if (player.equippedItems && player.equippedItems.length) return player.equippedItems as any;
+    if (player.currentItemIds && player.currentItemIds.length) {
+      return player.currentItemIds.map((id:string)=>({id, name:id, asset_path:`/assets/characters/items/misc/${id.replace(/\\s+/g,'').toLowerCase()}.png`}));
+    }
+    return [];
   };
 
   const currentTitle = getCurrentTitle();

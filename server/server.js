@@ -201,7 +201,7 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('desktopState', desktopState);
   });
 
-  socket.on('playerStateUpdate', ({ roomId, playerId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId }) => {
+  socket.on('playerStateUpdate', ({ roomId, playerId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId, equippedItems }) => {
     const room = rooms.get(roomId);
     if (!room || !room.players[playerId]) return;
     const p = room.players[playerId];
@@ -211,6 +211,7 @@ io.on('connection', (socket) => {
     if (speedMultiplier !== undefined) p.speedMultiplier = speedMultiplier;
     if (currentItemIds !== undefined) p.currentItemIds = currentItemIds;
     if (currentTitleId !== undefined) p.currentTitleId = currentTitleId;
+    if (equippedItems !== undefined) p.equippedItems = equippedItems;
     io.to(roomId).emit('playersUpdate', room.players);
   });
 
@@ -415,7 +416,7 @@ io.on('connection', (socket) => {
   });
 
   // Handle visitor gaming state updates (sitting/joystick)
-  socket.on('visitorStateUpdate', ({ dextopId, userId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId }) => {
+  socket.on('visitorStateUpdate', ({ dextopId, userId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId, equippedItems }) => {
     const session = activeDextops.get(dextopId);
     if (!session) return;
 
@@ -442,10 +443,11 @@ io.on('connection', (socket) => {
     if (speedMultiplier !== undefined) player.speedMultiplier = speedMultiplier;
     if (currentItemIds !== undefined) player.currentItemIds = currentItemIds;
     if (currentTitleId !== undefined) player.currentTitleId = currentTitleId;
+    if (equippedItems !== undefined) player.equippedItems = equippedItems;
     player.lastSeen = Date.now();
 
     // Broadcast to everyone currently in the dextop room (owner + all visitors)
-    const payload = { userId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId };
+    const payload = { userId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId, equippedItems };
     io.to(dextopId).emit('visitorStateUpdate', payload);
   });
 
