@@ -7,6 +7,7 @@ import { authService } from '../services/authService';
 import { socketService } from '../services/socketService';
 import '../styles/win98.css';
 import { syncDesktop } from '../store/programSlice';
+import { setInventoryData } from '../store/inventorySlice';
 
 const AuthScreen: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -77,6 +78,18 @@ const AuthScreen: React.FC = () => {
         interactionRange: 80,
         backgroundId: dextopData.dextop.backgroundId || 'sandstone',
       }));
+
+      // Populate inventory slice with server data (money, titles, items, selections)
+      const inventoryData = (dextopData as any).inventory;
+      if (inventoryData) {
+        dispatch(setInventoryData({
+          money: inventoryData.money,
+          titles: inventoryData.titles,
+          items: inventoryData.items,
+          currentTitleId: inventoryData.currentTitleId,
+          currentItemIds: inventoryData.currentItemIds,
+        }));
+      }
 
       socketService.updateAppearance(dextopData.avatar);
     }

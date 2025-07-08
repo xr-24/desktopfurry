@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { updateProgramState, closeProgram } from '../../store/programSlice';
-import { setCurrentTitle, setCurrentItems } from '../../store/inventorySlice';
+import { setCurrentTitle, setCurrentItems, Title, Item } from '../../store/inventorySlice';
 import ProgramWindow from '../ProgramWindow';
 import TitleModal from './TitleModal';
 import ItemModal from './ItemModal';
@@ -72,7 +72,7 @@ const Inventory: React.FC<InventoryProps> = ({
     
     try {
       const newItemIds = currentItemIds.includes(itemId)
-        ? currentItemIds.filter(id => id !== itemId)
+        ? currentItemIds.filter((id: string) => id !== itemId)
         : [...currentItemIds, itemId];
       
       dispatch(setCurrentItems(newItemIds));
@@ -84,7 +84,7 @@ const Inventory: React.FC<InventoryProps> = ({
   };
 
   const getCurrentTitle = () => {
-    return titles.find(title => title.id === currentTitleId);
+    return titles.find((title: Title) => title.id === currentTitleId);
   };
 
   const isItemEquipped = (itemId: string) => {
@@ -135,26 +135,10 @@ const Inventory: React.FC<InventoryProps> = ({
         <div className="inventory-content">
           {activeTab === 'titles' && (
             <div className="titles-tab">
-              <div className="current-selection">
-                <h4>Current Title:</h4>
-                <div className="current-title-display">
-                  {getCurrentTitle() ? (
-                    <span 
-                      className="title-preview"
-                      style={getCurrentTitle()?.style_config || {}}
-                    >
-                      {getCurrentTitle()?.name}
-                    </span>
-                  ) : (
-                    <span className="no-title">No title equipped</span>
-                  )}
-                </div>
-              </div>
-
               <div className="available-items">
                 <h4>Available Titles:</h4>
                 <div className="titles-grid">
-                  {titles.map((title) => (
+                  {titles.map((title: Title) => (
                     <div
                       key={title.id}
                       className={`title-item ${title.id === currentTitleId ? 'equipped' : ''}`}
@@ -178,38 +162,27 @@ const Inventory: React.FC<InventoryProps> = ({
 
           {activeTab === 'items' && (
             <div className="items-tab">
-              <div className="current-selection">
-                <h4>Equipped Items:</h4>
-                <div className="current-items-display">
-                  {currentItemIds.length > 0 ? (
-                    <div className="equipped-items">
-                      {currentItemIds.map((itemId) => {
-                        const item = items.find(i => i.id === itemId);
-                        return item ? (
-                          <div key={itemId} className="equipped-item">
-                            <img src={item.asset_path} alt={item.name} className="item-icon" />
-                            <span>{item.name}</span>
-                          </div>
-                        ) : null;
-                      })}
-                    </div>
-                  ) : (
-                    <span className="no-items">No items equipped</span>
-                  )}
-                </div>
-              </div>
-
               <div className="available-items">
                 <h4>Available Items:</h4>
                 <div className="items-grid">
-                  {items.map((item) => (
+                  {items.map((item: Item) => (
                     <div
                       key={item.id}
                       className={`item-card ${isItemEquipped(item.id) ? 'equipped' : ''}`}
                       onClick={() => handleItemSelect(item)}
                     >
                       <div className="item-image">
-                        <img src={item.asset_path} alt={item.name} className="item-icon" />
+                        <img 
+                          src={item.asset_path}
+                          alt={item.name}
+                          className="item-icon"
+                          onError={(e)=>{
+                            const fallback=`/assets/characters/items/misc/${item.name.toLowerCase().replace(/\s+/g,'')}.png`;
+                            if((e.target as HTMLImageElement).src!==window.location.origin+fallback){
+                              (e.target as HTMLImageElement).src=fallback;
+                            }
+                          }}
+                        />
                       </div>
                       <div className="item-name">{item.name}</div>
                       {isItemEquipped(item.id) && (

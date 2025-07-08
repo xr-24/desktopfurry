@@ -12,10 +12,12 @@ import Paint from './programs/Paint';
 import Browser98 from './programs/Browser98';
 import Terminal from './programs/Terminal';
 import Inventory from './programs/Inventory';
+import Breakout from './programs/Breakout';
+import Sudoku from './programs/Sudoku';
+import Checkers from './programs/Checkers';
+import Shop from './programs/Shop';
 // DexSocial moved to taskbar widget
 // import DexSocial from './programs/DexSocial';
-// Import other programs as they're created
-// import Checkers from './programs/Checkers';
 
 const ProgramManager: React.FC = () => {
   const { openPrograms } = useAppSelector((state) => state.programs);
@@ -59,36 +61,11 @@ const ProgramManager: React.FC = () => {
         );
       
       case 'checkers':
-        // Placeholder for Checkers program with proper window controls
         return (
-          <ProgramWindow
+          <Checkers
             key={program.id}
-            windowId={program.id}
-            title="Checkers"
-            icon="🔴"
-            position={program.position}
-            size={program.size}
-            zIndex={program.zIndex}
-            isMinimized={program.isMinimized}
-          >
-            <div style={{ 
-              padding: '20px',
-              textAlign: 'center',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              background: '#f0f0f0'
-            }}>
-              <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔴</div>
-              <h3 style={{ margin: '0 0 10px 0', fontFamily: 'Better VCR, monospace' }}>Checkers Game</h3>
-              <p style={{ margin: '0', fontFamily: 'Better VCR, monospace', fontSize: '12px' }}>Coming Soon!</p>
-              <p style={{ margin: '10px 0 0 0', fontFamily: 'Better VCR, monospace', fontSize: '10px', color: '#666' }}>
-                Multiplayer - All players can interact
-              </p>
-            </div>
-          </ProgramWindow>
+            {...commonProps}
+          />
         );
       
       case 'pong':
@@ -102,6 +79,14 @@ const ProgramManager: React.FC = () => {
       case 'snake':
         return (
           <Snake
+            key={program.id}
+            {...commonProps}
+          />
+        );
+      
+      case 'sudoku':
+        return (
+          <Sudoku
             key={program.id}
             {...commonProps}
           />
@@ -142,6 +127,22 @@ const ProgramManager: React.FC = () => {
       case 'inventory':
         return (
           <Inventory
+            key={program.id}
+            {...commonProps}
+          />
+        );
+      
+      case 'breakout':
+        return (
+          <Breakout
+            key={program.id}
+            {...commonProps}
+          />
+        );
+      
+      case 'shop':
+        return (
+          <Shop
             key={program.id}
             {...commonProps}
           />

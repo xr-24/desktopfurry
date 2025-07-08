@@ -24,6 +24,8 @@ const DESKTOP_ICONS = [
   { id: 'snake', label: 'SNEK', icon: '🐍', x: 150, y: 60, type: 'snake' as const },
   { id: 'browser98', label: 'Web', icon: '🌐', x: 150, y: 160, type: 'browser98' as const },
   { id: 'pong', label: 'Pong', icon: '🏓', x: 150, y: 260, type: 'pong' as const },
+  { id: 'breakout', label: 'Breakout', icon: '🧱', x: 150, y: 360, type: 'breakout' as const },
+  { id: 'sudoku', label: 'Sudoku', icon: '🔢', x: 150, y: 460, type: 'sudoku' as const },
 ];
 
 const useMovement = (): {

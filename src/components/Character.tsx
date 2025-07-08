@@ -111,11 +111,25 @@ const Character: React.FC<CharacterProps> = ({
     movementDirection ? `moving-${movementDirection}` : ''
   ].filter(Boolean).join(' ');
 
-  // Determine if sprite should be flipped (sprite faces left by default, flip when facing right)
-  const shouldFlip = facingDirection === 'right';
+  // Determine if sprite should be flipped. While gaming, sprite assets already include left/right variants, so disable flip.
+  const shouldFlip = !isGaming && facingDirection === 'right';
 
   const baseName = player.appearance?.body || 'CustomBase';
   const prefix = baseName.replace('Base', ''); // "Custom"
+
+  // Preload walk animation frames (walk + grab-walk) once per sprite set
+  useEffect(() => {
+    const sources = [
+      `${prefix}-Walk1.png`,
+      `${prefix}-Walk2.png`,
+      `${prefix}Grab-Walk1.png`,
+      `${prefix}Grab-Walk2.png`,
+    ];
+    sources.forEach((file) => {
+      const img = new Image();
+      img.src = `/assets/characters/body/${file}`;
+    });
+  }, [prefix]);
 
   // Use localWalkFrame for remote players, walkFrame for current player
   const effectiveWalkFrame = isCurrentPlayer ? walkFrame : localWalkFrame;
@@ -149,22 +163,24 @@ const Character: React.FC<CharacterProps> = ({
     return baseName; // CustomBase
   };
 
-  // Offset sprite downward when sitting (but not gaming)
-  const yOffset = (!isGaming && isSitting) ? 40 : 0;
+  // Offset sprite downward when sitting – include gaming sit sprites too
+  const yOffset = (isSitting || isGaming) ? 40 : 0;
 
   // Get inventory data for titles and items
-  const { titles, items } = useAppSelector((state: any) => state.inventory);
+  const { titles, items, currentTitleId: invTitleId, currentItemIds: invItemIds } = useAppSelector((state: any) => state.inventory);
   
   // Get current title for this player
   const getCurrentTitle = () => {
-    if (!player.currentTitleId) return null;
-    return titles.find((title: any) => title.id === player.currentTitleId);
+    const titleId = isCurrentPlayer ? invTitleId : player.currentTitleId;
+    if (!titleId) return null;
+    return titles.find((title: any) => title.id === titleId);
   };
 
   // Get current items for this player
   const getCurrentItems = () => {
-    if (!player.currentItemIds?.length) return [];
-    return player.currentItemIds
+    const itemIds = isCurrentPlayer ? invItemIds : player.currentItemIds;
+    if (!itemIds?.length) return [];
+    return itemIds
       .map((itemId: string) => items.find((item: any) => item.id === itemId))
       .filter(Boolean);
   };
@@ -263,6 +279,12 @@ const Character: React.FC<CharacterProps> = ({
             style={{ 
               zIndex: 15 + index, // Ensure items are on top of everything
               imageRendering: 'pixelated'
+            }}
+            onError={(e) => {
+              const fallback = `/assets/characters/items/misc/${item.name.toLowerCase().replace(/\s+/g, '')}.png`;
+              if ((e.target as HTMLImageElement).src !== window.location.origin + fallback) {
+                (e.target as HTMLImageElement).src = fallback;
+              }
             }}
           />
         ))}

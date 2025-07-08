@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface ProgramWindow {
   id: string;
-  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'pong' | 'characterEditor' | 'bdemediaplayer' | 'browser98' | 'terminal' | 'inventory';
+  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'pong' | 'characterEditor' | 'bdemediaplayer' | 'browser98' | 'terminal' | 'inventory' | 'breakout' | 'sudoku' | 'shop';
   isOpen: boolean;
   position: { x: number; y: number };
   size: { width: number; height: number };
@@ -45,13 +45,16 @@ const programSlice = createSlice({
         notepad: { width: 400, height: 300, isMultiplayer: false },
         winamp: { width: 300, height: 200, isMultiplayer: false },
         bdemediaplayer: { width: 800, height: 600, isMultiplayer: true },
-        checkers: { width: 450, height: 450, isMultiplayer: true },
+        checkers: { width: 520, height: 580, isMultiplayer: true },
         snake: { width: 400, height: 450, isMultiplayer: true },
         characterEditor: { width: 520, height: 500, isMultiplayer: false },
         browser98: { width: 800, height: 600, isMultiplayer: false },
         pong: { width: 500, height: 400, isMultiplayer: true },
+        breakout: { width: 500, height: 400, isMultiplayer: false },
+        sudoku: { width: 400, height: 500, isMultiplayer: false },
         terminal: { width: 500, height: 300, isMultiplayer: false },
         inventory: { width: 550, height: 450, isMultiplayer: false },
+        shop: { width: 700, height: 500, isMultiplayer: false },
       };
       
       const config = programConfigs[type];
@@ -206,6 +209,13 @@ function getProgramInitialState(type: ProgramWindow['type']) {
         currentPlayer: 'red',
         selectedPiece: null,
         gamePhase: 'setup', // setup, playing, finished
+        redPlayer: null, // Player ID assigned to red
+        blackPlayer: null, // Player ID assigned to black
+        winner: null,
+        validMoves: [],
+        redPieces: 12,
+        blackPieces: 12,
+        lastMove: null,
       };
     case 'snake':
       return {
@@ -217,6 +227,10 @@ function getProgramInitialState(type: ProgramWindow['type']) {
         highScore: 0,
         speed: 150, // milliseconds between moves
         gridSize: 20, // pixels per grid cell
+      };
+    case 'sudoku':
+      return {
+        board: null, // Component will initialize with puzzle & readonly flags
       };
     case 'characterEditor':
       return {};
@@ -236,6 +250,15 @@ function getProgramInitialState(type: ProgramWindow['type']) {
         ball: { x: 250, y: 200, vx: 2, vy: 2 },
         score: { left: 0, right: 0 },
       };
+    case 'breakout':
+      return {
+        gameState: 'title',
+        paddleX: 50, // percentage (0-100)
+        ball: { x: 250, y: 300, vx: 3, vy: -3 },
+        bricks: [], // will be generated on first play
+        score: 0,
+        lives: 3,
+      };
     case 'terminal':
       return {
         history: [],
@@ -247,6 +270,10 @@ function getProgramInitialState(type: ProgramWindow['type']) {
         showItemModal: false,
         selectedTitle: null,
         selectedItem: null,
+      };
+    case 'shop':
+      return {
+        activeTab: 'cosmetics', // 'cosmetics' | 'themes' | 'backgrounds' | 'games' | 'misc'
       };
     default:
       return {};
