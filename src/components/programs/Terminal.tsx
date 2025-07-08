@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { updateProgramState } from '../../store/programSlice';
 import { setVehicle, setGamingState, setSpeedMultiplier } from '../../store/playerSlice';
+import { earnMoney, spendMoney } from '../../store/inventorySlice';
+import { updateUserMoney } from '../../store/shopSlice';
 import ProgramWindow from '../ProgramWindow';
+import { authService } from '../../services/authService';
 
 interface TerminalProps {
   windowId: string;
@@ -30,6 +33,7 @@ const Terminal: React.FC<TerminalProps> = ({
   const dispatch = useAppDispatch();
   const currentVehicle = useAppSelector((state:any)=> state.player.vehicle);
   const currentSpeed = useAppSelector((state:any)=> state.player.speedMultiplier);
+  const inventoryMoney = useAppSelector((state:any)=> state.inventory.money);
   const [history, setHistory] = useState<string[]>(programState.history || []);
   const [input, setInput] = useState('');
 
@@ -62,6 +66,23 @@ const Terminal: React.FC<TerminalProps> = ({
           dispatch(setSpeedMultiplier(3));
           appendHistory('Lightspeed engaged!');
         }
+        break;
+      case 'money':
+        authService.adjustMoney(1000).then((res: any) => {
+          if (res.success && typeof res.newBalance === 'number') {
+            const diff = res.newBalance - inventoryMoney;
+            if (diff > 0) dispatch(earnMoney(diff));
+            else if (diff < 0) dispatch(spendMoney(-diff));
+            dispatch(updateUserMoney(res.newBalance));
+            appendHistory('You have received $1,000!');
+          } else {
+            // Fallback client-side only
+            const newBal = inventoryMoney + 1000;
+            dispatch(earnMoney(1000));
+            dispatch(updateUserMoney(newBal));
+            appendHistory('You have received $1,000 (local only)!');
+          }
+        });
         break;
       default:
         appendHistory(`Unknown command: ${cmd}`);

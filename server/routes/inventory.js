@@ -261,4 +261,29 @@ router.post('/purchase/title', authService.authenticateToken, async (req, res) =
   }
 });
 
+// Adjust money (earn or spend)
+router.post('/money', authService.authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    let { amount } = req.body;
+    amount = Number(amount);
+    if (isNaN(amount)) {
+      return res.status(400).json({ error: 'Invalid amount' });
+    }
+
+    // Update money (can be positive or negative but prevent going below zero)
+    await db.query(`
+      UPDATE users 
+      SET money = GREATEST(0, money + $1) 
+      WHERE id = $2
+    `, [amount, userId]);
+
+    const result = await db.query(`SELECT money FROM users WHERE id = $1`, [userId]);
+    res.json({ success: true, newBalance: result.rows[0].money });
+  } catch (error) {
+    console.error('Error adjusting money:', error);
+    res.status(500).json({ error: 'Failed to adjust money' });
+  }
+});
+
 module.exports = router; 

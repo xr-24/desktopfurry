@@ -9,9 +9,10 @@ import {
   purchaseSuccess,
   purchaseFailure,
   clearShopError,
-  ShopItem
+  ShopItem,
+  updateUserMoney
 } from '../../store/shopSlice';
-import { earnMoney } from '../../store/inventorySlice';
+import { earnMoney, spendMoney } from '../../store/inventorySlice';
 import ProgramWindow from '../ProgramWindow';
 import { authService } from '../../services/authService';
 import '../../styles/shop.css';
@@ -33,6 +34,7 @@ const Shop: React.FC<ShopProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { items, userMoney, activeTab, isLoading, error, isPurchasing } = useAppSelector((state: any) => state.shop);
+  const inventoryMoney = useAppSelector((state:any)=> state.inventory.money);
   
   // Only allow current player to interact (local-only program)
   const canInteract = controllerId === currentPlayerId;
@@ -47,21 +49,31 @@ const Shop: React.FC<ShopProps> = ({
   const loadShopData = async () => {
     dispatch(loadShopStart());
     try {
-      const response = await fetch('/api/shop/items', {
-        headers: {
-          'Authorization': `Bearer ${authService.getToken()}`
+      const data = await authService.loadShopItems();
+      if (data) {
+        // Remove placeholder categories/items per requirement
+        const filteredItems = { ...data.items };
+        // Remove all backgrounds (unlocked by default)
+        filteredItems.backgrounds = [];
+
+        // Helper to filter out placeholder items – keep those with a valid asset_path
+        const filterPlaceholders = (arr: ShopItem[] = []) => arr.filter(i => !!i.asset_path);
+        filteredItems.games = filterPlaceholders(filteredItems.games);
+        filteredItems.themes = filterPlaceholders(filteredItems.themes);
+
+        // Use local inventory balance as authoritative to avoid unwanted resets
+        dispatch(loadShopSuccess({
+          items: filteredItems,
+          userMoney: inventoryMoney
+        }));
+
+        // If server balance is higher than local, credit the difference (never debit here)
+        if (data.userMoney > inventoryMoney) {
+          dispatch(earnMoney(data.userMoney - inventoryMoney));
         }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to load shop data');
+      } else {
+        dispatch(loadShopFailure('Failed to load shop data'));
       }
-      
-      const data = await response.json();
-      dispatch(loadShopSuccess({
-        items: data.items,
-        userMoney: data.userMoney
-      }));
     } catch (error: any) {
       dispatch(loadShopFailure(error.message || 'Failed to load shop'));
     }
@@ -74,29 +86,20 @@ const Shop: React.FC<ShopProps> = ({
 
     dispatch(purchaseStart());
     try {
-      const response = await fetch('/api/shop/purchase', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authService.getToken()}`
-        },
-        body: JSON.stringify({ itemId: item.id })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Purchase failed');
-      }
-      
-      const data = await response.json();
+      const data = await authService.purchaseItem(item.id);
       dispatch(purchaseSuccess({
         itemId: item.id,
         newBalance: data.newBalance,
         purchasedItem: data.purchasedItem
       }));
 
-      // Update inventory money as well
-      dispatch(earnMoney(0)); // This will sync with the shop money
+      // Update inventory money as well – adjust by difference
+      const diff = data.newBalance - inventoryMoney;
+      if (diff > 0) dispatch(earnMoney(diff));
+      else if (diff < 0) dispatch(spendMoney(-diff));
+
+      // Also ensure shop slice userMoney is updated (safety)
+      dispatch(updateUserMoney(data.newBalance));
       
     } catch (error: any) {
       dispatch(purchaseFailure(error.message || 'Purchase failed'));

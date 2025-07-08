@@ -39,10 +39,7 @@ class SocketService {
   private selfDextopId: string | null = null;
 
   connect() {
-    // Use env variable in production, fallback to localhost during development
-    const serverUrl =
-      (process.env.REACT_APP_SOCKET_URL as string | undefined) ||
-      'http://localhost:3001';
+    const serverUrl = process.env.REACT_APP_SOCKET_URL;
 
     const token = authService.getToken();
 

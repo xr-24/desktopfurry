@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE = process.env.REACT_APP_API_URL;
 
 // Configure axios defaults
 axios.defaults.baseURL = API_BASE;
@@ -362,6 +362,48 @@ class AuthService {
     } catch (error) {
       console.error('Failed to load inventory:', error);
       return null;
+    }
+  }
+
+  // Shop API methods
+  async loadShopItems(): Promise<any> {
+    try {
+      const response = await axios.get('/shop/items');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to load shop items:', error);
+      return null;
+    }
+  }
+
+  async purchaseItem(itemId: string): Promise<any> {
+    try {
+      const response = await axios.post('/shop/purchase', { itemId });
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to purchase item:', error);
+      throw new Error(error.response?.data?.error || 'Purchase failed');
+    }
+  }
+
+  async loadPurchaseHistory(): Promise<any> {
+    try {
+      const response = await axios.get('/shop/purchases');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to load purchase history:', error);
+      return null;
+    }
+  }
+
+  // Adjust money balance (positive to add, negative to deduct)
+  async adjustMoney(amount: number): Promise<{ success: boolean; newBalance?: number }> {
+    try {
+      const response = await axios.post('/inventory/money', { amount });
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to adjust money:', error);
+      return { success: false };
     }
   }
 }
