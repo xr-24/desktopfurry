@@ -129,7 +129,7 @@ CREATE TABLE shop_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(200) NOT NULL,
     description TEXT,
-    category VARCHAR(50) NOT NULL CHECK (category IN ('cosmetics', 'themes', 'backgrounds', 'games', 'misc')),
+    category VARCHAR(50) NOT NULL CHECK (category IN ('cosmetics', 'themes', 'backgrounds', 'games', 'titles', 'misc')),
     item_type VARCHAR(50) NOT NULL, -- 'item', 'title', 'program', 'theme', 'background'
     price INTEGER NOT NULL CHECK (price > 0),
     asset_path VARCHAR(500),
@@ -249,7 +249,31 @@ INSERT INTO shop_items (name, description, category, item_type, price, asset_pat
 ('Purple Sponge', 'Unique purple sponge texture', 'backgrounds', 'background', 250, '', '{"background_id": "purple sponge"}'),
 ('Pink Flower', 'Delicate pink flower pattern', 'backgrounds', 'background', 250, '', '{"background_id": "pink flower"}'),
 ('Red Tile', 'Classic red tile pattern', 'backgrounds', 'background', 250, '', '{"background_id": "red tile"}'),
-('Metal Links', 'Industrial metal chain pattern', 'backgrounds', 'background', 250, '', '{"background_id": "metal links"}');
+('Metal Links', 'Industrial metal chain pattern', 'backgrounds', 'background', 250, '', '{"background_id": "metal links"}'),
+-- Titles (each costs 500)
+('King', 'Royal title', 'titles', 'title', 500, '', '{"style_config": {"color": "#800080", "fontWeight": "bold", "textShadow": "0 0 5px #fff"}}'),
+('Queen', 'Royal title for queens', 'titles', 'title', 500, '', '{"style_config": {"color": "#800080", "fontWeight": "bold", "textShadow": "0 0 5px #fff"}}'),
+('Smelly', 'Pale green glowing title', 'titles', 'title', 500, '', '{"style_config": {"color": "#98FB98", "fontWeight": "bold", "textShadow": "0 0 5px #fff"}}'),
+('Noob', 'Red glowing title', 'titles', 'title', 500, '', '{"style_config": {"color": "#ff0000", "fontWeight": "bold", "textShadow": "0 0 5px #fff"}}'),
+('Tiny Baby', 'Baby blue glowing title', 'titles', 'title', 500, '', '{"style_config": {"color": "#89CFF0", "fontWeight": "bold", "textShadow": "0 0 5px #fff"}}'),
+('Le Joker', 'Dual colored glowing title', 'titles', 'title', 500, '', '{"style_config": {"gradient": ["#00aa00", "#800080"], "fontWeight": "bold", "textShadow": "0 0 5px #fff"}}'),
+('Gaymer', 'Rainbow glowing title', 'titles', 'title', 500, '', '{"style_config": {"rainbow": true, "fontWeight": "bold", "textShadow": "0 0 5px #fff"}}');
+
+-- Ensure corresponding rows exist in titles table
+INSERT INTO titles (name, style_config, cost, description) VALUES
+('King', '{"color":"#800080", "fontWeight":"bold", "textShadow":"0 0 5px #fff"}', 500, 'Royal title') ON CONFLICT (name) DO NOTHING;
+INSERT INTO titles (name, style_config, cost, description) VALUES
+('Queen', '{"color":"#800080", "fontWeight":"bold", "textShadow":"0 0 5px #fff"}', 500, 'Royal title for queens') ON CONFLICT (name) DO NOTHING;
+INSERT INTO titles (name, style_config, cost, description) VALUES
+('Smelly', '{"color":"#98FB98", "fontWeight":"bold", "textShadow":"0 0 5px #fff"}', 500, 'Pale green glowing title') ON CONFLICT (name) DO NOTHING;
+INSERT INTO titles (name, style_config, cost, description) VALUES
+('Noob', '{"color":"#ff0000", "fontWeight":"bold", "textShadow":"0 0 5px #fff"}', 500, 'Red glowing title') ON CONFLICT (name) DO NOTHING;
+INSERT INTO titles (name, style_config, cost, description) VALUES
+('Tiny Baby', '{"color":"#89CFF0", "fontWeight":"bold", "textShadow":"0 0 5px #fff"}', 500, 'Baby blue glowing title') ON CONFLICT (name) DO NOTHING;
+INSERT INTO titles (name, style_config, cost, description) VALUES
+('Le Joker', '{"gradient":["#00aa00","#800080"], "fontWeight":"bold", "textShadow":"0 0 5px #fff"}', 500, 'Dual colored glowing title') ON CONFLICT (name) DO NOTHING;
+INSERT INTO titles (name, style_config, cost, description) VALUES
+('Gaymer', '{"rainbow":true, "fontWeight":"bold", "textShadow":"0 0 5px #fff"}', 500, 'Rainbow glowing title') ON CONFLICT (name) DO NOTHING;
 
 -- Function to automatically create dextop for new users
 CREATE OR REPLACE FUNCTION create_user_dextop()

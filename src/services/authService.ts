@@ -406,6 +406,16 @@ class AuthService {
       return { success: false };
     }
   }
+
+  async grantTitle(titleName: string, styleConfig: any = {}): Promise<any> {
+    try {
+      const response = await axios.post('/inventory/grant-title', { titleName, styleConfig });
+      return response.data;
+    } catch (error: any) {
+      console.error('Failed to grant title:', error);
+      return { success: false };
+    }
+  }
 }
 
 export const authService = new AuthService(); 

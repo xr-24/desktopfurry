@@ -31,6 +31,7 @@ router.get('/items', authService.authenticateToken, async (req, res) => {
       themes: [],
       backgrounds: [],
       games: [],
+      titles: [],
       misc: []
     };
     
@@ -148,6 +149,31 @@ router.post('/purchase', authService.authenticateToken, async (req, res) => {
           VALUES ($1, $2)
           ON CONFLICT (user_id, item_id) DO NOTHING
         `, [userId, inventoryItemId]);
+      } else if (item.item_type === 'title') {
+        // Ensure title exists in titles table
+        const existingTitleResult = await db.query(`
+          SELECT id FROM titles WHERE name = $1
+        `, [item.name]);
+
+        let titleId;
+        if (existingTitleResult.rows.length === 0) {
+          const styleConfig = item.metadata?.style_config || {};
+          const newTitleResult = await db.query(`
+            INSERT INTO titles (name, style_config, cost, description, is_active)
+            VALUES ($1, $2, $3, $4, true)
+            RETURNING id
+          `, [item.name, JSON.stringify(styleConfig), item.price, item.description]);
+          titleId = newTitleResult.rows[0].id;
+        } else {
+          titleId = existingTitleResult.rows[0].id;
+        }
+
+        // Grant title to user if not already owned
+        await db.query(`
+          INSERT INTO user_titles (user_id, title_id)
+          VALUES ($1, $2)
+          ON CONFLICT (user_id, title_id) DO NOTHING
+        `, [userId, titleId]);
       }
       
       // Commit transaction

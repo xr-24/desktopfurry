@@ -12,7 +12,7 @@ import {
   ShopItem,
   updateUserMoney
 } from '../../store/shopSlice';
-import { earnMoney, spendMoney } from '../../store/inventorySlice';
+import { earnMoney, spendMoney, setInventoryData } from '../../store/inventorySlice';
 import ProgramWindow from '../ProgramWindow';
 import { authService } from '../../services/authService';
 import '../../styles/shop.css';
@@ -100,13 +100,19 @@ const Shop: React.FC<ShopProps> = ({
 
       // Also ensure shop slice userMoney is updated (safety)
       dispatch(updateUserMoney(data.newBalance));
+
+      // Reload inventory to include new items
+      const inv = await authService.loadInventory();
+      if (inv) {
+        dispatch(setInventoryData(inv));
+      }
       
     } catch (error: any) {
       dispatch(purchaseFailure(error.message || 'Purchase failed'));
     }
   };
 
-  const handleTabChange = (tab: 'cosmetics' | 'themes' | 'backgrounds' | 'games' | 'misc') => {
+  const handleTabChange = (tab: 'cosmetics' | 'themes' | 'backgrounds' | 'games' | 'titles' | 'misc') => {
     if (canInteract) {
       dispatch(setActiveTab(tab));
     }
@@ -175,6 +181,7 @@ const Shop: React.FC<ShopProps> = ({
       case 'themes': return '🎨';
       case 'backgrounds': return '🖼️';
       case 'games': return '🎮';
+      case 'titles': return '🏷️';
       case 'misc': return '📋';
       default: return '📋';
     }
@@ -234,7 +241,7 @@ const Shop: React.FC<ShopProps> = ({
 
         {/* Tab Navigation */}
         <div className="shop-tabs">
-          {(['cosmetics', 'themes', 'backgrounds', 'games', 'misc'] as const).map((tab) => (
+          {(['cosmetics', 'themes', 'backgrounds', 'games', 'titles', 'misc'] as const).map((tab) => (
             <button
               key={tab}
               className={`shop-tab ${activeTab === tab ? 'active' : ''}`}

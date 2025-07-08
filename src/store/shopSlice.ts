@@ -17,6 +17,7 @@ export interface ShopItemsByCategory {
   backgrounds: ShopItem[];
   games: ShopItem[];
   misc: ShopItem[];
+  titles: ShopItem[];
 }
 
 export interface PurchaseHistoryItem {
@@ -33,7 +34,7 @@ export interface PurchaseHistoryItem {
 interface ShopState {
   items: ShopItemsByCategory;
   userMoney: number;
-  activeTab: 'cosmetics' | 'themes' | 'backgrounds' | 'games' | 'misc';
+  activeTab: 'cosmetics' | 'themes' | 'backgrounds' | 'games' | 'titles' | 'misc';
   purchaseHistory: PurchaseHistoryItem[];
   isLoading: boolean;
   error: string | null;
@@ -46,6 +47,7 @@ const initialState: ShopState = {
     themes: [],
     backgrounds: [],
     games: [],
+    titles: [],
     misc: []
   },
   userMoney: 0,
@@ -60,7 +62,7 @@ const shopSlice = createSlice({
   name: 'shop',
   initialState,
   reducers: {
-    setActiveTab: (state, action: PayloadAction<'cosmetics' | 'themes' | 'backgrounds' | 'games' | 'misc'>) => {
+    setActiveTab: (state, action: PayloadAction<'cosmetics' | 'themes' | 'backgrounds' | 'games' | 'titles' | 'misc'>) => {
       state.activeTab = action.payload;
     },
     

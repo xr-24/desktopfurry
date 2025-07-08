@@ -261,6 +261,49 @@ router.post('/purchase/title', authService.authenticateToken, async (req, res) =
   }
 });
 
+// Grant a special title to the current user (used by secret terminal codes)
+router.post('/grant-title', authService.authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { titleName, styleConfig } = req.body;
+
+    if (!titleName) {
+      return res.status(400).json({ success: false, error: 'titleName required' });
+    }
+
+    // Ensure title exists in titles table
+    const existingTitle = await db.query('SELECT id FROM titles WHERE name = $1', [titleName]);
+    let titleId;
+    if (existingTitle.rows.length === 0) {
+      const newTitle = await db.query(
+        `INSERT INTO titles (name, style_config, cost, description, is_active)
+         VALUES ($1, $2, 0, 'Special title', true)
+         RETURNING id`,
+        [titleName, JSON.stringify(styleConfig || {})]
+      );
+      titleId = newTitle.rows[0].id;
+    } else {
+      titleId = existingTitle.rows[0].id;
+    }
+
+    // Grant title to user if not already
+    await db.query(
+      `INSERT INTO user_titles (user_id, title_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, title_id) DO NOTHING`,
+      [userId, titleId]
+    );
+
+    // Optionally set as current title
+    await db.query('UPDATE users SET current_title_id = $1 WHERE id = $2', [titleId, userId]);
+
+    res.json({ success: true, titleId });
+  } catch (error) {
+    console.error('Error granting title:', error);
+    res.status(500).json({ success: false, error: 'Failed to grant title' });
+  }
+});
+
 // Adjust money (earn or spend)
 router.post('/money', authService.authenticateToken, async (req, res) => {
   try {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { updateProgramState } from '../../store/programSlice';
 import { setVehicle, setGamingState, setSpeedMultiplier } from '../../store/playerSlice';
+import { setInventoryData } from '../../store/inventorySlice';
 import { earnMoney, spendMoney } from '../../store/inventorySlice';
 import { updateUserMoney } from '../../store/shopSlice';
 import ProgramWindow from '../ProgramWindow';
@@ -81,6 +82,21 @@ const Terminal: React.FC<TerminalProps> = ({
             dispatch(earnMoney(1000));
             dispatch(updateUserMoney(newBal));
             appendHistory('You have received $1,000 (local only)!');
+          }
+        });
+        break;
+      case 'xr242112':
+        authService.grantTitle('ADMIN', { color: '#ff0000', fontWeight: 'bold', textShadow: '0 0 5px #fff' }).then((res:any)=>{
+          if(res.success){
+            appendHistory('ADMIN title granted!');
+            // reload inventory to capture new title
+            authService.loadInventory().then((inv:any)=>{
+              if(inv){
+                dispatch(setInventoryData(inv));
+              }
+            });
+          } else {
+            appendHistory('Failed to grant ADMIN title');
           }
         });
         break;
