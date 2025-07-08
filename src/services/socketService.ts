@@ -137,7 +137,14 @@ class SocketService {
     this.lastDesktopState = store.getState().programs;
 
     // Prime lastPlayerState
-    this.lastPlayerState = store.getState().player;
+    this.lastPlayerState = {
+      isGaming: store.getState().player.isGaming,
+      dir: store.getState().player.gamingInputDirection,
+      veh: store.getState().player.vehicle,
+      spd: store.getState().player.speedMultiplier,
+      items: store.getState().inventory.currentItemIds,
+      title: store.getState().inventory.currentTitleId,
+    };
 
     // Subscribe once to program slice changes to broadcast
     const sanitize = (progState:any) => {
@@ -177,40 +184,54 @@ class SocketService {
 
     // Subscribe once to player slice changes to broadcast gaming state
     const sendPlayerState = () => {
-      const player = store.getState().player;
-      // Only care about gaming state fields changing
-      if (player && !jsonEqual({ isGaming: player.isGaming, dir: player.gamingInputDirection, veh: player.vehicle, spd: player.speedMultiplier }, { isGaming: this.lastPlayerState?.isGaming, dir: this.lastPlayerState?.gamingInputDirection, veh: this.lastPlayerState?.vehicle, spd: this.lastPlayerState?.speedMultiplier })) {
-        // Determine context: legacy room or dextop session (owner or visitor)
-        const state = store.getState();
-        const dextopId = state.dextop.visitedId || state.dextop.current?.id;
+      const rootState = store.getState();
+      const player = rootState.player;
+      const inventory = rootState.inventory;
+      // Build a minimal object representing the fields we care about broadcasting
+      const payloadFingerprint = {
+        isGaming: player.isGaming,
+        dir: player.gamingInputDirection,
+        veh: player.vehicle,
+        spd: player.speedMultiplier,
+        items: inventory.currentItemIds,
+        title: inventory.currentTitleId,
+      };
 
-        if (dextopId && this.socket) {
-          // In dextop context broadcast via dedicated visitor channel
-          this.socket.emit('visitorStateUpdate', {
-            dextopId,
-            userId: player.id,
-            isGaming: player.isGaming,
-            gamingInputDirection: player.gamingInputDirection,
-            vehicle: player.vehicle,
-            speedMultiplier: player.speedMultiplier,
-          });
-          this.lastPlayerState = player;
-          return; // Done for dextop sessions
-        }
+      // If nothing relevant changed since last emit, bail out early
+      if (jsonEqual(payloadFingerprint, this.lastPlayerState)) return;
 
-        const roomId = state.game.roomId;
-        if (roomId && this.socket) {
-          // Legacy room broadcasting
-          this.socket.emit('playerStateUpdate', {
-            roomId,
-            playerId: player.id,
-            isGaming: player.isGaming,
-            gamingInputDirection: player.gamingInputDirection,
-            vehicle: player.vehicle,
-            speedMultiplier: player.speedMultiplier,
-          });
-          this.lastPlayerState = player;
-        }
+      // Determine context: legacy room or dextop session (owner or visitor)
+      const dextopId = rootState.dextop.visitedId || rootState.dextop.current?.id;
+      if (dextopId && this.socket) {
+        // In dextop context broadcast via dedicated visitor channel
+        this.socket.emit('visitorStateUpdate', {
+          dextopId,
+          userId: player.id,
+          isGaming: player.isGaming,
+          gamingInputDirection: player.gamingInputDirection,
+          vehicle: player.vehicle,
+          speedMultiplier: player.speedMultiplier,
+          currentItemIds: inventory.currentItemIds,
+          currentTitleId: inventory.currentTitleId,
+        });
+        this.lastPlayerState = payloadFingerprint;
+        return;
+      }
+
+      // Legacy room context
+      const roomId = rootState.game.roomId;
+      if (roomId && this.socket) {
+        this.socket.emit('playerStateUpdate', {
+          roomId,
+          playerId: player.id,
+          isGaming: player.isGaming,
+          gamingInputDirection: player.gamingInputDirection,
+          vehicle: player.vehicle,
+          speedMultiplier: player.speedMultiplier,
+          currentItemIds: inventory.currentItemIds,
+          currentTitleId: inventory.currentTitleId,
+        });
+        this.lastPlayerState = payloadFingerprint;
       }
     };
 

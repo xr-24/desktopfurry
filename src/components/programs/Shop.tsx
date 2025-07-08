@@ -118,10 +118,55 @@ const Shop: React.FC<ShopProps> = ({
     }
   };
 
+  // Helper: return emoji icon for non-image items
+  function getItemIcon(itemType: string) {
+    switch (itemType) {
+      case 'item': return '✨';
+      case 'theme': return '🎨';
+      case 'background': return '🖼️';
+      case 'program': return '📦';
+      default: return '📋';
+    }
+  }
+ 
+  // Utility: darken hex color by factor (0 - 1)
+  const darkenColor = (hex:string, factor:number = 0.5) => {
+    let h = hex.replace('#','');
+    if (h.length === 3) h = h.split('').map(c=>c+c).join('');
+    const r = Math.max(0,Math.min(255, Math.round(parseInt(h.substr(0,2),16)*factor)));
+    const g = Math.max(0,Math.min(255, Math.round(parseInt(h.substr(2,2),16)*factor)));
+    const b = Math.max(0,Math.min(255, Math.round(parseInt(h.substr(4,2),16)*factor)));
+    return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+  };
+ 
   const renderShopItem = (item: ShopItem) => {
     const canAfford = userMoney >= item.price;
     const isPurchased = item.is_purchased;
-    
+
+    // Helper to build title preview style
+    const buildTitleStyle = (metadata: any = {}) => {
+      const cfg = metadata.style_config || {};
+      const style: React.CSSProperties = {
+        fontWeight: cfg.fontWeight || 'bold',
+      };
+
+      if (cfg.rainbow) {
+        // Let per-letter spans set their own colours; just add composite glow
+        style.textShadow = '0 0 4px rgba(0,0,0,0.4)';
+      } else if (cfg.color) {
+        style.color = cfg.color;
+        style.textShadow = `0 0 4px ${darkenColor(cfg.color, 0.4)}`;
+      } else if (cfg.gradient) {
+        const stopsArr = Array.isArray(cfg.gradient) ? cfg.gradient : cfg.gradient.split(',');
+        const stops = stopsArr.join(', ');
+        style.background = `linear-gradient(90deg, ${stops})`;
+        style.WebkitBackgroundClip = 'text';
+        style.WebkitTextFillColor = 'transparent';
+        style.textShadow = `0 0 4px ${darkenColor(stopsArr[0].trim(),0.4)}`;
+      }
+      return style;
+    };
+ 
     return (
       <div
         key={item.id}
@@ -129,7 +174,29 @@ const Shop: React.FC<ShopProps> = ({
         onClick={() => !isPurchased && canAfford && handlePurchase(item)}
       >
         <div className="shop-item-image">
-          {item.asset_path ? (
+          {item.item_type === 'title' ? (
+            <div className="title-preview" style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%', height: '100%',
+              fontSize: '14px',
+              ...buildTitleStyle(item.metadata)
+            }}>
+              {(item.metadata?.style_config?.rainbow || item.name.toLowerCase()==='gaymer') ? (
+                (() => {
+                  const letters = item.name.split('');
+                  const rainbow = ['#ff0000','#ff7f00','#ffff00','#00ff00','#0000ff','#8b00ff'];
+                  const glow = rainbow.map(c=>`0 0 4px ${c}`).join(', ');
+                  return letters.map((ch,idx)=>(
+                    <span key={idx} style={{color: rainbow[idx % rainbow.length], textShadow: glow}}>{ch}</span>
+                  ));
+                })()
+              ) : (
+                item.name
+              )}
+            </div>
+          ) : item.asset_path ? (
             <img 
               src={item.asset_path}
               alt={item.name}
@@ -147,7 +214,9 @@ const Shop: React.FC<ShopProps> = ({
         </div>
         <div className="shop-item-details">
           <div className="shop-item-name">{item.name}</div>
-          <div className="shop-item-description">{item.description}</div>
+          {item.item_type !== 'title' && (
+            <div className="shop-item-description">{item.description}</div>
+          )}
           <div className="shop-item-footer">
             <div className="shop-item-price">💰 {item.price.toLocaleString()}</div>
             <div className="shop-item-status">
@@ -163,16 +232,6 @@ const Shop: React.FC<ShopProps> = ({
         </div>
       </div>
     );
-  };
-
-  const getItemIcon = (itemType: string) => {
-    switch (itemType) {
-      case 'item': return '✨';
-      case 'theme': return '🎨';
-      case 'background': return '🖼️';
-      case 'program': return '📦';
-      default: return '📋';
-    }
   };
 
   const getTabEmoji = (tab: string) => {

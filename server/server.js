@@ -201,12 +201,16 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('desktopState', desktopState);
   });
 
-  socket.on('playerStateUpdate', ({ roomId, playerId, isGaming, gamingInputDirection }) => {
+  socket.on('playerStateUpdate', ({ roomId, playerId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId }) => {
     const room = rooms.get(roomId);
     if (!room || !room.players[playerId]) return;
-    room.players[playerId].isGaming = isGaming;
-    room.players[playerId].gamingInputDirection = gamingInputDirection;
-    // Broadcast updated players list
+    const p = room.players[playerId];
+    if (isGaming !== undefined) p.isGaming = isGaming;
+    if (gamingInputDirection !== undefined) p.gamingInputDirection = gamingInputDirection;
+    if (vehicle !== undefined) p.vehicle = vehicle;
+    if (speedMultiplier !== undefined) p.speedMultiplier = speedMultiplier;
+    if (currentItemIds !== undefined) p.currentItemIds = currentItemIds;
+    if (currentTitleId !== undefined) p.currentTitleId = currentTitleId;
     io.to(roomId).emit('playersUpdate', room.players);
   });
 
@@ -411,7 +415,7 @@ io.on('connection', (socket) => {
   });
 
   // Handle visitor gaming state updates (sitting/joystick)
-  socket.on('visitorStateUpdate', ({ dextopId, userId, isGaming, gamingInputDirection }) => {
+  socket.on('visitorStateUpdate', ({ dextopId, userId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId }) => {
     const session = activeDextops.get(dextopId);
     if (!session) return;
 
@@ -432,17 +436,17 @@ io.on('connection', (socket) => {
       session.visitors.set(userId, player);
     }
 
-    player.isGaming = isGaming;
-    player.gamingInputDirection = gamingInputDirection;
+    if (isGaming !== undefined) player.isGaming = isGaming;
+    if (gamingInputDirection !== undefined) player.gamingInputDirection = gamingInputDirection;
+    if (vehicle !== undefined) player.vehicle = vehicle;
+    if (speedMultiplier !== undefined) player.speedMultiplier = speedMultiplier;
+    if (currentItemIds !== undefined) player.currentItemIds = currentItemIds;
+    if (currentTitleId !== undefined) player.currentTitleId = currentTitleId;
     player.lastSeen = Date.now();
 
-    // Broadcast to all sockets in this dextop (including sender)
-    const payload = { userId, isGaming, gamingInputDirection };
-    for (const v of session.visitors.values()) {
-      if (v.socketId) {
-        io.to(v.socketId).emit('visitorStateUpdate', payload);
-      }
-    }
+    // Broadcast to everyone currently in the dextop room (owner + all visitors)
+    const payload = { userId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId };
+    io.to(dextopId).emit('visitorStateUpdate', payload);
   });
 
   // Social feature handlers

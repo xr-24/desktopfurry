@@ -209,10 +209,12 @@ const Breakout: React.FC<BreakoutProps> = ({
         state.paddleX = Math.max(0, Math.min(100, state.paddleX + deltaPercent));
       }
 
-      /* --- Ball movement --- */
+      /* --- Ball movement (frame-rate independent) --- */
       let { x, y, vx, vy } = state.ball;
-      x += vx;
-      y += vy;
+      const FRAME_BASE = 60; // reference 60 fps baseline (vx,vy tuned for this)
+      const stepScale = dt * FRAME_BASE;
+      x += vx * stepScale;
+      y += vy * stepScale;
 
       // Walls
       if (x < 10) { x = 10; vx = -vx; }

@@ -180,9 +180,17 @@ const Character: React.FC<CharacterProps> = ({
   const getCurrentItems = () => {
     const itemIds = isCurrentPlayer ? invItemIds : player.currentItemIds;
     if (!itemIds?.length) return [];
-    return itemIds
-      .map((itemId: string) => items.find((item: any) => item.id === itemId))
-      .filter(Boolean);
+    return itemIds.map((itemId: string) => {
+      // Try to find full item record in current inventory slice (only populated for current player)
+      const found = items.find((item: any) => item.id === itemId);
+      if (found) return found;
+      // Fallback stub so we can still render something for remote players
+      return {
+        id: itemId,
+        name: itemId,
+        asset_path: `/assets/characters/items/misc/${itemId.replace(/\s+/g, '').toLowerCase()}.png`,
+      };
+    });
   };
 
   const currentTitle = getCurrentTitle();
