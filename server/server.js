@@ -417,7 +417,7 @@ io.on('connection', (socket) => {
   });
 
   // Handle visitor gaming state updates (sitting/joystick)
-  socket.on('visitorStateUpdate', ({ dextopId, userId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId, equippedItems }) => {
+  socket.on('visitorStateUpdate', ({ dextopId, userId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId, equippedItems, equippedTitle }) => {
     const session = activeDextops.get(dextopId);
     if (!session) return;
 
@@ -445,10 +445,11 @@ io.on('connection', (socket) => {
     if (currentItemIds !== undefined) player.currentItemIds = currentItemIds;
     if (currentTitleId !== undefined) player.currentTitleId = currentTitleId;
     if (equippedItems !== undefined) player.equippedItems = equippedItems;
+    if (equippedTitle !== undefined) player.equippedTitle = equippedTitle;
     player.lastSeen = Date.now();
 
     // Broadcast to everyone currently in the dextop room (owner + all visitors)
-    const payload = { userId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId, equippedItems };
+    const payload = { userId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId, equippedItems, equippedTitle };
     io.to(dextopId).emit('visitorStateUpdate', payload);
   });
 
