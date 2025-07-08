@@ -201,7 +201,7 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('desktopState', desktopState);
   });
 
-  socket.on('playerStateUpdate', ({ roomId, playerId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId, equippedItems }) => {
+  socket.on('playerStateUpdate', ({ roomId, playerId, isGaming, gamingInputDirection, vehicle, speedMultiplier, currentItemIds, currentTitleId, equippedItems, equippedTitle }) => {
     const room = rooms.get(roomId);
     if (!room || !room.players[playerId]) return;
     const p = room.players[playerId];
@@ -212,6 +212,7 @@ io.on('connection', (socket) => {
     if (currentItemIds !== undefined) p.currentItemIds = currentItemIds;
     if (currentTitleId !== undefined) p.currentTitleId = currentTitleId;
     if (equippedItems !== undefined) p.equippedItems = equippedItems;
+    if (equippedTitle !== undefined) p.equippedTitle = equippedTitle;
     io.to(roomId).emit('playersUpdate', room.players);
   });
 

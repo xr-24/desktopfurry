@@ -37,6 +37,8 @@ class SocketService {
   // Cache of owner dextop info (metadata)
   private ownerDextopInfoCache: any = null;
   private selfDextopId: string | null = null;
+  // Track previously known players to detect newly joined players and resend cosmetics
+  private knownPlayerIds: Set<string> = new Set();
 
   connect() {
     const serverUrl = process.env.REACT_APP_SOCKET_URL;
@@ -126,7 +128,17 @@ class SocketService {
     });
 
     this.socket.on('playersUpdate', (players: any) => {
+      // Detect if any new players have joined that we have not seen before
+      const incomingIds = Object.keys(players || {});
+      const hasNewPlayer = incomingIds.some(id => !this.knownPlayerIds.has(id));
       store.dispatch(updatePlayers(players));
+      // Update our local snapshot
+      this.knownPlayerIds = new Set(incomingIds);
+
+      // If someone new joined the room, broadcast our cosmetics again so they receive them
+      if (hasNewPlayer) {
+        this.broadcastCosmetics();
+      }
     });
 
     this.socket.on('playerMoved', (data: any) => {
@@ -180,6 +192,7 @@ class SocketService {
       const rootState = store.getState();
       const player = rootState.player;
       const inventory = rootState.inventory;
+      const equippedTitleFull = inventory.currentTitleId ? inventory.titles.find((t:any)=>t.id===inventory.currentTitleId) : null;
       const equippedItemsFull = inventory.currentItemIds.map((id:string)=>{
         const itm = inventory.items.find((i:any)=>i.id===id);
         return itm ? { id: itm.id, name: itm.name, asset_path: itm.asset_path } : { id } as any;
@@ -192,6 +205,8 @@ class SocketService {
         spd: player.speedMultiplier,
         items: inventory.currentItemIds,
         title: inventory.currentTitleId,
+        titleHash: equippedTitleFull ? JSON.stringify({id:equippedTitleFull.id,style:equippedTitleFull.style_config}) : 'none',
+        eqHash: JSON.stringify(equippedItemsFull.map(e=>e.asset_path||e.id)),
       };
       const commonPayloadFields = {
         isGaming: player.isGaming,
@@ -200,6 +215,7 @@ class SocketService {
         speedMultiplier: player.speedMultiplier,
         currentItemIds: inventory.currentItemIds,
         currentTitleId: inventory.currentTitleId,
+        equippedTitle: equippedTitleFull,
         equippedItems: equippedItemsFull,
       };
 
@@ -375,6 +391,8 @@ class SocketService {
 
       store.dispatch(joinRoom(dextopId));
       store.dispatch(setPlayer({ id: userId, username, quadrant: 0 }));
+      // After joining a dextop (as owner or visitor), broadcast our current cosmetics so everyone sees them
+      setTimeout(() => this.broadcastCosmetics(), 0);
     });
 
     this.socket.on('visitorsUpdate', (visitors:any)=>{
@@ -382,6 +400,8 @@ class SocketService {
     });
     this.socket.on('visitorJoined', (visitor:any)=>{
       store.dispatch(addVisitor(visitor));
+      // A new visitor appeared on the current dextop – resend cosmetics so they see them
+      this.broadcastCosmetics();
     });
     this.socket.on('visitorLeft', ({userId}:any)=>{
       store.dispatch(removeVisitor({userId}));
@@ -565,6 +585,41 @@ class SocketService {
   sendFriendRequest(username: string) {
     if (!this.socket) return;
     this.socket.emit('friendRequest', { username });
+  }
+
+  // Public helper to immediately broadcast full cosmetics (items + title)
+  broadcastCosmetics() {
+    const rootState = store.getState();
+    const player = rootState.player;
+    const inventory = rootState.inventory;
+    if (!player?.id || !this.socket) return;
+
+    const equippedItemsFull = inventory.currentItemIds.map((id:string)=>{
+      const itm = inventory.items.find((i:any)=>i.id===id);
+      return itm ? { id: itm.id, name: itm.name, asset_path: itm.asset_path } : { id } as any;
+    });
+    const equippedTitleFull = inventory.currentTitleId ? inventory.titles.find((t:any)=>t.id===inventory.currentTitleId) : null;
+
+    const payloadCommon = {
+      isGaming: player.isGaming,
+      gamingInputDirection: player.gamingInputDirection,
+      vehicle: player.vehicle,
+      speedMultiplier: player.speedMultiplier,
+      currentItemIds: inventory.currentItemIds,
+      currentTitleId: inventory.currentTitleId,
+      equippedTitle: equippedTitleFull,
+      equippedItems: equippedItemsFull,
+    };
+
+    const dextopId = rootState.dextop.visitedId || rootState.dextop.current?.id;
+    if (dextopId) {
+      this.socket.emit('visitorStateUpdate', { dextopId, userId: player.id, ...payloadCommon });
+    } else {
+      const roomId = rootState.game.roomId;
+      if (roomId) {
+        this.socket.emit('playerStateUpdate', { roomId, playerId: player.id, ...payloadCommon });
+      }
+    }
   }
 
   acceptFriendRequest(requestId: string) {

@@ -173,8 +173,13 @@ const Character: React.FC<CharacterProps> = ({
   // Get current title for this player
   const getCurrentTitle = () => {
     const titleId = isCurrentPlayer ? invTitleId : player.currentTitleId;
-    if (!titleId) return null;
-    return titles.find((title: any) => title.id === titleId);
+    if (!titleId) {
+      // Fall back to remote equippedTitle object if provided
+      if (!isCurrentPlayer && (player as any).equippedTitle) return (player as any).equippedTitle;
+      return null;
+    }
+    return titles.find((title: any) => title.id === titleId)
+      || (!isCurrentPlayer ? (player as any).equippedTitle : null);
   };
 
   // Get current items for this player
