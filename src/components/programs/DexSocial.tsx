@@ -38,6 +38,7 @@ interface DexSocialProps {
     friendRequests?: any[];
   };
   onClose?: () => void; // Callback to hide the widget
+  focusTrigger?: number; // increments when parent wants to focus input
 }
 
 const DexSocial: React.FC<DexSocialProps> = ({
@@ -47,7 +48,8 @@ const DexSocial: React.FC<DexSocialProps> = ({
   zIndex,
   isMinimized,
   programState,
-  onClose
+  onClose,
+  focusTrigger,
 }) => {
   const dispatch = useAppDispatch();
   const [activeTab, setActiveTabLocal] = useState<'friends' | 'local' | 'private' | 'dextop'>(
@@ -66,6 +68,7 @@ const DexSocial: React.FC<DexSocialProps> = ({
   const currentDextop = useAppSelector((state) => state.dextop.current);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const localInputRef = useRef<HTMLInputElement>(null);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -118,6 +121,8 @@ const DexSocial: React.FC<DexSocialProps> = ({
 
     if (activeTab === 'local') {
       socketService.sendLocalMessage(messageInput);
+      // Auto-close after sending local chat if onClose provided
+      onClose?.();
     } else if (activeTab === 'private' && selectedFriend) {
       socketService.sendPrivateMessage(selectedFriend, messageInput);
     }
@@ -271,6 +276,7 @@ const DexSocial: React.FC<DexSocialProps> = ({
             </div>
             <div className="message-input">
               <input
+                ref={localInputRef}
                 type="text"
                 placeholder="Type a message..."
                 value={messageInput}
@@ -401,6 +407,20 @@ const DexSocial: React.FC<DexSocialProps> = ({
         );
     }
   };
+
+  // Auto focus input when focusTrigger changes
+  useEffect(() => {
+    if (focusTrigger !== undefined) {
+      // Ensure local tab
+      if (activeTab !== 'local') {
+        handleTabChange('local');
+      }
+      // delay focus until input rendered
+      setTimeout(() => {
+        localInputRef.current?.focus();
+      }, 0);
+    }
+  }, [focusTrigger]);
 
   return (
     <div

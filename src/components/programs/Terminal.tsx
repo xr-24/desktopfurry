@@ -5,8 +5,11 @@ import { setVehicle, setGamingState, setSpeedMultiplier } from '../../store/play
 import { setInventoryData } from '../../store/inventorySlice';
 import { earnMoney, spendMoney } from '../../store/inventorySlice';
 import { updateUserMoney } from '../../store/shopSlice';
+import { toggleHud, toggleRetro, toggleTrailerMode } from '../../store/uiSlice';
 import ProgramWindow from '../ProgramWindow';
 import { authService } from '../../services/authService';
+import { deleteDummyIcons, addDummyIcon, hideIcon, restoreIcons, hideAllIcons, resetToDefaults } from '../../store/iconSlice';
+import { store } from '../../store/store';
 
 interface TerminalProps {
   windowId: string;
@@ -38,6 +41,11 @@ const Terminal: React.FC<TerminalProps> = ({
   const [history, setHistory] = useState<string[]>(programState.history || []);
   const [input, setInput] = useState('');
 
+  // UI state selectors for toggling feedback
+  const showHud = useAppSelector((state:any)=> state.ui.showHud);
+  const showRetro = useAppSelector((state:any)=> state.ui.showRetro);
+  const trailerMode = useAppSelector((state:any)=> state.ui.trailerMode);
+
   const isController = controllerId === currentPlayerId;
 
   const appendHistory = (line: string) => {
@@ -48,6 +56,14 @@ const Terminal: React.FC<TerminalProps> = ({
 
   const handleCommand = (cmd: string) => {
     switch (cmd.toLowerCase()) {
+      case 'hud':
+        dispatch(toggleHud());
+        appendHistory(showHud ? 'HUD hidden.' : 'HUD shown.');
+        break;
+      case 'retro':
+        dispatch(toggleRetro());
+        appendHistory(showRetro ? 'CRT overlay disabled.' : 'CRT overlay enabled.');
+        break;
       case 'ufo':
         if (currentVehicle === 'ufo') {
           dispatch(setVehicle('none'));
@@ -100,8 +116,60 @@ const Terminal: React.FC<TerminalProps> = ({
           }
         });
         break;
+      case 'trailer':
+        dispatch(toggleTrailerMode());
+        appendHistory(trailerMode ? 'Trailer mode deactivated.' : 'Trailer mode activated! Press U to chat invisibly.');
+        break;
       default:
-        appendHistory(`Unknown command: ${cmd}`);
+        // Handle dummy command patterns
+        if (cmd.toLowerCase().startsWith('hide icon ')) {
+          const label = cmd.substring(9).trim();
+          const icons = (store.getState() as any).icons.icons as any[];
+          const matchIcon = icons.find((i:any)=> i.label.toLowerCase()===label.toLowerCase() || i.id.toLowerCase()===label.toLowerCase());
+          if (matchIcon) {
+            dispatch(hideIcon(matchIcon.id));
+            appendHistory(`Icon '${label}' hidden.`);
+          } else {
+            appendHistory(`Icon '${label}' not found.`);
+          }
+        } else if (cmd.toLowerCase()==='restore icons default') {
+          dispatch(resetToDefaults());
+          appendHistory('Icons reset to default layout.');
+        } else if (cmd.toLowerCase()==='restore icons') {
+          dispatch(restoreIcons());
+          appendHistory('All icons restored.');
+        } else if (cmd.toLowerCase()==='hide icons all') {
+          dispatch(hideAllIcons());
+          appendHistory('All current icons hidden.');
+        } else if (cmd.toLowerCase().startsWith('dummy')) {
+          const parts = cmd.split(' ');
+          if (parts.length >= 2) {
+            if (parts[1].toLowerCase() === 'delete') {
+              dispatch(deleteDummyIcons());
+              appendHistory('All dummy icons removed.');
+            } else {
+              // Expect format: dummy "Label" <icon>
+              const match = cmd.match(/^dummy\s+\"([^\"]+)\"\s+(.*)$/i);
+              if (match) {
+                const label = match[1];
+                const iconChar = match[2].trim();
+                if (iconChar) {
+                  dispatch(addDummyIcon({ label, iconChar }));
+                  appendHistory(`Dummy icon '${label}' added.`);
+                } else {
+                  appendHistory('Invalid dummy icon format. Example: dummy "Tetris 2" 🕹️');
+                }
+              } else {
+                appendHistory('Invalid dummy icon format. Use: dummy "Label" <icon>');
+              }
+            }
+          } else {
+            appendHistory('Invalid dummy command.');
+          }
+        } else {
+          appendHistory(`Unknown command: ${cmd}`);
+        }
+        break;
     }
   };
 

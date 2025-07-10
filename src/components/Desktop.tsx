@@ -5,6 +5,7 @@ import SystemClock from './SystemClock';
 import MoneyDisplay from './MoneyDisplay';
 import StartMenu from './StartMenu';
 import ProgramManager from './ProgramManager';
+import DesktopIcon from './DesktopIcon';
 import DexSocial from './programs/DexSocial';
 import useMovement from '../hooks/useMovement';
 import { setBackground } from '../store/programSlice';
@@ -35,11 +36,14 @@ const Desktop: React.FC = () => {
   const visitors = useAppSelector((state:any)=> state.dextop.visitors);
   const socialState = useAppSelector((state: any) => state.social);
   const dispatch = useAppDispatch();
+  const trailerMode = useAppSelector((state:any)=> state.ui.trailerMode);
   
   // Desktop customization state
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
   const [isRoomInfoOpen, setIsRoomInfoOpen] = useState(false);
   const [isDexSocialOpen, setIsDexSocialOpen] = useState(false);
+  const [isDexSocialHidden, setIsDexSocialHidden] = useState(false);
+  const [focusChatSignal, setFocusChatSignal] = useState(0);
   
   // Migration: Try to restore DexSocial data from old program state
   useEffect(() => {
@@ -187,6 +191,71 @@ const Desktop: React.FC = () => {
     };
   }, []);
 
+  // Global hotkey T to open/focus chat (visible)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 't' || e.key === 'T') {
+        if (e.repeat) return;
+
+        const active = document.activeElement as HTMLElement | null;
+        const isTyping = active && (
+          active.tagName === 'INPUT' ||
+          active.tagName === 'TEXTAREA' ||
+          (active as any).isContentEditable
+        );
+
+        if (isTyping) {
+          // Allow normal typing inside any text field or editable element
+          return;
+        }
+
+        e.preventDefault();
+
+        if (!isDexSocialOpen) {
+          // Open and focus
+          dispatch(setActiveTab('local'));
+          setIsDexSocialOpen(true);
+          setFocusChatSignal((s) => s + 1);
+        } else {
+          // Chat open but input not focused: close it
+          setIsDexSocialOpen(false);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDexSocialOpen, dispatch]);
+
+  // Trailer mode: hotkey U to open invisible local chat
+  useEffect(() => {
+    if (!trailerMode) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'u' || e.key === 'U') {
+        if (e.repeat) return;
+
+        const active = document.activeElement as HTMLElement | null;
+        const isTyping = active && (
+          active.tagName === 'INPUT' ||
+          active.tagName === 'TEXTAREA' ||
+          (active as any).isContentEditable
+        );
+        if (isTyping) return;
+
+        e.preventDefault();
+
+        // Toggle invisible chat
+        setIsDexSocialHidden(true);
+        setActiveTab('local');
+        setIsDexSocialOpen(true);
+        setFocusChatSignal((s)=>s+1);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [trailerMode]);
+
   // Helper to provide entity map depending on context (dextop vs legacy room)
   const getEntityMap = () => {
     if (visitedId) return visitors;
@@ -276,23 +345,19 @@ const Desktop: React.FC = () => {
       })}
       
       {/* Desktop Icons with proximity feedback */}
-      {desktopIcons.map((iconData) => (
-        <div 
+      {desktopIcons.filter(i=>!i.hidden).map((iconData) => (
+        <DesktopIcon
           key={iconData.id}
-          className={`desktop-icon ${nearbyIcon === iconData.id ? 'nearby' : ''}`}
-          style={{
-            left: iconData.x,
-            top: iconData.y,
+          id={iconData.id}
+          label={iconData.label}
+          icon={iconData.icon}
+          position={{ x: iconData.x, y: iconData.y }}
+          isNearby={nearbyIcon === iconData.id}
+          onInteract={() => {
+            // Interaction handled in useMovement with E key; double-click fallback here.
+            // Could open program directly:
           }}
-          title={nearbyIcon === iconData.id ? `Press E to open ${iconData.label}` : `Walk close and press E to open ${iconData.label}`}
-        >
-          <div className="desktop-icon-image">
-            {iconData.icon}
-          </div>
-          <div className="desktop-icon-label">
-            {iconData.label}
-          </div>
-        </div>
+        />
       ))}
 
       {/* All open program windows */}
@@ -305,7 +370,7 @@ const Desktop: React.FC = () => {
             className="room-info-backdrop" 
             onClick={() => setIsDexSocialOpen(false)}
           />
-          <div className="dex-social-widget">
+          <div className={`dex-social-widget${isDexSocialHidden ? ' invisible-chat' : ''}`}>
             <DexSocial
               windowId="dex-social-widget"
               position={{ x: 0, y: 0 }}
@@ -313,7 +378,8 @@ const Desktop: React.FC = () => {
               zIndex={10000}
               isMinimized={false}
               programState={socialState}
-              onClose={() => setIsDexSocialOpen(false)}
+              onClose={() => { setIsDexSocialOpen(false); setIsDexSocialHidden(false);} }
+              focusTrigger={focusChatSignal}
             />
           </div>
         </>

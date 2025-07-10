@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setPosition, setSittingState } from '../store/playerSlice';
 import { openProgram, updateProgramPosition, updateProgramSize } from '../store/programSlice';
+import { DesktopIcon as DesktopIconType, setIconPosition } from '../store/iconSlice';
 import { socketService } from '../services/socketService';
 
 // Movement speed in pixels per second (was 8 px per 60 fps frame → 480 px/s)
@@ -14,19 +15,7 @@ const DESKTOP_BOUNDS = {
   maxY: window.innerHeight - 80,
 };
 
-// Desktop icons data
-const DESKTOP_ICONS = [
-  { id: 'paint', label: 'Paint', icon: '🎨', x: 50, y: 60, type: 'paint' as const },
-  { id: 'notepad', label: 'Notepad', icon: '📝', x: 50, y: 160, type: 'notepad' as const },
-  { id: 'winamp', label: 'Muze', icon: '🎵', x: 50, y: 260, type: 'winamp' as const },
-  { id: 'bdemediaplayer', label: 'BDE Media Player', icon: '🚧', x: 50, y: 360, type: 'bdemediaplayer' as const },
-  { id: 'checkers', label: 'Checkers', icon: '🔴', x: 50, y: 460, type: 'checkers' as const },
-  { id: 'snake', label: 'SNEK', icon: '🐍', x: 150, y: 60, type: 'snake' as const },
-  { id: 'browser98', label: 'Web', icon: '🌐', x: 150, y: 160, type: 'browser98' as const },
-  { id: 'pong', label: 'Pong', icon: '🏓', x: 150, y: 260, type: 'pong' as const },
-  { id: 'breakout', label: 'Breakout', icon: '🧱', x: 150, y: 360, type: 'breakout' as const },
-  { id: 'sudoku', label: 'Sudoku', icon: '🔢', x: 150, y: 460, type: 'sudoku' as const },
-];
+// Desktop icon state will come from Redux now
 
 const useMovement = (): {
   position: { x: number; y: number };
@@ -34,13 +23,21 @@ const useMovement = (): {
   movementDirection: string | null;
   walkFrame: number;
   nearbyIcon: string | null;
-  desktopIcons: typeof DESKTOP_ICONS;
+  desktopIcons: DesktopIconType[];
   facingDirection: 'left' | 'right';
   isGrabbing: boolean;
   isResizing: boolean;
   isSitting: boolean;
 } => {
   const dispatch = useAppDispatch();
+
+  // Live icon data from Redux
+  const desktopIcons = useAppSelector((state:any)=> state.icons.icons) as DesktopIconType[];
+  const iconsRef = useRef<DesktopIconType[]>(desktopIcons);
+  useEffect(()=>{
+    iconsRef.current = desktopIcons;
+  }, [desktopIcons]);
+
   const [localPosition, setLocalPosition] = useState({ x: 200, y: 200 });
   const [isMoving, setIsMoving] = useState(false);
   const [movementDirection, setMovementDirection] = useState<string | null>(null);
@@ -55,6 +52,11 @@ const useMovement = (): {
   
   // New resize-related state
   const [isResizing, setIsResizing] = useState(false);
+
+  // Icon dragging (Shift+E) state
+  const [isDraggingIcon, setIsDraggingIcon] = useState(false);
+  const isDraggingIconRef = useRef(false);
+  const draggedIconIdRef = useRef<string | null>(null);
   const [resizeAnchor, setResizeAnchor] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [resizeStartPosition, setResizeStartPosition] = useState({ x: 0, y: 0 });
   const [resizeSide, setResizeSide] = useState({ horizontal: 'left', vertical: 'top' });
@@ -133,7 +135,7 @@ const useMovement = (): {
 
   // Helper function to find nearby icons
   const findNearbyIcon = (playerX: number, playerY: number) => {
-    for (const icon of DESKTOP_ICONS) {
+    for (const icon of iconsRef.current.filter(i=>!i.hidden)) {
       const distance = getDistanceToIcon(icon.x, icon.y, playerX, playerY);
       if (distance <= INTERACTION_RANGE) {
         return icon.id;
@@ -145,15 +147,21 @@ const useMovement = (): {
   // Helper function to open a program
   const openProgramForIcon = useCallback((iconId: string) => {
     console.log('🔧 Attempting to open program:', iconId, 'Current player:', currentPlayerId);
-    const icon = DESKTOP_ICONS.find(i => i.id === iconId);
+    const icon = iconsRef.current.find(i => i.id === iconId);
     if (!icon || !currentPlayerId) {
       console.log('❌ Cannot open program - missing icon or player ID');
       return;
     }
 
+    if(icon.type === 'dummy') {
+      // Dummy icons are decorative only
+      return;
+    }
+
     console.log('✅ Opening program:', icon.type);
     dispatch(openProgram({
-      type: icon.type,
+      // cast because dummy is filtered already
+      type: icon.type as any,
       controllerId: currentPlayerId,
       position: { x: localPosition.x + 100, y: localPosition.y - 50 }
     }));
@@ -602,7 +610,18 @@ const useMovement = (): {
       positionRef.current = newPosition;
       setLocalPosition(newPosition);
       dispatch(setPosition(newPosition));
-      
+
+      // If carrying an icon, move it along
+      if (isDraggingIconRef.current && draggedIconIdRef.current) {
+        const iconOffsetX = 0; // icon will be at player's top-left for simplicity
+        const iconOffsetY = -40;
+        dispatch(setIconPosition({
+          id: draggedIconIdRef.current,
+          x: newPosition.x + iconOffsetX,
+          y: newPosition.y + iconOffsetY,
+        }));
+      }
+
       // Check for nearby icons
       const nearby = findNearbyIcon(newX, newY);
       if (nearby !== nearbyIconRef.current) {
@@ -663,6 +682,10 @@ const useMovement = (): {
   }, [facingDirection]);
 
   useEffect(() => {
+    isDraggingIconRef.current = isDraggingIcon;
+  }, [isDraggingIcon]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase();
       
@@ -676,6 +699,23 @@ const useMovement = (): {
         target.closest('textarea')
       );
       
+      // Handle Shift+E for picking up / dropping desktop icons
+      if (key === 'e' && event.shiftKey && !isTyping) {
+        event.preventDefault();
+        if (!isDraggingIconRef.current && nearbyIconRef.current) {
+          // Start dragging
+          draggedIconIdRef.current = nearbyIconRef.current;
+          isDraggingIconRef.current = true;
+          setIsDraggingIcon(true);
+        } else if (isDraggingIconRef.current) {
+          // Drop icon
+          isDraggingIconRef.current = false;
+          setIsDraggingIcon(false);
+          draggedIconIdRef.current = null;
+        }
+        return;
+      }
+
       // Handle E key for opening programs (but not when typing)
       if (key === 'e' && !isTyping) {
         // Check if player is near a program window first
@@ -950,11 +990,11 @@ const useMovement = (): {
     movementDirection,
     walkFrame,
     nearbyIcon,
-    desktopIcons: DESKTOP_ICONS,
+    desktopIcons,
     facingDirection,
     isGrabbing,
     isResizing,
-    isSitting
+    isSitting: isSittingRef.current,
   };
 };
 

@@ -7,6 +7,8 @@ import dextopSlice from './dextopSlice';
 import socialSlice from './socialSlice';
 import inventorySlice from './inventorySlice';
 import shopSlice from './shopSlice';
+import uiSlice from './uiSlice';
+import iconSlice from './iconSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +20,8 @@ export const store = configureStore({
     social: socialSlice,
     inventory: inventorySlice,
     shop: shopSlice,
+    ui: uiSlice,
+    icons: iconSlice,
   },
 });
 

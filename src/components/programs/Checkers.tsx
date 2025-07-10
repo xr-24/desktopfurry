@@ -22,6 +22,7 @@ interface CheckersProps {
     redPieces: number;
     blackPieces: number;
     lastMove: { from: { row: number; col: number }; to: { row: number; col: number } } | null;
+    kingedSquare: { row: number; col: number; time: number } | null;
   };
   controllerId: string;
   currentPlayerId: string;
@@ -73,6 +74,13 @@ const Checkers: React.FC<CheckersProps> = ({
   const redPieces = programState.redPieces || 12;
   const blackPieces = programState.blackPieces || 12;
   const lastMove = programState.lastMove || null;
+  const kingedSquare = (programState as any).kingedSquare || null;
+  const isKingFlashActive = (row:number, col:number) => {
+    if (!kingedSquare) return false;
+    const elapsed = Date.now() - kingedSquare.time;
+    if (elapsed > 2000) return false;
+    return kingedSquare.row === row && kingedSquare.col === col;
+  };
 
   // Determine player's assigned color and if they can interact
   const playerColor = redPlayer === currentPlayerId ? 'red' : blackPlayer === currentPlayerId ? 'black' : null;
@@ -281,16 +289,17 @@ const Checkers: React.FC<CheckersProps> = ({
     
     if (!piece) return;
 
-    // Move piece
-    newBoard[toRow][toCol] = { ...piece };
-    newBoard[fromRow][fromCol] = null;
-
-    // Check for king promotion
-    if (!piece.isKing) {
-      if ((piece.color === 'red' && toRow === 7) || (piece.color === 'black' && toRow === 0)) {
-        newBoard[toRow][toCol]!.isKing = true;
-      }
+    // Determine if move results in promotion
+    let promoted = false;
+    let movedPiece = { ...piece };
+    if (!piece.isKing && ((piece.color === 'red' && toRow === 7) || (piece.color === 'black' && toRow === 0))) {
+      movedPiece.isKing = true;
+      promoted = true;
     }
+
+    // Move piece (with potential promotion)
+    newBoard[toRow][toCol] = movedPiece;
+    newBoard[fromRow][fromCol] = null;
 
     // Remove captured pieces
     let newRedPieces = redPieces;
@@ -331,11 +340,12 @@ const Checkers: React.FC<CheckersProps> = ({
       blackPieces: newBlackPieces,
       winner: newWinner,
       gamePhase: newGamePhase,
-      lastMove: { from: { row: fromRow, col: fromCol }, to: { row: toRow, col: toCol } }
+      lastMove: { from: { row: fromRow, col: fromCol }, to: { row: toRow, col: toCol } },
+      kingedSquare: promoted ? { row: toRow, col: toCol, time: Date.now() } : null,
     });
 
-    // Play move sound
-    audioService.playSound('move');
+    // Play sounds
+    audioService.playSound(promoted ? 'notif' : 'move');
   }, [board, currentPlayer, redPieces, blackPieces, gamePhase, updateGameState]);
 
   const handleCellClick = useCallback((row: number, col: number) => {
@@ -376,7 +386,12 @@ const Checkers: React.FC<CheckersProps> = ({
   }, [canInteract, winner, board, selectedPiece, validMoves, playerColor, getValidMoves, makeMove, updateGameState]);
 
   const renderBoard = () => {
-    const cellSize = Math.min((size.width - 40) / 8, (size.height - 80) / 8);
+    // Reserve space for the status/header (≈110px) + board top/bottom margins (20px)
+    const STATUS_SPACE = 110;
+    const cellSize = Math.min(
+      (size.width - 40) / 8,
+      (size.height - STATUS_SPACE) / 8
+    );
     
     return (
       <div 
@@ -422,6 +437,7 @@ const Checkers: React.FC<CheckersProps> = ({
                 onMouseLeave={() => setHoveredCell(null)}
               >
                 {cell && (
+                  <>
                   <div
                     style={{
                       width: cellSize * 0.8,
@@ -438,8 +454,50 @@ const Checkers: React.FC<CheckersProps> = ({
                       textShadow: '1px 1px 1px rgba(0,0,0,0.5)',
                     }}
                   >
-                    {cell.isKing ? '♔' : ''}
+                    {/* piece center content (empty when king) */}
                   </div>
+                  {cell.isKing && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '-8%',
+                        left: 0,
+                        width: '100%',
+                        textAlign: 'center',
+                        fontSize: cellSize * 0.8,
+                        lineHeight: 1,
+                        pointerEvents: 'none',
+                        color: '#FFD700',
+                        textShadow: '0 0 3px rgba(0,0,0,0.6)',
+                        zIndex: 4,
+                      }}
+                    >
+                      👑
+                    </div>
+                  )}
+                  {isKingFlashActive(rowIndex,colIndex) && (
+                    <div
+                      style={{
+                         position: 'absolute',
+                         top: 0,
+                         left: 0,
+                         width: '100%',
+                         height: '100%',
+                         display: 'flex',
+                         alignItems: 'center',
+                         justifyContent: 'center',
+                         pointerEvents: 'none',
+                         animation: 'kingFlash 1.5s ease-out',
+                         fontSize: cellSize * 0.7,
+                         color: '#FFD700',
+                         textShadow: '0 0 6px rgba(255,215,0,0.9)',
+                         zIndex: 5,
+                       }}
+                    >
+                      👑 KINGED!
+                    </div>
+                  )}
+                  </>
                 )}
                 {isValidMove && (
                   <div

@@ -3,8 +3,17 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { db } = require('./database');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
+// Ensure JWT_SECRET is set - exit if not
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is required');
+  process.exit(1);
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
 const SALT_ROUNDS = 12;
+
+// Guest token expiration (7 days)
+const GUEST_TOKEN_EXPIRY_DAYS = 7;
 
 class AuthService {
   constructor() {
@@ -12,12 +21,21 @@ class AuthService {
     this.authenticateToken = this.authenticateToken.bind(this);
   }
 
-  // Generate a secure guest token
+  // Generate a secure guest token with expiration
   generateGuestToken() {
-    return uuidv4() + '-' + Date.now();
+    const expiry = Date.now() + (GUEST_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+    return uuidv4() + '-' + expiry;
   }
 
-  // Generate JWT token
+  // Check if guest token is expired
+  isGuestTokenExpired(guestToken) {
+    if (!guestToken || !guestToken.includes('-')) return true;
+    const parts = guestToken.split('-');
+    const expiry = parseInt(parts[parts.length - 1]);
+    return Date.now() > expiry;
+  }
+
+  // Generate JWT token with shorter expiration
   generateJWT(user) {
     return jwt.sign(
       { 
@@ -26,7 +44,7 @@ class AuthService {
         userType: user.user_type 
       },
       JWT_SECRET,
-      { expiresIn: '30d' } // Long-lived for better UX
+      { expiresIn: '24h' } // Shortened from 30 days
     );
   }
 
@@ -193,6 +211,11 @@ class AuthService {
   // Resume guest session
   async resumeGuestSession(guestToken) {
     try {
+      // Check if token is expired
+      if (this.isGuestTokenExpired(guestToken)) {
+        return { success: false, error: 'Guest session expired' };
+      }
+
       const user = await db.findUserByGuestToken(guestToken);
       if (!user) {
         return { success: false, error: 'Guest session not found' };

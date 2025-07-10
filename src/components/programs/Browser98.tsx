@@ -148,8 +148,8 @@ const Browser98: React.FC<BrowserProps> = ({
   return (
     <ProgramWindow
       windowId={windowId}
-      title={`Browser 98`}
-      icon="🌐"
+      title={`Web Conquistador '98`}
+      icon="⚜️"
       position={position}
       size={size}
       zIndex={zIndex}

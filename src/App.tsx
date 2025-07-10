@@ -8,6 +8,7 @@ import AuthScreen from './components/AuthScreen';
 import Desktop from './components/Desktop';
 import './App.css';
 import { authService } from './services/authService';
+import CRTEffect from './components/CRTEffect';
 
 const AppContent: React.FC = () => {
   const dispatchRedux = useAppDispatch();
@@ -23,7 +24,14 @@ const AppContent: React.FC = () => {
       if (!authService.isAuthenticated()) return;
       const inv = await authService.loadInventory();
       if (inv) {
-        dispatchRedux(setInventoryData(inv));
+        let processed = { ...inv } as any;
+        if (processed.currentItemIds && processed.currentItemIds.length === 1) {
+          const itemMeta = processed.items.find((it:any)=>it.id===processed.currentItemIds[0]);
+          if (itemMeta && /happyface\.png$/i.test(itemMeta.asset_path || '')) {
+            processed.currentItemIds = [];
+          }
+        }
+        dispatchRedux(setInventoryData(processed));
         socketService.broadcastCosmetics();
       }
     };
@@ -43,6 +51,7 @@ const AppContent: React.FC = () => {
   // Show desktop if authenticated and dextop is loaded
   return (
     <div className="App">
+      <CRTEffect />
       <Desktop />
     </div>
   );

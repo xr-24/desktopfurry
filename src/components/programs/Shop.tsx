@@ -61,15 +61,18 @@ const Shop: React.FC<ShopProps> = ({
         filteredItems.games = filterPlaceholders(filteredItems.games);
         filteredItems.themes = filterPlaceholders(filteredItems.themes);
 
-        // Use local inventory balance as authoritative to avoid unwanted resets
+        // Always trust server-reported balance as the source of truth.
         dispatch(loadShopSuccess({
           items: filteredItems,
-          userMoney: inventoryMoney
+          userMoney: data.userMoney
         }));
 
-        // If server balance is higher than local, credit the difference (never debit here)
-        if (data.userMoney > inventoryMoney) {
-          dispatch(earnMoney(data.userMoney - inventoryMoney));
+        // Synchronise inventory slice to match server balance exactly.
+        const diff = data.userMoney - inventoryMoney;
+        if (diff > 0) {
+          dispatch(earnMoney(diff));
+        } else if (diff < 0) {
+          dispatch(spendMoney(-diff));
         }
       } else {
         dispatch(loadShopFailure('Failed to load shop data'));

@@ -33,6 +33,7 @@ interface CharacterProps {
   isSitting?: boolean;
   isGaming?: boolean;
   gamingInputDirection?: 'up' | 'down' | 'left' | 'right' | null;
+  hideChatBubbles?: boolean;
 }
 
 const Character: React.FC<CharacterProps> = ({ 
@@ -46,7 +47,8 @@ const Character: React.FC<CharacterProps> = ({
   isResizing = false,
   isSitting = false,
   isGaming = false,
-  gamingInputDirection = null
+  gamingInputDirection = null,
+  hideChatBubbles = false
 }) => {
   // Add animation recovery for non-current players
   const [localWalkFrame, setLocalWalkFrame] = useState(walkFrame);
@@ -95,6 +97,40 @@ const Character: React.FC<CharacterProps> = ({
       }
     };
   }, [walkFrame, isMoving, isCurrentPlayer, player.id]);
+
+  // Selector for all local chat messages
+  const localMessages = useAppSelector((state: any) => state.social.localMessages);
+
+  // Maintain a stack of bubbles for this character
+  const [chatBubbles, setChatBubbles] = useState<Array<{ id: string; content: string; color?: number }>>([]);
+  // Track message IDs we've already shown so we don't re-spawn after bubble expires
+  const displayedIdsRef = useRef<Set<string>>(new Set());
+
+  // Detect new messages from this player and add bubbles
+  useEffect(() => {
+    if (!localMessages || !localMessages.length) return;
+
+    // Messages authored by this player and not yet displayed
+    const unseen = localMessages.filter((m: any) => m.senderId === player.id && !displayedIdsRef.current.has(m.id));
+    if (!unseen.length) return;
+
+    unseen.forEach((msg: any) => {
+      displayedIdsRef.current.add(msg.id);
+      setChatBubbles(prev => [...prev, { id: msg.id, content: msg.content, color: msg.color }]);
+
+      // Schedule automatic removal (with slight delay to match fade-out)
+      setTimeout(() => {
+        setChatBubbles(prev => prev.filter(b => b.id !== msg.id));
+
+        // Clean up displayedIds to keep memory low (optional)
+        if (displayedIdsRef.current.size > 100) {
+          // remove oldest 50
+          const toDelete = Array.from(displayedIdsRef.current).slice(0, 50);
+          toDelete.forEach(id => displayedIdsRef.current.delete(id));
+        }
+      }, 6000); // visible ~5s + 1s fade
+    });
+  }, [localMessages, player.id]);
 
   // Different colors for each quadrant
   const getPlayerColor = (quadrant: number) => {
@@ -197,6 +233,9 @@ const Character: React.FC<CharacterProps> = ({
   const currentTitle = getCurrentTitle();
   const currentItems = getCurrentItems();
 
+  // HUD visibility toggle from UI slice
+  const showHud = useAppSelector((state: any) => state.ui?.showHud ?? true);
+
   return (
     <div
       className={characterClasses}
@@ -205,8 +244,24 @@ const Character: React.FC<CharacterProps> = ({
         top: player.position.y + yOffset,
       }}
     >
+      {/* Chat Bubbles */}
+      {!hideChatBubbles && chatBubbles.map((bubble, idx) => {
+        // Newest bubble at bottom (closest to character)
+        const baseOffset = 10; // 10px gap above character container
+        const offset = baseOffset + (chatBubbles.length - 1 - idx) * 46; // each bubble ~34px tall + spacing
+        return (
+          <div
+            key={bubble.id}
+            className="chat-bubble"
+            style={{ bottom: `calc(100% + ${offset}px)`, color: `hsl(${bubble.color ?? 0}, 100%, 50%)` }}
+          >
+            {bubble.content}
+          </div>
+        );
+      })}
+
       {/* Title above username */}
-      {currentTitle && (
+      {showHud && currentTitle && (
         <div 
           className="character-title"
           style={currentTitle.style_config}
@@ -215,9 +270,11 @@ const Character: React.FC<CharacterProps> = ({
         </div>
       )}
       
-      <div className="character-username">
-        {player.username}
-      </div>
+      {showHud && (
+        <div className="character-username">
+          {player.username}
+        </div>
+      )}
       <div 
         className="character-sprite"
         style={{

@@ -155,7 +155,8 @@ class SocketService {
     const sanitize = (progState:any) => {
       const clone = JSON.parse(JSON.stringify(progState));
       for (const id of Object.keys(clone.openPrograms)) {
-        if (clone.openPrograms[id].type === 'characterEditor') {
+        const t = clone.openPrograms[id].type;
+        if (t === 'characterEditor' || t === 'inventory') {
           delete clone.openPrograms[id];
         }
       }
@@ -191,6 +192,15 @@ class SocketService {
     const sendPlayerState = () => {
       const rootState = store.getState();
       const player = rootState.player;
+
+      // Guard: avoid broadcasting placeholder visitor packets before the client
+      // has received its definitive player ID from the server. Emitting with a
+      // null / undefined userId causes the server to create an "unknown" visitor
+      // entry that lingers until page reload. Only proceed once we have a valid
+      // player.id.
+      if (!player.id) {
+        return;
+      }
       const inventory = rootState.inventory;
       const equippedTitleFull = inventory.currentTitleId ? inventory.titles.find((t:any)=>t.id===inventory.currentTitleId) : null;
       const equippedItemsFull = inventory.currentItemIds.map((id:string)=>{
@@ -427,7 +437,8 @@ class SocketService {
     const handleIncomingDesktop = (desktopState:any) => {
       // Sanitize incoming state (remove CharacterEditor sessions)
       for (const id of Object.keys(desktopState.openPrograms || {})) {
-        if (desktopState.openPrograms[id].type === 'characterEditor') {
+        const t = desktopState.openPrograms[id].type;
+        if (t === 'characterEditor' || t === 'inventory') {
           delete desktopState.openPrograms[id];
         }
       }

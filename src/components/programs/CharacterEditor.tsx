@@ -210,6 +210,7 @@ const CharacterEditor: React.FC<CharacterEditorProps> = ({
             <Character 
               player={{ id: currentPlayerId, username:'You', position:{x:0, y:0}, quadrant:0, appearance:previewAppearance }}
               isCurrentPlayer={true}
+              hideChatBubbles={true}
             />
           </div>
 
