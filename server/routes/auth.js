@@ -1,58 +1,14 @@
 const express = require('express');
-// const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const authService = require('../auth');
-
-// Rate limiting for auth endpoints - TEMPORARILY DISABLED
-// const authLimiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 10, // limit each IP to 10 requests per windowMs
-//   message: { error: 'Too many authentication attempts, please try again later' },
-//   standardHeaders: true,
-//   legacyHeaders: false,
-// });
-
-// Stricter rate limiting for login attempts - TEMPORARILY DISABLED
-// const loginLimiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 5, // limit each IP to 5 login attempts per windowMs
-//   message: { error: 'Too many login attempts, please try again later' },
-//   standardHeaders: true,
-//   legacyHeaders: false,
-// });
-
-// Input validation helpers - MADE LESS STRICT
-const validateUsername = (username) => {
-  if (!username || typeof username !== 'string') return 'Username is required';
-  const trimmed = username.trim();
-  if (trimmed.length < 1) return 'Username is required';
-  if (trimmed.length > 50) return 'Username is too long';
-  return null;
-};
-
-const validateEmail = (email) => {
-  if (!email || typeof email !== 'string') return 'Email is required';
-  const trimmed = email.trim();
-  if (trimmed.length > 254) return 'Email is too long';
-  if (!trimmed.includes('@')) return 'Please enter a valid email address';
-  return null;
-};
-
-const validatePassword = (password) => {
-  if (!password || typeof password !== 'string') return 'Password is required';
-  if (password.length < 1) return 'Password is required';
-  if (password.length > 128) return 'Password is too long';
-  return null;
-};
 
 // Create guest account
 router.post('/guest', async (req, res) => {
   try {
     const { username } = req.body;
     
-    const usernameError = validateUsername(username);
-    if (usernameError) {
-      return res.status(400).json({ error: usernameError });
+    if (!username || username.trim().length < 3) {
+      return res.status(400).json({ error: 'Username must be at least 3 characters' });
     }
 
     const result = await authService.createGuestUser(username.trim());
@@ -73,19 +29,17 @@ router.post('/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
     
-    const usernameError = validateUsername(username);
-    if (usernameError) {
-      return res.status(400).json({ error: usernameError });
+    // Validation
+    if (!username || username.trim().length < 3) {
+      return res.status(400).json({ error: 'Username must be at least 3 characters' });
     }
     
-    const emailError = validateEmail(email);
-    if (emailError) {
-      return res.status(400).json({ error: emailError });
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Valid email required' });
     }
     
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      return res.status(400).json({ error: passwordError });
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
     const result = await authService.register(username.trim(), email.trim(), password);
@@ -106,14 +60,8 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    const emailError = validateEmail(email);
-    if (emailError) {
-      return res.status(400).json({ error: emailError });
-    }
-
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      return res.status(400).json({ error: passwordError });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
     }
 
     const result = await authService.login(email.trim(), password);
@@ -134,7 +82,7 @@ router.post('/guest-resume', async (req, res) => {
   try {
     const { guestToken } = req.body;
     
-    if (!guestToken || typeof guestToken !== 'string') {
+    if (!guestToken) {
       return res.status(400).json({ error: 'Guest token required' });
     }
 
@@ -156,23 +104,21 @@ router.post('/migrate', async (req, res) => {
   try {
     const { guestToken, username, email, password } = req.body;
     
-    if (!guestToken || typeof guestToken !== 'string') {
+    if (!guestToken) {
       return res.status(400).json({ error: 'Guest token required' });
     }
     
-    const usernameError = validateUsername(username);
-    if (usernameError) {
-      return res.status(400).json({ error: usernameError });
+    // Validation
+    if (!username || username.trim().length < 3) {
+      return res.status(400).json({ error: 'Username must be at least 3 characters' });
     }
     
-    const emailError = validateEmail(email);
-    if (emailError) {
-      return res.status(400).json({ error: emailError });
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Valid email required' });
     }
     
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      return res.status(400).json({ error: passwordError });
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
     }
 
     const result = await authService.migrateGuestToAccount(

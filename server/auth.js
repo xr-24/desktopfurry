@@ -3,16 +3,8 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { db } = require('./database');
 
-// Ensure JWT_SECRET is set - make more forgiving for now
-if (!process.env.JWT_SECRET) {
-  console.warn('WARNING: JWT_SECRET environment variable not set, using fallback');
-}
-
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-alpha-testing';
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-in-production';
 const SALT_ROUNDS = 12;
-
-// Guest token expiration (30 days - extended for alpha)
-const GUEST_TOKEN_EXPIRY_DAYS = 30;
 
 class AuthService {
   constructor() {
@@ -20,21 +12,12 @@ class AuthService {
     this.authenticateToken = this.authenticateToken.bind(this);
   }
 
-  // Generate a secure guest token with expiration
+  // Generate a secure guest token
   generateGuestToken() {
-    const expiry = Date.now() + (GUEST_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-    return uuidv4() + '-' + expiry;
+    return uuidv4() + '-' + Date.now();
   }
 
-  // Check if guest token is expired
-  isGuestTokenExpired(guestToken) {
-    if (!guestToken || !guestToken.includes('-')) return true;
-    const parts = guestToken.split('-');
-    const expiry = parseInt(parts[parts.length - 1]);
-    return Date.now() > expiry;
-  }
-
-  // Generate JWT token with longer expiration for alpha
+  // Generate JWT token
   generateJWT(user) {
     return jwt.sign(
       { 
@@ -43,7 +26,7 @@ class AuthService {
         userType: user.user_type 
       },
       JWT_SECRET,
-      { expiresIn: '30d' } // Back to 30 days for alpha testing
+      { expiresIn: '30d' } // Long-lived for better UX
     );
   }
 
@@ -210,11 +193,6 @@ class AuthService {
   // Resume guest session
   async resumeGuestSession(guestToken) {
     try {
-      // Check if token is expired
-      if (this.isGuestTokenExpired(guestToken)) {
-        return { success: false, error: 'Guest session expired' };
-      }
-
       const user = await db.findUserByGuestToken(guestToken);
       if (!user) {
         return { success: false, error: 'Guest session not found' };
