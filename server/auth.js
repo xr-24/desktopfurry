@@ -12,8 +12,8 @@ if (!process.env.JWT_SECRET) {
 const JWT_SECRET = process.env.JWT_SECRET;
 const SALT_ROUNDS = 12;
 
-// Guest token expiration (7 days)
-const GUEST_TOKEN_EXPIRY_DAYS = 7;
+// Guest token expiration (30 days - extended for alpha)
+const GUEST_TOKEN_EXPIRY_DAYS = 30;
 
 class AuthService {
   constructor() {
@@ -35,7 +35,7 @@ class AuthService {
     return Date.now() > expiry;
   }
 
-  // Generate JWT token with shorter expiration
+  // Generate JWT token with longer expiration for alpha
   generateJWT(user) {
     return jwt.sign(
       { 
@@ -44,7 +44,7 @@ class AuthService {
         userType: user.user_type 
       },
       JWT_SECRET,
-      { expiresIn: '24h' } // Shortened from 30 days
+      { expiresIn: '30d' } // Back to 30 days for alpha testing
     );
   }
 

@@ -29,16 +29,16 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false, // Disable for Socket.IO compatibility
 }));
 
-// General rate limiting
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: { error: 'Too many requests, please try again later' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// General rate limiting - TEMPORARILY DISABLED FOR ALPHA
+// const generalLimiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 100, // limit each IP to 100 requests per windowMs
+//   message: { error: 'Too many requests, please try again later' },
+//   standardHeaders: true,
+//   legacyHeaders: false,
+// });
 
-app.use(generalLimiter);
+// app.use(generalLimiter);
 
 // CORS configuration
 const corsOptions = {
