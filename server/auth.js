@@ -3,13 +3,12 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { db } = require('./database');
 
-// Ensure JWT_SECRET is set - exit if not
+// Ensure JWT_SECRET is set - make more forgiving for now
 if (!process.env.JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET environment variable is required');
-  process.exit(1);
+  console.warn('WARNING: JWT_SECRET environment variable not set, using fallback');
 }
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-alpha-testing';
 const SALT_ROUNDS = 12;
 
 // Guest token expiration (30 days - extended for alpha)

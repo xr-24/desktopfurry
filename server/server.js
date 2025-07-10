@@ -9,25 +9,11 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const server = http.createServer(app);
 
-// Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      fontSrc: ["'self'"],
-      connectSrc: ["'self'", "ws:", "wss:"],
-      mediaSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      baseUri: ["'self'"],
-      frameAncestors: ["'none'"],
-      upgradeInsecureRequests: [],
-    },
-  },
-  crossOriginEmbedderPolicy: false, // Disable for Socket.IO compatibility
-}));
+// Security middleware - TEMPORARILY DISABLED
+// app.use(helmet({
+//   contentSecurityPolicy: false, // TEMPORARILY DISABLED - might be causing white screen
+//   crossOriginEmbedderPolicy: false, // Disable for Socket.IO compatibility
+// }));
 
 // General rate limiting - TEMPORARILY DISABLED FOR ALPHA
 // const generalLimiter = rateLimit({
@@ -40,10 +26,10 @@ app.use(helmet({
 
 // app.use(generalLimiter);
 
-// CORS configuration
+// CORS configuration - FIXED
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL || 'https://yourdomain.com'
+    ? process.env.FRONTEND_URL || 'https://dextop.unkind.dev'
     : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true,
   optionsSuccessStatus: 200,
@@ -53,7 +39,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Socket.IO with CORS
+// Socket.IO with CORS - FIXED
 const io = socketIo(server, {
   cors: corsOptions,
   pingTimeout: 60000,

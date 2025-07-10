@@ -26,17 +26,23 @@ const AuthScreen: React.FC = () => {
   // Try to resume session on component mount
   useEffect(() => {
     const tryResumeSession = async () => {
-      if (authService.isAuthenticated()) {
-        const isValid = await authService.verifyToken();
-        if (isValid) {
-          const userData = authService.getStoredUser();
-          if (userData && userData.userType !== 'guest') {
-            dispatch(loginSuccess(userData));
-            await loadUserDextop();
-            socketService.authenticate();
-            // socketService.createRoom(userData.username); // removed to avoid legacy room duplication
+      try {
+        if (authService.isAuthenticated()) {
+          const isValid = await authService.verifyToken();
+          if (isValid) {
+            const userData = authService.getStoredUser();
+            if (userData && userData.userType !== 'guest') {
+              dispatch(loginSuccess(userData));
+              await loadUserDextop();
+              socketService.authenticate();
+              // socketService.createRoom(userData.username); // removed to avoid legacy room duplication
+            }
           }
         }
+      } catch (error) {
+        console.error('Session resumption failed:', error);
+        // Clear invalid session
+        authService.logout();
       }
     };
 
@@ -44,54 +50,59 @@ const AuthScreen: React.FC = () => {
   }, [dispatch]);
 
   const loadUserDextop = async () => {
-    const dextopData = await authService.loadMyDextop();
-    if (dextopData) {
-      dispatch(loadDextopSuccess({
-        dextop: { ...dextopData.dextop, isOwner: true },
-        achievements: dextopData.achievements,
-        unlockedPrograms: dextopData.unlockedPrograms
-      }));
-      
-      dispatch(setAppearance(dextopData.avatar));
-
-      const openPrograms: any = {};
-      let highestZ = 100;
-      for (const p of dextopData.programs) {
-        const windowId = p.id || `${p.type}-${Date.now()}`;
-        openPrograms[windowId] = {
-          id: windowId,
-          type: p.type,
-          isOpen: true,
-          position: p.position,
-          size: p.size,
-          isMinimized: p.isMinimized,
-          zIndex: p.zIndex,
-          controllerId: '',
-          isMultiplayer: true,
-          state: p.state || {},
-        };
-        if (p.zIndex > highestZ) highestZ = p.zIndex;
-      }
-      dispatch(syncDesktop({
-        openPrograms,
-        highestZIndex: highestZ,
-        interactionRange: 80,
-        backgroundId: dextopData.dextop.backgroundId || 'sandstone',
-      }));
-
-      // Populate inventory slice with server data (money, titles, items, selections)
-      const inventoryData = (dextopData as any).inventory;
-      if (inventoryData) {
-        dispatch(setInventoryData({
-          money: inventoryData.money,
-          titles: inventoryData.titles,
-          items: inventoryData.items,
-          currentTitleId: inventoryData.currentTitleId,
-          currentItemIds: inventoryData.currentItemIds,
+    try {
+      const dextopData = await authService.loadMyDextop();
+      if (dextopData) {
+        dispatch(loadDextopSuccess({
+          dextop: { ...dextopData.dextop, isOwner: true },
+          achievements: dextopData.achievements,
+          unlockedPrograms: dextopData.unlockedPrograms
         }));
-      }
+        
+        dispatch(setAppearance(dextopData.avatar));
 
-      socketService.updateAppearance(dextopData.avatar);
+        const openPrograms: any = {};
+        let highestZ = 100;
+        for (const p of dextopData.programs) {
+          const windowId = p.id || `${p.type}-${Date.now()}`;
+          openPrograms[windowId] = {
+            id: windowId,
+            type: p.type,
+            isOpen: true,
+            position: p.position,
+            size: p.size,
+            isMinimized: p.isMinimized,
+            zIndex: p.zIndex,
+            controllerId: '',
+            isMultiplayer: true,
+            state: p.state || {},
+          };
+          if (p.zIndex > highestZ) highestZ = p.zIndex;
+        }
+        dispatch(syncDesktop({
+          openPrograms,
+          highestZIndex: highestZ,
+          interactionRange: 80,
+          backgroundId: dextopData.dextop.backgroundId || 'sandstone',
+        }));
+
+        // Populate inventory slice with server data (money, titles, items, selections)
+        const inventoryData = (dextopData as any).inventory;
+        if (inventoryData) {
+          dispatch(setInventoryData({
+            money: inventoryData.money,
+            titles: inventoryData.titles,
+            items: inventoryData.items,
+            currentTitleId: inventoryData.currentTitleId,
+            currentItemIds: inventoryData.currentItemIds,
+          }));
+        }
+
+        socketService.updateAppearance(dextopData.avatar);
+      }
+    } catch (error) {
+      console.error('Failed to load user dextop:', error);
+      // Don't logout here, just log the error
     }
   };
 
