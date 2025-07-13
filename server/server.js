@@ -2,7 +2,6 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
-const rateLimit = require('express-rate-limit');
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
@@ -33,18 +32,6 @@ const io = socketIo(server, {
 
 app.use(cors({ origin: allowedOrigin }));
 app.use(express.json());
-
-// Rate limiting for auth endpoints
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs
-  message: 'Too many auth attempts, please try again later',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Apply rate limiting to auth routes
-app.use('/api/auth', authLimiter);
 
 // API Routes
 app.use('/api/auth', authRoutes);
