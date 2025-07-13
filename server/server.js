@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
@@ -20,7 +21,7 @@ const app = express();
 const server = http.createServer(app);
 
 // Allow CORS from the production front-end domain or localhost during dev.
-const allowedOrigin = process.env.CLIENT_ORIGIN || '*';
+const allowedOrigin = process.env.CLIENT_ORIGIN || 'https://dextop.unkind.dev';
 
 const io = socketIo(server, {
   cors: {
@@ -32,6 +33,18 @@ const io = socketIo(server, {
 
 app.use(cors({ origin: allowedOrigin }));
 app.use(express.json());
+
+// Rate limiting for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs
+  message: 'Too many auth attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting to auth routes
+app.use('/api/auth', authLimiter);
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -80,6 +93,12 @@ io.on('connection', (socket) => {
   });
 
   socket.on('createRoom', ({ username }) => {
+    // Basic validation
+    if (!username || typeof username !== 'string' || username.trim().length < 3 || username.length > 50) {
+      socket.emit('error', { message: 'Invalid username' });
+      return;
+    }
+    
     const roomId = uuidv4().substring(0, 8); // Short room ID
     const playerId = socket.id;
     const quadrant = 0; // First player gets top-left

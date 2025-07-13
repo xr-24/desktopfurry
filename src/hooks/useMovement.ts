@@ -38,6 +38,19 @@ const useMovement = (): {
     iconsRef.current = desktopIcons;
   }, [desktopIcons]);
 
+  // Grid snapping settings
+  const gridSnappingEnabled = useAppSelector((state:any) => state.ui.gridSnappingEnabled);
+  const gridSize = useAppSelector((state:any) => state.ui.gridSize);
+
+  // Grid snapping helper function
+  const snapToGrid = useCallback((x: number, y: number) => {
+    if (!gridSnappingEnabled) return { x, y };
+    return {
+      x: Math.round(x / gridSize) * gridSize,
+      y: Math.round(y / gridSize) * gridSize,
+    };
+  }, [gridSnappingEnabled, gridSize]);
+
   const [localPosition, setLocalPosition] = useState({ x: 200, y: 200 });
   const [isMoving, setIsMoving] = useState(false);
   const [movementDirection, setMovementDirection] = useState<string | null>(null);
@@ -615,10 +628,15 @@ const useMovement = (): {
       if (isDraggingIconRef.current && draggedIconIdRef.current) {
         const iconOffsetX = 0; // icon will be at player's top-left for simplicity
         const iconOffsetY = -40;
-        dispatch(setIconPosition({
-          id: draggedIconIdRef.current,
+        const rawIconPos = {
           x: newPosition.x + iconOffsetX,
           y: newPosition.y + iconOffsetY,
+        };
+        const snappedIconPos = snapToGrid(rawIconPos.x, rawIconPos.y);
+        dispatch(setIconPosition({
+          id: draggedIconIdRef.current,
+          x: snappedIconPos.x,
+          y: snappedIconPos.y,
         }));
       }
 

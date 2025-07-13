@@ -2,6 +2,8 @@ import React from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { openProgram } from '../store/programSlice';
 import { setChatColorHue } from '../store/playerSlice';
+import { toggleGridSnapping } from '../store/uiSlice';
+import { resetToDefaults } from '../store/iconSlice';
 // Dynamically load all pattern images from assets/patterns
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const patternsContext = (require as any).context('../assets/patterns', false, /\.(png|jpe?g|gif)$/);
@@ -27,6 +29,7 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
   const dispatch = useAppDispatch();
   const { id: currentPlayerId } = useAppSelector((state: any) => state.player || {});
   const chatColorHue = useAppSelector((state:any)=> state.player.chatColorHue);
+  const gridSnappingEnabled = useAppSelector((state:any) => state.ui.gridSnappingEnabled);
 
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
 
@@ -43,6 +46,15 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
 
   const handleHueChange = (hue:number)=>{
     dispatch(setChatColorHue(hue));
+  };
+
+  const handleGridSnappingToggle = () => {
+    dispatch(toggleGridSnapping());
+  };
+
+  const handleResetIcons = () => {
+    dispatch(resetToDefaults());
+    onClose();
   };
 
   return (
@@ -123,6 +135,31 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
                     <div style={{fontSize:'10px', color:'#000080'}}>
                       Preview: <span style={{color:`hsl(${chatColorHue},100%,50%)`}}>Hello World!</span>
                     </div>
+                  </div>
+                  
+                  <div style={{marginTop:'12px', marginBottom:'8px', fontWeight:'bold'}}>Desktop Icons</div>
+                  <div style={{display:'flex', flexDirection:'column', gap:'6px'}}>
+                    <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                      <input
+                        type="checkbox"
+                        checked={gridSnappingEnabled}
+                        onChange={handleGridSnappingToggle}
+                        id="grid-snapping"
+                      />
+                      <label htmlFor="grid-snapping" style={{cursor:'pointer'}}>
+                        Grid Snapping
+                      </label>
+                    </div>
+                    <div style={{fontSize:'10px', color:'#000080'}}>
+                      Snap icons to grid when dragging
+                    </div>
+                    <button 
+                      className="win98-button small"
+                      onClick={handleResetIcons}
+                      style={{marginTop:'4px', fontSize:'10px', padding:'2px 6px'}}
+                    >
+                      Reset Icon Positions
+                    </button>
                   </div>
                 </div>
               </div>
