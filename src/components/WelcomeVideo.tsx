@@ -14,9 +14,9 @@ interface WelcomeVideoProps {
 const WelcomeVideo: React.FC<WelcomeVideoProps> = ({ onClose }) => {
   const dispatch = useAppDispatch();
   const [showDisablePrompt, setShowDisablePrompt] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
   const currentPlayerId = useAppSelector((state: any) => state.player?.id);
   const showWelcomeMessage = useAppSelector((state: any) => state.dextop.showWelcomeMessage);
+  const openPrograms = useAppSelector((state: any) => state.programs.openPrograms);
 
   // Open BDE Media Player with welcome video
   useEffect(() => {
@@ -57,10 +57,15 @@ const WelcomeVideo: React.FC<WelcomeVideoProps> = ({ onClose }) => {
     }
   }, [currentPlayerId, showWelcomeMessage, dispatch]);
 
-  const handleClose = () => {
-    setIsClosing(true);
-    setShowDisablePrompt(true);
-  };
+  // Check if BDE Media Player is still open
+  const bdeProgram = Object.values(openPrograms).find((p: any) => p.type === 'bdemediaplayer');
+  
+  // Show disable prompt when BDE Media Player is closed
+  useEffect(() => {
+    if (showWelcomeMessage && !bdeProgram && !showDisablePrompt) {
+      setShowDisablePrompt(true);
+    }
+  }, [bdeProgram, showWelcomeMessage, showDisablePrompt]);
 
   const handleDisableWelcome = async () => {
     try {
@@ -87,28 +92,6 @@ const WelcomeVideo: React.FC<WelcomeVideoProps> = ({ onClose }) => {
 
   return (
     <>
-      {/* Welcome Video Overlay */}
-      <div className="welcome-video-overlay">
-        <div className="welcome-video-container">
-          <div className="welcome-video-header">
-            <h2>🎬 Welcome to Dextop!</h2>
-            <button 
-              className="welcome-close-button"
-              onClick={handleClose}
-              title="Close Welcome Video"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="welcome-video-content">
-            <p>Welcome to your new Dextop! Enjoy this welcome video to get started.</p>
-            <div className="welcome-video-player">
-              {/* BDE Media Player will be opened automatically */}
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Disable Welcome Message Prompt */}
       {showDisablePrompt && (
         <div className="welcome-disable-overlay">
