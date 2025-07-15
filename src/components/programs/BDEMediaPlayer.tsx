@@ -115,7 +115,7 @@ const BDEMediaPlayer: React.FC<BDEMediaPlayerProps> = ({
           width: playerWidth,
           videoId: currentVideo.youtubeId,
           playerVars: {
-            autoplay: 0,
+            autoplay: programState.playlist.length === 1 && programState.currentTrack === 0 ? 1 : 0, // Autoplay if it's the first video
             controls: 0, // Hide default controls, we'll use custom ones
             disablekb: 1,
             modestbranding: 1,

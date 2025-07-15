@@ -243,6 +243,38 @@
   font-size: 11px;
 }
 
+.auth-discord {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--win98-light-gray);
+}
+
+.auth-discord .discord-button {
+  background: linear-gradient(90deg, #5865f2 0%, #4752c4 100%);
+  color: white;
+  border: 2px outset #5865f2;
+  font-weight: bold;
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 12px;
+  font-size: 12px;
+}
+
+.auth-discord .discord-button:hover {
+  background: linear-gradient(90deg, #4752c4 0%, #3c45a5 100%);
+}
+
+.auth-discord .discord-button:active {
+  border: 2px inset #5865f2;
+}
+
+.discord-subtitle {
+  font-size: 10px;
+  color: var(--win98-dark-gray);
+  margin: 4px 0 0 0;
+}
+
 .form-group {
   margin-bottom: 16px;
   text-align: left;

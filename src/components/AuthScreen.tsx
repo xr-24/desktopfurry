@@ -257,8 +257,14 @@ const AuthScreen: React.FC = () => {
         </button>
       </div>
       
-      <div className="auth-note">
-        💡 Guests can save progress and upgrade to a full account later!
+      <div className="auth-discord">
+        <button 
+          className="win98-button discord-button"
+          onClick={() => window.open('https://discord.gg/c7AzUmzz2R', '_blank')}
+        >
+          💬 Join Our Discord
+        </button>
+        <p className="discord-subtitle">Connect with other players!</p>
       </div>
     </div>
   );

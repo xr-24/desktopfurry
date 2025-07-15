@@ -151,4 +151,23 @@ router.get('/verify', authService.authenticateToken, (req, res) => {
   });
 });
 
+// Set welcome message preference
+router.post('/welcome-message-preference', authService.authenticateToken, async (req, res) => {
+  try {
+    const { showWelcome } = req.body;
+    const userId = req.user.userId;
+    
+    if (typeof showWelcome !== 'boolean') {
+      return res.status(400).json({ error: 'showWelcome must be a boolean' });
+    }
+
+    // Store the preference in localStorage for now (could be moved to database later)
+    // For now, we'll just return success since the client handles the preference
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Welcome message preference error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router; 

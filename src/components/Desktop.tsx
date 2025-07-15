@@ -7,6 +7,7 @@ import StartMenu from './StartMenu';
 import ProgramManager from './ProgramManager';
 import DesktopIcon from './DesktopIcon';
 import DexSocial from './programs/DexSocial';
+import WelcomeVideo from './WelcomeVideo';
 import useMovement from '../hooks/useMovement';
 import { setBackground } from '../store/programSlice';
 import { restoreFromProgramState, setActiveTab, setSelectedFriend } from '../store/socialSlice';
@@ -292,6 +293,15 @@ const Desktop: React.FC = () => {
   const socialNotifications = useAppSelector((state:any)=> state.social);
   const hasDexNotification = (socialNotifications.unreadMessages || socialNotifications.unreadFriendRequests) > 0;
   const notificationTarget = socialNotifications.lastNotification;
+  const showWelcomeMessage = useAppSelector((state: any) => state.dextop.showWelcomeMessage);
+  const [showWelcomeVideo, setShowWelcomeVideo] = useState(false);
+
+  // Show welcome video on first load
+  useEffect(() => {
+    if (showWelcomeMessage && currentDextop && !visitedId) {
+      setShowWelcomeVideo(true);
+    }
+  }, [showWelcomeMessage, currentDextop, visitedId]);
 
   const handleDexSocialToggle = () => {
     if (!isDexSocialOpen) {
@@ -453,6 +463,11 @@ const Desktop: React.FC = () => {
         onChangeBackground={(id) => dispatch(setBackground(id))}
         currentBackground={backgroundId}
       />
+
+      {/* Welcome Video */}
+      {showWelcomeVideo && (
+        <WelcomeVideo onClose={() => setShowWelcomeVideo(false)} />
+      )}
     </div>
   );
 };

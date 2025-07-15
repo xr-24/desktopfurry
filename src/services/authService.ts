@@ -416,6 +416,23 @@ class AuthService {
       return { success: false };
     }
   }
+
+  async setWelcomeMessagePreference(showWelcome: boolean): Promise<boolean> {
+    try {
+      await axios.post('/auth/welcome-message-preference', { showWelcome });
+      // Also store locally for immediate access
+      localStorage.setItem('welcome_message_disabled', (!showWelcome).toString());
+      return true;
+    } catch (error: any) {
+      console.error('Failed to save welcome message preference:', error);
+      return false;
+    }
+  }
+
+  getWelcomeMessagePreference(): boolean {
+    const disabled = localStorage.getItem('welcome_message_disabled');
+    return disabled !== 'true'; // Default to showing welcome message
+  }
 }
 
 export const authService = new AuthService(); 

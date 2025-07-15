@@ -53,6 +53,7 @@ interface DextopState {
   isLoading: boolean;
   error: string | null;
   visitedId?: string | null;
+  showWelcomeMessage: boolean;
 }
 
 const initialState: DextopState = {
@@ -63,6 +64,13 @@ const initialState: DextopState = {
   isLoading: false,
   error: null,
   visitedId: null,
+  showWelcomeMessage: (() => {
+    if (typeof window !== 'undefined') {
+      const disabled = localStorage.getItem('welcome_message_disabled');
+      return disabled !== 'true'; // Default to showing welcome message
+    }
+    return true;
+  })(),
 };
 
 const dextopSlice = createSlice({
@@ -140,6 +148,9 @@ const dextopSlice = createSlice({
     clearVisitedDextop: (state) => {
       state.visitedId = null;
     },
+    setShowWelcomeMessage: (state, action: PayloadAction<boolean>) => {
+      state.showWelcomeMessage = action.payload;
+    },
   },
 });
 
@@ -156,6 +167,7 @@ export const {
   clearDextop,
   setVisitedDextop,
   clearVisitedDextop,
+  setShowWelcomeMessage,
 } = dextopSlice.actions;
 
 export default dextopSlice.reducer; 
