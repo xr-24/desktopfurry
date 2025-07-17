@@ -16,6 +16,7 @@ const usersRoutes = require('./routes/users');
 const inventoryRoutes = require('./routes/inventory');
 const shopRoutes = require('./routes/shop');
 const profilesRoutes = require('./routes/profiles');
+const socialRoutes = require('./routes/social');
 
 const app = express();
 const server = http.createServer(app);
@@ -41,6 +42,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/shop', shopRoutes);
 app.use('/api/profiles', profilesRoutes);
+app.use('/api/social', socialRoutes);
 
 // In-memory storage for active dextop sessions
 const activeDextops = new Map(); // dextopId -> { visitors: Map<userId, playerData> }
@@ -479,14 +481,35 @@ io.on('connection', (socket) => {
 
   socket.on('privateMessage', async ({ recipientId, message }) => {
     try {
+      // Get user from token
+      const token = socket.handshake.auth.token;
+      const decoded = authService.verifyJWT(token);
+      if (!decoded) return;
+
+      const user = await db.findUserById(decoded.userId);
+      if (!user) return;
+
+      // Save message to database
+      const savedMessage = await db.saveMessage(user.id, recipientId, message.content, 'private');
+
+      const fullMessage = {
+        ...message,
+        id: savedMessage.id,
+        sender: user.username,
+        senderId: user.id,
+        timestamp: new Date(savedMessage.created_at).getTime(),
+        type: 'private',
+        recipientId
+      };
+
       // Get recipient's socket ID
       const recipientSocketId = userSockets.get(recipientId);
-      if (!recipientSocketId) return; // User is offline
-
-      // Send to recipient
-      io.to(recipientSocketId).emit('privateMessage', message);
+      if (recipientSocketId) {
+        // User is online - send immediately
+        io.to(recipientSocketId).emit('privateMessage', fullMessage);
+      }
       // Send back to sender
-      socket.emit('privateMessage', message);
+      socket.emit('privateMessage', fullMessage);
     } catch (error) {
       console.error('Error sending private message:', error);
     }
@@ -513,14 +536,16 @@ io.on('connection', (socket) => {
         return;
       }
 
-      // Create friend request
-      const requestId = uuidv4();
+      // Save friend request to database
+      const savedRequest = await db.saveFriendRequest(decoded.userId, targetUser.id);
+      
+      // Add to in-memory cache
       const targetUserRequests = userFriendRequests.get(targetUser.id) || new Set();
       targetUserRequests.add({
-        id: requestId,
+        id: savedRequest.id,
         from: decoded.userId,
         username: decoded.username,
-        timestamp: Date.now()
+        timestamp: new Date(savedRequest.created_at).getTime()
       });
       userFriendRequests.set(targetUser.id, targetUserRequests);
 
@@ -528,7 +553,7 @@ io.on('connection', (socket) => {
       const targetSocketId = userSockets.get(targetUser.id);
       if (targetSocketId) {
         io.to(targetSocketId).emit('friendRequest', {
-          requestId,
+          requestId: savedRequest.id,
           from: decoded.userId,
           username: decoded.username
         });
@@ -546,35 +571,39 @@ io.on('connection', (socket) => {
       const decoded = authService.verifyJWT(token);
       if (!decoded) return;
 
-      // Find the request
-      const userRequests = userFriendRequests.get(decoded.userId);
-      if (!userRequests) return;
+      // Update request status in database
+      await db.updateFriendRequestStatus(requestId, 'accepted');
 
-      const request = Array.from(userRequests).find(r => r.id === requestId);
+      // Get the request details from database
+      const requests = await db.getPendingFriendRequests(decoded.userId);
+      const request = requests.find(r => r.id === requestId);
       if (!request) return;
 
-      // Remove request
-      userRequests.delete(request);
+      // Remove from in-memory cache
+      const userRequests = userFriendRequests.get(decoded.userId);
+      if (userRequests) {
+        userRequests.delete(request);
+      }
 
       // Add to friends lists
       const userFriendsList = userFriends.get(decoded.userId) || new Set();
-      const otherUserFriendsList = userFriends.get(request.from) || new Set();
+      const otherUserFriendsList = userFriends.get(request.from_user_id) || new Set();
 
-      userFriendsList.add(request.from);
+      userFriendsList.add(request.from_user_id);
       otherUserFriendsList.add(decoded.userId);
 
       userFriends.set(decoded.userId, userFriendsList);
-      userFriends.set(request.from, otherUserFriendsList);
+      userFriends.set(request.from_user_id, otherUserFriendsList);
 
       // Save to database
-      await db.addFriend(decoded.userId, request.from);
+      await db.addFriend(decoded.userId, request.from_user_id);
 
       // Notify both users
       const friendData = {
-        id: request.from,
-        username: request.username,
+        id: request.from_user_id,
+        username: request.from_username,
         isOnline: true,
-        currentDextop: onlineUsers.get(request.from)?.currentDextop
+        currentDextop: onlineUsers.get(request.from_user_id)?.currentDextop
       };
 
       const userData = {
@@ -586,7 +615,7 @@ io.on('connection', (socket) => {
 
       socket.emit('friendRequestAccepted', { friend: friendData });
 
-      const otherSocketId = userSockets.get(request.from);
+      const otherSocketId = userSockets.get(request.from_user_id);
       if (otherSocketId) {
         io.to(otherSocketId).emit('friendRequestAccepted', { friend: userData });
       }
@@ -603,14 +632,17 @@ io.on('connection', (socket) => {
       const decoded = authService.verifyJWT(token);
       if (!decoded) return;
 
-      // Find and remove the request
+      // Update request status in database
+      await db.updateFriendRequestStatus(requestId, 'rejected');
+
+      // Remove from in-memory cache
       const userRequests = userFriendRequests.get(decoded.userId);
-      if (!userRequests) return;
-
-      const request = Array.from(userRequests).find(r => r.id === requestId);
-      if (!request) return;
-
-      userRequests.delete(request);
+      if (userRequests) {
+        const request = Array.from(userRequests).find(r => r.id === requestId);
+        if (request) {
+          userRequests.delete(request);
+        }
+      }
     } catch (error) {
       console.error('Error rejecting friend request:', error);
     }
@@ -693,17 +725,49 @@ io.on('connection', (socket) => {
       }
       onlineUsers.set(decoded.userId, { socketId: socket.id, currentDextop: selfDextopId });
 
-      // NEW: Hydrate in-memory friends list for this user so future
-      // handlers (e.g. joinFriendDextop) know who they're friends with.
-      if (!userFriends.has(decoded.userId)) {
-        try {
-          const friends = await db.getUserFriends(decoded.userId);
-          const friendSet = new Set(friends.map((f) => f.id));
-          userFriends.set(decoded.userId, friendSet);
-        } catch (err) {
-          console.error('Failed to load friends for', decoded.userId, err);
-        }
+          // NEW: Hydrate in-memory friends list for this user so future
+    // handlers (e.g. joinFriendDextop) know who they're friends with.
+    if (!userFriends.has(decoded.userId)) {
+      try {
+        const friends = await db.getUserFriends(decoded.userId);
+        const friendSet = new Set(friends.map((f) => f.id));
+        userFriends.set(decoded.userId, friendSet);
+      } catch (err) {
+        console.error('Failed to load friends for', decoded.userId, err);
       }
+    }
+
+    // Load offline data (messages and friend requests)
+    try {
+      const [unreadMessages, pendingRequests] = await Promise.all([
+        db.getUnreadMessages(decoded.userId),
+        db.getPendingFriendRequests(decoded.userId)
+      ]);
+
+      // Send offline messages
+      if (unreadMessages.length > 0) {
+        socket.emit('offlineMessages', unreadMessages.map(msg => ({
+          id: msg.id,
+          sender: msg.sender_username,
+          senderId: msg.sender_id,
+          content: msg.content,
+          timestamp: new Date(msg.created_at).getTime(),
+          type: 'private',
+          recipientId: msg.recipient_id
+        })));
+      }
+
+      // Send pending friend requests
+      if (pendingRequests.length > 0) {
+        socket.emit('offlineFriendRequests', pendingRequests.map(req => ({
+          id: req.id,
+          from: req.from_user_id,
+          username: req.from_username
+        })));
+      }
+    } catch (err) {
+      console.error('Failed to load offline data for', decoded.userId, err);
+    }
 
       // Notify friends that user is online
       const userFriendsList = userFriends.get(decoded.userId);

@@ -161,8 +161,7 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
                   <div 
                     className="background-preview" 
                     style={{ 
-                      backgroundImage: `url(${bg.pattern})`,
-                      backgroundSize: 'cover'
+                      backgroundImage: `url(${bg.pattern})`
                     }}
                   ></div>
                   <span>{bg.name}</span>

@@ -13,4 +13,16 @@
   --theme-text-secondary: #6a1b9a;
   --theme-font-primary: 'Better VCR', 'MS Sans Serif', sans-serif;
   --theme-font-monospace: 'Better VCR', monospace;
+  
+  /* Enhanced taskbar colors - EXTREMELY BOLD */
+  --taskbar-bg: linear-gradient(90deg, #ff00ff 0%, #9932cc 25%, #8a2be2 50%, #9370db 75%, #da70d6 100%);
+  --taskbar-border: #4d1a66;
+}
+
+/* Orchid theme specific taskbar styling */
+.win98-taskbar {
+  background: var(--taskbar-bg) !important;
+  border-top: 4px solid var(--taskbar-border) !important;
+  box-shadow: 0 -4px 16px rgba(255, 0, 255, 0.7) !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5) !important;
 }

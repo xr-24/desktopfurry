@@ -286,6 +286,31 @@ class SocketService {
       Object.values(this.friendStatusHandlers).forEach(handler => handler(friends));
     });
 
+    // Handle offline messages received on connection
+    this.socket.on('offlineMessages', (messages: any[]) => {
+      console.log('Received offline messages:', messages);
+      const currentUserId = authService.getStoredUser()?.id;
+      
+      messages.forEach(message => {
+        if (message.senderId !== currentUserId) {
+          store.dispatch(addPrivateMessage({ message, currentUserId }));
+        }
+      });
+    });
+
+    // Handle offline friend requests received on connection
+    this.socket.on('offlineFriendRequests', (requests: any[]) => {
+      console.log('Received offline friend requests:', requests);
+      
+      requests.forEach(request => {
+        store.dispatch(addFriendRequest({
+          id: request.id,
+          from: request.from,
+          username: request.username
+        }));
+      });
+    });
+
     this.socket.on('friendRequest', (data: { requestId: string; from: string; username: string }) => {
       // Store request and notify
       store.dispatch(addFriendRequest({ id: data.requestId, from: data.from, username: data.username }));

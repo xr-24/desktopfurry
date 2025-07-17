@@ -311,6 +311,7 @@
   cursor: pointer;
   position: relative;
   gap: 8px;
+  color: #000000;
 }
 
 .start-menu-item:hover {
@@ -338,11 +339,33 @@
   position: absolute;
   left: 100%;
   bottom: 0;
-  width: 180px;
+  width: 200px;
+  max-height: 300px;
   background-color: var(--win98-gray);
   border: 2px outset var(--win98-gray);
   display: none;
   z-index: 1002;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--win98-dark-gray) var(--win98-gray);
+}
+
+.backgrounds-submenu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.backgrounds-submenu::-webkit-scrollbar-track {
+  background: var(--win98-gray);
+}
+
+.backgrounds-submenu::-webkit-scrollbar-thumb {
+  background: var(--win98-dark-gray);
+  border-radius: 4px;
+}
+
+.backgrounds-submenu::-webkit-scrollbar-thumb:hover {
+  background: var(--win98-darker-gray);
 }
 
 .backgrounds-item:hover .backgrounds-submenu {
@@ -352,9 +375,12 @@
 .background-option {
   display: flex;
   align-items: center;
-  padding: 4px 8px;
+  padding: 6px 8px;
   cursor: pointer;
   gap: 8px;
+  min-height: 24px;
+  width: 100%;
+  color: #000000;
 }
 
 .background-option:hover {
@@ -364,13 +390,19 @@
 
 .background-option.selected {
   background-color: var(--win98-light-gray);
+  color: #000000;
 }
 
 .background-preview {
-  width: 16px;
-  height: 12px;
-  border: 1px solid var(--win98-dark-gray);
+  width: 20px;
+  height: 20px;
+  border: none;
   flex-shrink: 0;
+  border-radius: 2px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: repeat;
+  pointer-events: none;
 }
 
 /* Themes Submenu */
@@ -381,12 +413,34 @@
 .themes-submenu {
   position: absolute;
   left: 100%;
-  bottom: 0;
-  width: 180px;
+  top: 0;
+  width: 200px;
+  max-height: 300px;
   background-color: var(--win98-gray);
   border: 2px outset var(--win98-gray);
   display: none;
   z-index: 1002;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--win98-dark-gray) var(--win98-gray);
+}
+
+.themes-submenu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.themes-submenu::-webkit-scrollbar-track {
+  background: var(--win98-gray);
+}
+
+.themes-submenu::-webkit-scrollbar-thumb {
+  background: var(--win98-dark-gray);
+  border-radius: 4px;
+}
+
+.themes-submenu::-webkit-scrollbar-thumb:hover {
+  background: var(--win98-darker-gray);
 }
 
 .themes-item:hover .themes-submenu {
@@ -396,9 +450,11 @@
 .theme-option {
   display: flex;
   align-items: center;
-  padding: 4px 8px;
+  padding: 6px 8px;
   cursor: pointer;
   gap: 8px;
+  min-height: 24px;
+  color: #000000;
 }
 
 .theme-option:hover {
@@ -408,12 +464,13 @@
 
 .theme-option.selected {
   background-color: var(--win98-light-gray);
+  color: #000000;
 }
 
 .theme-preview {
   width: 20px;
   height: 20px;
-  border: 1px solid var(--win98-dark-gray);
+  border: none;
   flex-shrink: 0;
   border-radius: 2px;
 }

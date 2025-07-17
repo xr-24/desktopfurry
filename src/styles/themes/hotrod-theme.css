@@ -13,6 +13,10 @@
   --theme-text-secondary: #b71c1c;
   --theme-font-primary: 'Better VCR', 'MS Sans Serif', sans-serif;
   --theme-font-monospace: 'Better VCR', monospace;
+  
+  /* Enhanced taskbar colors - EXTREMELY BOLD */
+  --taskbar-bg: linear-gradient(90deg, #ff0000 0%, #ff4500 20%, #dc143c 40%, #ff6347 60%, #ff8c00 80%, #ffa500 100%);
+  --taskbar-border: #8b0000;
 }
 
 /* Hotrod theme specific overrides for racing aesthetic */
@@ -27,4 +31,12 @@
 
 .hotrod-theme .desktop {
   background-color: #8b0000;
+}
+
+/* Hotrod theme specific taskbar styling */
+.win98-taskbar {
+  background: var(--taskbar-bg) !important;
+  border-top: 4px solid var(--taskbar-border) !important;
+  box-shadow: 0 -4px 16px rgba(255, 0, 0, 0.7) !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5) !important;
 }

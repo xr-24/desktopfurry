@@ -3,6 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setActiveTab, updateFriends, setSelectedFriend, clearUnreadMessages, clearFriendRequestNotifications, removeFriendRequest } from '../../store/socialSlice';
 import { socketService } from '../../services/socketService';
 import { authService } from '../../services/authService';
+import { offlineDataService } from '../../services/offlineDataService';
 import './DexSocial.css';
 
 interface Message {
@@ -167,14 +168,20 @@ const DexSocial: React.FC<DexSocialProps> = ({
   };
 
   // Friend request handlers
-  const handleAcceptRequest = (requestId: string) => {
-    socketService.acceptFriendRequest(requestId);
-    dispatch(removeFriendRequest(requestId));
+  const handleAcceptRequest = async (requestId: string) => {
+    const success = await offlineDataService.respondToFriendRequest(requestId, 'accept');
+    if (success) {
+      socketService.acceptFriendRequest(requestId);
+      dispatch(removeFriendRequest(requestId));
+    }
   };
 
-  const handleRejectRequest = (requestId: string) => {
-    socketService.rejectFriendRequest(requestId);
-    dispatch(removeFriendRequest(requestId));
+  const handleRejectRequest = async (requestId: string) => {
+    const success = await offlineDataService.respondToFriendRequest(requestId, 'reject');
+    if (success) {
+      socketService.rejectFriendRequest(requestId);
+      dispatch(removeFriendRequest(requestId));
+    }
   };
 
   const renderTabContent = () => {

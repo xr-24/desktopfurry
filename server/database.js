@@ -243,6 +243,90 @@ const db = {
     );
     return result.rows;
   },
+
+  // Message functions
+  async saveMessage(senderId, recipientId, content, messageType) {
+    const result = await pool.query(`
+      INSERT INTO messages (sender_id, recipient_id, content, message_type)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, created_at
+    `, [senderId, recipientId, content, messageType]);
+    return result.rows[0];
+  },
+
+  async getUnreadMessages(userId) {
+    const result = await pool.query(`
+      SELECT m.*, u.username as sender_username
+      FROM messages m
+      JOIN users u ON m.sender_id = u.id
+      WHERE m.recipient_id = $1 AND m.is_read = false
+      ORDER BY m.created_at ASC
+    `, [userId]);
+    return result.rows;
+  },
+
+  async getRecentMessages(userId, limit = 50) {
+    const result = await pool.query(`
+      SELECT m.*, u.username as sender_username
+      FROM messages m
+      JOIN users u ON m.sender_id = u.id
+      WHERE m.recipient_id = $1 OR m.sender_id = $1
+      ORDER BY m.created_at DESC
+      LIMIT $2
+    `, [userId, limit]);
+    return result.rows.reverse(); // Return in chronological order
+  },
+
+  async markMessagesAsRead(userId, messageIds) {
+    if (messageIds.length === 0) return;
+    await pool.query(`
+      UPDATE messages 
+      SET is_read = true 
+      WHERE id = ANY($1) AND recipient_id = $2
+    `, [messageIds, userId]);
+  },
+
+  // Friend request functions
+  async saveFriendRequest(fromUserId, toUserId) {
+    const result = await pool.query(`
+      INSERT INTO friend_requests (from_user_id, to_user_id)
+      VALUES ($1, $2)
+      ON CONFLICT (from_user_id, to_user_id) DO NOTHING
+      RETURNING id, created_at
+    `, [fromUserId, toUserId]);
+    return result.rows[0];
+  },
+
+  async getPendingFriendRequests(userId) {
+    const result = await pool.query(`
+      SELECT fr.*, u.username as from_username
+      FROM friend_requests fr
+      JOIN users u ON fr.from_user_id = u.id
+      WHERE fr.to_user_id = $1 AND fr.status = 'pending'
+      ORDER BY fr.created_at ASC
+    `, [userId]);
+    return result.rows;
+  },
+
+  async updateFriendRequestStatus(requestId, status) {
+    await pool.query(`
+      UPDATE friend_requests 
+      SET status = $1, responded_at = NOW()
+      WHERE id = $2
+    `, [status, requestId]);
+  },
+
+  async getUnreadCounts(userId) {
+    const [messageCount, requestCount] = await Promise.all([
+      pool.query('SELECT COUNT(*) as count FROM messages WHERE recipient_id = $1 AND is_read = false', [userId]),
+      pool.query('SELECT COUNT(*) as count FROM friend_requests WHERE to_user_id = $1 AND status = \'pending\'', [userId])
+    ]);
+    
+    return {
+      unreadMessages: parseInt(messageCount.rows[0].count),
+      unreadFriendRequests: parseInt(requestCount.rows[0].count)
+    };
+  },
 };
 
 module.exports = { pool, db }; 

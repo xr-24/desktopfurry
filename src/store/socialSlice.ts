@@ -9,6 +9,7 @@ interface Message {
   timestamp: number;
   type: 'local' | 'private';
   recipientId?: string;
+  isRead?: boolean;
 }
 
 interface Friend {
@@ -111,6 +112,47 @@ const socialSlice = createSlice({
     restoreFromProgramState: (state, action: PayloadAction<Partial<SocialState>>) => {
       Object.assign(state, action.payload);
     },
+    loadOfflineData: (state, action: PayloadAction<{ messages: Message[]; friendRequests: FriendRequest[] }>) => {
+      const { messages, friendRequests } = action.payload;
+      
+      // Add offline messages to private messages
+      messages.forEach(message => {
+        const friendId = message.senderId;
+        if (friendId) {
+          if (!state.privateMessages[friendId]) {
+            state.privateMessages[friendId] = [];
+          }
+          state.privateMessages[friendId].push(message);
+        }
+      });
+      
+      // Add offline friend requests
+      friendRequests.forEach(request => {
+        if (!state.friendRequests.find((req) => req.id === request.id)) {
+          state.friendRequests.push(request);
+          state.unreadFriendRequests += 1;
+        }
+      });
+      
+      // Update unread counts
+      state.unreadMessages = messages.length;
+      if (messages.length > 0) {
+        state.lastNotification = { tab: 'private' };
+      }
+    },
+    markMessagesAsRead: (state, action: PayloadAction<string[]>) => {
+      const messageIds = action.payload;
+      // Mark messages as read in private messages
+      Object.values(state.privateMessages).forEach(messages => {
+        messages.forEach(message => {
+          if (messageIds.includes(message.id)) {
+            message.isRead = true;
+          }
+        });
+      });
+      // Recalculate unread count
+      state.unreadMessages = Math.max(0, state.unreadMessages - messageIds.length);
+    },
   },
 });
 
@@ -125,6 +167,8 @@ export const {
   removeFriendRequest,
   clearFriendRequestNotifications,
   restoreFromProgramState,
+  loadOfflineData,
+  markMessagesAsRead,
 } = socialSlice.actions;
 
 export default socialSlice.reducer; 

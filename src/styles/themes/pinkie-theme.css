@@ -13,4 +13,16 @@
   --theme-text-secondary: #c2185b;
   --theme-font-primary: 'Better VCR', 'MS Sans Serif', sans-serif;
   --theme-font-monospace: 'Better VCR', monospace;
+  
+  /* Enhanced taskbar colors - EXTREMELY BOLD */
+  --taskbar-bg: linear-gradient(90deg, #ff1493 0%, #ff69b4 25%, #e91e63 50%, #ffb6c1 75%, #ffc0cb 100%);
+  --taskbar-border: #c2185b;
+}
+
+/* Pinkie theme specific taskbar styling */
+.win98-taskbar {
+  background: var(--taskbar-bg) !important;
+  border-top: 4px solid var(--taskbar-border) !important;
+  box-shadow: 0 -4px 16px rgba(255, 20, 147, 0.7) !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5) !important;
 }

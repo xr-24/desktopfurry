@@ -498,6 +498,67 @@ class AuthService {
       };
     }
   }
+
+  // Social API methods
+  async getUnreadCounts(): Promise<{ unreadMessages: number; unreadFriendRequests: number }> {
+    try {
+      const response = await axios.get('/social/unread-counts');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get unread counts:', error);
+      return { unreadMessages: 0, unreadFriendRequests: 0 };
+    }
+  }
+
+  async getRecentMessages(limit = 50): Promise<any[]> {
+    try {
+      const response = await axios.get(`/social/messages?limit=${limit}`);
+      return response.data.messages || [];
+    } catch (error) {
+      console.error('Failed to get recent messages:', error);
+      return [];
+    }
+  }
+
+  async getUnreadMessages(): Promise<any[]> {
+    try {
+      const response = await axios.get('/social/unread-messages');
+      return response.data.messages || [];
+    } catch (error) {
+      console.error('Failed to get unread messages:', error);
+      return [];
+    }
+  }
+
+  async markMessagesAsRead(messageIds: string[]): Promise<boolean> {
+    try {
+      await axios.post('/social/messages/mark-read', { messageIds });
+      return true;
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error);
+      return false;
+    }
+  }
+
+  async getPendingFriendRequests(): Promise<any[]> {
+    try {
+      const response = await axios.get('/social/friend-requests');
+      return response.data.requests || [];
+    } catch (error) {
+      console.error('Failed to get friend requests:', error);
+      return [];
+    }
+  }
+
+  async respondToFriendRequest(requestId: string, action: 'accept' | 'reject'): Promise<boolean> {
+    try {
+      await axios.post(`/social/friend-requests/${requestId}/respond`, { action });
+      return true;
+    } catch (error) {
+      console.error('Failed to respond to friend request:', error);
+      return false;
+    }
+  }
 }
 
 export const authService = new AuthService();

@@ -13,4 +13,15 @@
   --theme-text-secondary: #cc3300;
   --theme-font-primary: 'Better VCR', 'MS Sans Serif', sans-serif;
   --theme-font-monospace: 'Better VCR', monospace;
+  
+  /* Enhanced taskbar colors */
+  --taskbar-bg: linear-gradient(90deg, #ff6600 0%, #ff8c00 50%, #ffa500 100%);
+  --taskbar-border: #cc3300;
+}
+
+/* Sunset theme specific taskbar styling */
+.win98-taskbar {
+  background: var(--taskbar-bg) !important;
+  border-top: 2px solid var(--taskbar-border) !important;
+  box-shadow: 0 -2px 8px rgba(255, 102, 0, 0.3) !important;
 }

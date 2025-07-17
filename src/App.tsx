@@ -9,6 +9,7 @@ import AuthScreen from './components/AuthScreen';
 import Desktop from './components/Desktop';
 import './App.css';
 import { authService } from './services/authService';
+import { offlineDataService } from './services/offlineDataService';
 import CRTEffect from './components/CRTEffect';
 
 const AppContent: React.FC = () => {
@@ -60,6 +61,13 @@ const AppContent: React.FC = () => {
       }
     };
     loadThemeData();
+
+    // Load offline data when authenticated
+    const loadOfflineData = async () => {
+      if (!authService.isAuthenticated()) return;
+      await offlineDataService.initialize();
+    };
+    loadOfflineData();
 
     // Cleanup on unmount
     return () => {
