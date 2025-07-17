@@ -41,8 +41,13 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
     );
   };
 
-  // Convert equipped item IDs to item objects
+  // Use equipped items from profile data (provided by backend)
   const equippedItems = useMemo(() => {
+    if (profile.equippedItems && Array.isArray(profile.equippedItems)) {
+      return profile.equippedItems;
+    }
+    
+    // Fallback to inventory lookup if equippedItems not provided
     if (!profile.current_item_ids || !Array.isArray(profile.current_item_ids)) {
       return [];
     }
@@ -55,7 +60,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
         name: item.name,
         asset_path: item.asset_path
       }));
-  }, [profile.current_item_ids, items]);
+  }, [profile.equippedItems, profile.current_item_ids, items]);
 
   const getBackgroundStyle = () => {
     if (!profile.profile_background_id) return {};

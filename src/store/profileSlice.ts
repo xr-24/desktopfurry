@@ -23,6 +23,11 @@ export interface UserProfile {
   // Equipped cosmetics
   current_title_id?: string | null;
   current_item_ids?: string[] | null;
+  equippedItems?: Array<{
+    id: string;
+    name: string;
+    asset_path: string;
+  }>;
   // Additional fields for search results
   is_friend?: boolean;
 }

@@ -176,9 +176,26 @@ router.put('/me', authenticateToken, async (req, res) => {
       WHERE up.user_id = $1
     `, [userId]);
 
-    console.log('Complete profile data:', completeProfile.rows[0]);
+    // Get equipped items details
+    let equippedItems = [];
+    if (completeProfile.rows[0]?.current_item_ids && completeProfile.rows[0].current_item_ids.length > 0) {
+      const itemsResult = await db.query(`
+        SELECT id, name, asset_path
+        FROM items 
+        WHERE id = ANY($1) AND is_active = true
+      `, [completeProfile.rows[0].current_item_ids]);
+      equippedItems = itemsResult.rows;
+    }
 
-    res.json({ success: true, profile: completeProfile.rows[0] });
+    // Add equipped items to profile
+    const profileWithItems = {
+      ...completeProfile.rows[0],
+      equippedItems
+    };
+
+    console.log('Complete profile data:', profileWithItems);
+
+    res.json({ success: true, profile: profileWithItems });
   } catch (error) {
     console.error('Error updating user profile:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
@@ -302,9 +319,26 @@ router.get('/search', authenticateToken, async (req, res) => {
 
     console.log('Search results:', profiles.rows.length, 'profiles found');
 
+    // Get equipped items for all profiles
+    const profilesWithItems = await Promise.all(profiles.rows.map(async (profile) => {
+      let equippedItems = [];
+      if (profile.current_item_ids && profile.current_item_ids.length > 0) {
+        const itemsResult = await db.query(`
+          SELECT id, name, asset_path
+          FROM items 
+          WHERE id = ANY($1) AND is_active = true
+        `, [profile.current_item_ids]);
+        equippedItems = itemsResult.rows;
+      }
+      return {
+        ...profile,
+        equippedItems
+      };
+    }));
+
     res.json({
       success: true,
-      profiles: profiles.rows,
+      profiles: profilesWithItems,
       pagination: {
         currentPage: parseInt(page),
         totalPages,
