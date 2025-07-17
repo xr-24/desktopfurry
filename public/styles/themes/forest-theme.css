@@ -1,0 +1,16 @@
+/* Forest Theme */
+:root {
+  --win98-gray: #c8e6c8;
+  --win98-light-gray: #e8f5e8;
+  --win98-dark-gray: #90EE90;
+  --win98-darker-gray: #1a4d1a;
+  --win98-blue: #228B22;
+  --win98-dark-blue: #006400;
+  --win98-desktop-teal: #2d5a2d;
+  
+  /* Theme-specific variables */
+  --theme-text-primary: #1a4d1a;
+  --theme-text-secondary: #006400;
+  --theme-font-primary: 'Better VCR', 'MS Sans Serif', sans-serif;
+  --theme-font-monospace: 'Better VCR', monospace;
+}

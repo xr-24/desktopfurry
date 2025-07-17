@@ -189,9 +189,21 @@ const themeSlice = createSlice({
 
 // Helper function to apply theme to DOM
 function applyThemeToDOM(theme: Theme) {
-  const root = document.documentElement;
+  // Remove any existing theme stylesheets
+  const existingThemeLinks = document.querySelectorAll('link[data-theme]');
+  existingThemeLinks.forEach(link => link.remove());
   
-  // Apply color variables
+  // If it's not the default theme, load the theme CSS file
+  if (theme.id !== 'win98-default') {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `/styles/themes/${theme.id}.css`;
+    link.setAttribute('data-theme', theme.id);
+    document.head.appendChild(link);
+  }
+  
+  // Also apply via CSS variables as fallback
+  const root = document.documentElement;
   root.style.setProperty('--win98-gray', theme.colors.primary);
   root.style.setProperty('--win98-light-gray', theme.colors.secondary);
   root.style.setProperty('--win98-dark-gray', theme.colors.border);

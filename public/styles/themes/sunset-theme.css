@@ -1,0 +1,16 @@
+/* Sunset Theme */
+:root {
+  --win98-gray: #ffcc99;
+  --win98-light-gray: #ffe6cc;
+  --win98-dark-gray: #ff9966;
+  --win98-darker-gray: #663300;
+  --win98-blue: #ff6600;
+  --win98-dark-blue: #cc3300;
+  --win98-desktop-teal: #cc4400;
+  
+  /* Theme-specific variables */
+  --theme-text-primary: #663300;
+  --theme-text-secondary: #cc3300;
+  --theme-font-primary: 'Better VCR', 'MS Sans Serif', sans-serif;
+  --theme-font-monospace: 'Better VCR', monospace;
+}

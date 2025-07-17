@@ -1,0 +1,16 @@
+/* Ocean Theme */
+:root {
+  --win98-gray: #b3d9ff;
+  --win98-light-gray: #e6f3ff;
+  --win98-dark-gray: #0080ff;
+  --win98-darker-gray: #003366;
+  --win98-blue: #0066cc;
+  --win98-dark-blue: #004499;
+  --win98-desktop-teal: #004080;
+  
+  /* Theme-specific variables */
+  --theme-text-primary: #003366;
+  --theme-text-secondary: #004499;
+  --theme-font-primary: 'Better VCR', 'MS Sans Serif', sans-serif;
+  --theme-font-monospace: 'Better VCR', monospace;
+}
