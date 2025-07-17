@@ -20,6 +20,9 @@ export interface UserProfile {
   avatar_crop_scale?: number;
   avatar_crop_offset_x?: number;
   avatar_crop_offset_y?: number;
+  // Equipped cosmetics
+  current_title_id?: string | null;
+  current_item_ids?: string[] | null;
   // Additional fields for search results
   is_friend?: boolean;
 }

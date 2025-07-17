@@ -9,6 +9,12 @@ interface AvatarAppearance {
   body: string;
 }
 
+interface EquippedItem {
+  id: string;
+  name: string;
+  asset_path: string;
+}
+
 interface AvatarCropProps {
   appearance: AvatarAppearance;
   size?: number;
@@ -18,13 +24,15 @@ interface AvatarCropProps {
     offsetX?: number;
     offsetY?: number;
   };
+  equippedItems?: EquippedItem[];
 }
 
 const AvatarCrop: React.FC<AvatarCropProps> = ({ 
   appearance, 
   size = 80, 
   className = '',
-  cropConfig
+  cropConfig,
+  equippedItems = []
 }) => {
   const getAssetPath = (category: string, asset: string): string | undefined => {
     if (!asset || asset === 'none') return undefined;
@@ -134,6 +142,27 @@ const AvatarCrop: React.FC<AvatarCropProps> = ({
             }}
           />
         )}
+
+        {/* Equipped items layer (highest z-index) */}
+        {equippedItems.map((item, index) => (
+          <img
+            key={item.id}
+            src={item.asset_path}
+            alt={item.name}
+            style={{
+              ...spriteStyle,
+              zIndex: 15 + index, // Ensure items are on top of everything
+            }}
+            onError={(e) => {
+              const fallback = `/assets/characters/items/misc/${item.name.toLowerCase().replace(/\s+/g, '')}.png`;
+              if ((e.target as HTMLImageElement).src !== window.location.origin + fallback) {
+                (e.target as HTMLImageElement).src = fallback;
+              } else {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }
+            }}
+          />
+        ))}
       </div>
     </div>
   );

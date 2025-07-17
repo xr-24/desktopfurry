@@ -1,27 +1,19 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { UserProfile } from '../store/profileSlice';
 import AvatarCrop from './AvatarCrop';
-import { useDispatch } from 'react-redux';
-import { openProgram } from '../store/programSlice';
+import { socketService } from '../services/socketService';
+import { useAppSelector } from '../store/hooks';
 
 interface ProfileCardProps {
   profile: UserProfile;
 }
 
 const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
-  const dispatch = useDispatch();
+  const currentUser = useAppSelector((state) => state.auth.user);
+  const { items } = useAppSelector((state) => state.inventory);
 
-  const handleVisitDextop = () => {
-    // Open Browser98 and then update its state to navigate to the user's dextop
-    const windowId = `browser98-${Date.now()}`;
-    dispatch(openProgram({
-      type: 'browser98',
-      controllerId: 'system'
-    }));
-    
-    // Note: In a real implementation, we would need to update the browser state
-    // after the program opens to navigate to the dextop URL
-    // This would require additional logic in the Browser98 component
+  const handleSendFriendRequest = () => {
+    socketService.sendFriendRequest(profile.username);
   };
 
   const truncateText = (text: string, maxLength: number) => {
@@ -48,6 +40,22 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
       </div>
     );
   };
+
+  // Convert equipped item IDs to item objects
+  const equippedItems = useMemo(() => {
+    if (!profile.current_item_ids || !Array.isArray(profile.current_item_ids)) {
+      return [];
+    }
+    
+    return profile.current_item_ids
+      .map(itemId => items.find((item: any) => item.id === itemId))
+      .filter(Boolean)
+      .map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        asset_path: item.asset_path
+      }));
+  }, [profile.current_item_ids, items]);
 
   const getBackgroundStyle = () => {
     if (!profile.profile_background_id) return {};
@@ -85,7 +93,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
       'Sandstone'}.png`;
 
     return {
-      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(${backgroundPath})`,
+      backgroundImage: `url(${backgroundPath})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
@@ -112,6 +120,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
                 offsetX: profile.avatar_crop_offset_x || -0.5,
                 offsetY: profile.avatar_crop_offset_y || -0.3,
               }}
+              equippedItems={equippedItems}
             />
           </div>
           <div className="profile-card-info">
@@ -130,15 +139,18 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
 
         {renderInterestTags()}
 
-        <div className="profile-card-actions">
-          <button
-            className="win98-button profile-card-visit-btn"
-            onClick={handleVisitDextop}
-            title="Visit their Dextop"
-          >
-            Visit Dextop
-          </button>
-        </div>
+        {/* Add Friend button - only show if not already a friend and not the current user */}
+        {!profile.is_friend && currentUser && profile.user_id !== currentUser.id && (
+          <div className="profile-card-actions">
+            <button
+              className="win98-button profile-card-add-friend-btn"
+              onClick={handleSendFriendRequest}
+              title="Send friend request"
+            >
+              Add Friend
+            </button>
+          </div>
+        )}
 
         <div className="profile-card-privacy">
           {profile.privacy_setting === 'public' && '🌐 Public'}

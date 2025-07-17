@@ -16,6 +16,8 @@ router.get('/me', authenticateToken, async (req, res) => {
         SELECT 
           up.*,
           u.username,
+          u.current_title_id,
+          u.current_item_ids,
           COALESCE(aa.hue, 0) as hue, 
           COALESCE(aa.eyes, 'none') as eyes, 
           COALESCE(aa.ears, 'none') as ears, 
@@ -54,6 +56,8 @@ router.get('/me', authenticateToken, async (req, res) => {
           SELECT 
             up.*,
             u.username,
+            u.current_title_id,
+            u.current_item_ids,
             COALESCE(aa.hue, 0) as hue, 
             COALESCE(aa.eyes, 'none') as eyes, 
             COALESCE(aa.ears, 'none') as ears, 
@@ -155,6 +159,8 @@ router.put('/me', authenticateToken, async (req, res) => {
       SELECT 
         up.*,
         u.username,
+        u.current_title_id,
+        u.current_item_ids,
         COALESCE(aa.hue, 0) as hue, 
         COALESCE(aa.eyes, 'none') as eyes, 
         COALESCE(aa.ears, 'none') as ears, 
@@ -237,6 +243,8 @@ router.get('/search', authenticateToken, async (req, res) => {
       SELECT 
         up.*,
         u.username,
+        u.current_title_id,
+        u.current_item_ids,
         COALESCE(aa.hue, 0) as hue, 
         COALESCE(aa.eyes, 'none') as eyes, 
         COALESCE(aa.ears, 'none') as ears, 

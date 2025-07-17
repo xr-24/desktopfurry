@@ -181,38 +181,6 @@ const DexDirectory: React.FC<DexDirectoryProps> = ({
 
     return (
       <div className="profile-tab">
-        <div className="profile-header">
-            <div className="profile-avatar">
-              <AvatarCrop
-                appearance={{
-                  hue: currentProfile.hue || 0,
-                  eyes: currentProfile.eyes || 'none',
-                  ears: currentProfile.ears || 'none',
-                  fluff: currentProfile.fluff || 'none',
-                  tail: currentProfile.tail || 'none',
-                  body: currentProfile.body || 'CustomBase',
-                }}
-                size={120}
-                cropConfig={{
-                  scale: currentProfile.avatar_crop_scale || 2.2,
-                  offsetX: currentProfile.avatar_crop_offset_x || -0.5,
-                  offsetY: currentProfile.avatar_crop_offset_y || -0.3,
-                }}
-              />
-            </div>
-          <div className="profile-info">
-            <h2 className="username">{currentProfile.username}</h2>
-            {!isEditing && (
-              <button
-                className="win98-button"
-                onClick={() => dispatch(startEditing())}
-              >
-                Edit Profile
-              </button>
-            )}
-          </div>
-        </div>
-
         {isEditing ? (
           <div className="profile-edit">
             <div className="form-group">
@@ -387,48 +355,17 @@ const DexDirectory: React.FC<DexDirectoryProps> = ({
             {saveError && <div className="error">{saveError}</div>}
           </div>
         ) : (
-          <div 
-            className="profile-view"
-            style={{
-              backgroundImage: currentProfile.profile_background_id ? 
-                `linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)), url(/assets/patterns/${
-                  availableBackgrounds.find(bg => bg.id === currentProfile.profile_background_id)?.pattern.split('/').pop() || 'Sandstone.png'
-                })` : 
-                undefined,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
-            }}
-          >
-            <div className="profile-section">
-              <h3>Biography</h3>
-              <div className="biography">
-                {currentProfile.biography || 'No biography set.'}
-              </div>
+          <div className="my-profile-preview">
+            <div className="profile-card-container">
+              <ProfileCard profile={currentProfile} />
             </div>
-
-            <div className="profile-section">
-              <h3>Interests</h3>
-              <div className="interest-tags">
-                {currentProfile.interest_tags ? (
-                  currentProfile.interest_tags.split(',').map((tag, index) => (
-                    <span key={index} className="interest-tag">
-                      {tag.trim()}
-                    </span>
-                  ))
-                ) : (
-                  'No interests set.'
-                )}
-              </div>
-            </div>
-
-            <div className="profile-section">
-              <h3>Privacy</h3>
-              <div className="privacy-setting">
-                {currentProfile.privacy_setting === 'public' && 'Public Profile'}
-                {currentProfile.privacy_setting === 'friends' && 'Friends Only'}
-                {currentProfile.privacy_setting === 'private' && 'Private Profile'}
-              </div>
+            <div className="profile-edit-actions">
+              <button
+                className="win98-button edit-profile-btn"
+                onClick={() => dispatch(startEditing())}
+              >
+                Edit Profile
+              </button>
             </div>
           </div>
         )}
