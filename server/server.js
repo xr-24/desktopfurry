@@ -778,9 +778,14 @@ io.on('connection', (socket) => {
         db.getPendingFriendRequests(decoded.userId)
       ]);
 
+      console.log(`Loading offline data for user ${decoded.userId}:`, {
+        unreadMessages: unreadMessages.length,
+        pendingRequests: pendingRequests.length
+      });
+
       // Send offline messages
       if (unreadMessages.length > 0) {
-        socket.emit('offlineMessages', unreadMessages.map(msg => ({
+        const transformedMessages = unreadMessages.map(msg => ({
           id: msg.id,
           sender: msg.sender_username,
           senderId: msg.sender_id,
@@ -788,16 +793,22 @@ io.on('connection', (socket) => {
           timestamp: new Date(msg.created_at).getTime(),
           type: 'private',
           recipientId: msg.recipient_id
-        })));
+        }));
+        
+        console.log('Sending offline messages:', transformedMessages);
+        socket.emit('offlineMessages', transformedMessages);
       }
 
       // Send pending friend requests
       if (pendingRequests.length > 0) {
-        socket.emit('offlineFriendRequests', pendingRequests.map(req => ({
+        const transformedRequests = pendingRequests.map(req => ({
           id: req.id,
           from: req.from_user_id,
           username: req.from_username
-        })));
+        }));
+        
+        console.log('Sending offline friend requests:', transformedRequests);
+        socket.emit('offlineFriendRequests', transformedRequests);
       }
     } catch (err) {
       console.error('Failed to load offline data for', decoded.userId, err);

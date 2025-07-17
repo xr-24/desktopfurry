@@ -293,6 +293,7 @@ class SocketService {
       
       messages.forEach(message => {
         if (message.senderId !== currentUserId) {
+          console.log('Adding offline message to store:', message);
           store.dispatch(addPrivateMessage({ message, currentUserId }));
         }
       });

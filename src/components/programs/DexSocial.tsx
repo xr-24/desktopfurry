@@ -247,7 +247,7 @@ const DexSocial: React.FC<DexSocialProps> = ({
               </div>
             )}
             <div className="friends-list">
-              {programState.friends
+              {[...programState.friends]
                 .sort((a, b) => {
                   // Sort online friends first, then alphabetically
                   if (a.isOnline !== b.isOnline) {
@@ -325,7 +325,7 @@ const DexSocial: React.FC<DexSocialProps> = ({
         return (
           <div className="dex-social-private">
             <div className="friends-sidebar">
-              {programState.friends
+              {[...programState.friends]
                 .sort((a, b) => {
                   // Sort online friends first, then alphabetically
                   if (a.isOnline !== b.isOnline) {

@@ -62,12 +62,8 @@ const AppContent: React.FC = () => {
     };
     loadThemeData();
 
-    // Load offline data when authenticated
-    const loadOfflineData = async () => {
-      if (!authService.isAuthenticated()) return;
-      await offlineDataService.initialize();
-    };
-    loadOfflineData();
+    // Note: Offline data is now loaded via socket connection instead of API calls
+    // This prevents duplicate loading and ensures consistency
 
     // Cleanup on unmount
     return () => {
