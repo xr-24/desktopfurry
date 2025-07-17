@@ -15,6 +15,7 @@ interface Message {
   timestamp: number;
   type: 'local' | 'private';
   recipientId?: string;
+  isRead?: boolean; // Added for marking messages as read
 }
 
 interface Friend {
@@ -40,6 +41,9 @@ interface DexSocialProps {
   };
   onClose?: () => void; // Callback to hide the widget
   focusTrigger?: number; // increments when parent wants to focus input
+  onTabChange?: (tab: 'friends' | 'local' | 'private' | 'dextop') => void; // Callback when tab is manually changed
+  initialTab?: 'friends' | 'local' | 'private' | 'dextop'; // Initial tab to show (overrides programState.activeTab)
+  forceLocalTab?: boolean; // Whether to force switch to local tab when focusTrigger changes
 }
 
 const DexSocial: React.FC<DexSocialProps> = ({
@@ -51,11 +55,19 @@ const DexSocial: React.FC<DexSocialProps> = ({
   programState,
   onClose,
   focusTrigger,
+  onTabChange,
+  initialTab,
+  forceLocalTab,
 }) => {
   const dispatch = useAppDispatch();
   const [activeTab, setActiveTabLocal] = useState<'friends' | 'local' | 'private' | 'dextop'>(
-    programState.activeTab || 'local'
+    initialTab || 'local'
   );
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('DexSocial initialized with activeTab:', activeTab, 'initialTab prop:', initialTab);
+  }, []);
   const [messageInput, setMessageInput] = useState('');
   const [friendSearchInput, setFriendSearchInput] = useState('');
   const [dextopCodeInput, setDextopCodeInput] = useState('');
@@ -94,11 +106,7 @@ const DexSocial: React.FC<DexSocialProps> = ({
     };
   }, [windowId, dispatch]);
 
-  // Update Redux state when local state changes
-  useEffect(() => {
-    dispatch(setActiveTab(activeTab));
-  }, [activeTab, dispatch]);
-
+  // Update selectedFriend in Redux when local state changes
   useEffect(() => {
     dispatch(setSelectedFriend(selectedFriend));
   }, [selectedFriend, dispatch]);
@@ -107,14 +115,28 @@ const DexSocial: React.FC<DexSocialProps> = ({
   useEffect(() => {
     if (activeTab === 'local' || activeTab === 'private') {
       dispatch(clearUnreadMessages());
+      
+      // If viewing private tab, mark all unread messages as read in the database
+      if (activeTab === 'private') {
+        const allMessages = Object.values(programState.privateMessages).flat();
+        const unreadMessageIds = allMessages
+          .filter(msg => !msg.isRead && msg.senderId !== currentUser?.id)
+          .map(msg => msg.id);
+        
+        if (unreadMessageIds.length > 0) {
+          offlineDataService.markMessagesAsRead(unreadMessageIds);
+        }
+      }
     }
     if (activeTab === 'friends') {
       dispatch(clearFriendRequestNotifications());
     }
-  }, [activeTab, dispatch]);
+  }, [activeTab, dispatch, programState.privateMessages, currentUser?.id]);
 
   const handleTabChange = (tab: 'friends' | 'local' | 'private' | 'dextop') => {
     setActiveTabLocal(tab);
+    // Notify parent of manual tab change
+    onTabChange?.(tab);
   };
 
   const handleSendMessage = () => {
@@ -371,11 +393,6 @@ const DexSocial: React.FC<DexSocialProps> = ({
                     <div ref={messagesEndRef} />
                   </div>
                   <div className="message-input">
-                    {selectedFriend && !programState.friends.find(f => f.id === selectedFriend)?.isOnline && (
-                      <div className="offline-notice">
-                        Friend is offline. Message will be delivered when they log in.
-                      </div>
-                    )}
                     <input
                       type="text"
                       placeholder="Type a message..."
@@ -447,8 +464,8 @@ const DexSocial: React.FC<DexSocialProps> = ({
   // Auto focus input when focusTrigger changes
   useEffect(() => {
     if (focusTrigger !== undefined) {
-      // Ensure local tab
-      if (activeTab !== 'local') {
+      // Only force local tab if forceLocalTab is true (i.e., opened via T key)
+      if (forceLocalTab && activeTab !== 'local') {
         handleTabChange('local');
       }
       // delay focus until input rendered
@@ -456,7 +473,7 @@ const DexSocial: React.FC<DexSocialProps> = ({
         localInputRef.current?.focus();
       }, 0);
     }
-  }, [focusTrigger]);
+  }, [focusTrigger, forceLocalTab]);
 
   return (
     <div

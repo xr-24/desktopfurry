@@ -10,7 +10,7 @@ import DexSocial from './programs/DexSocial';
 import WelcomeVideo from './WelcomeVideo';
 import useMovement from '../hooks/useMovement';
 import { setBackground } from '../store/programSlice';
-import { restoreFromProgramState, setActiveTab, setSelectedFriend } from '../store/socialSlice';
+import { restoreFromProgramState, setActiveTab, setSelectedFriend, setLastManualTab } from '../store/socialSlice';
 import { updatePlayerPosition } from '../store/gameSlice';
 import '../styles/desktop.css';
 import { authService } from '../services/authService';
@@ -36,6 +36,7 @@ const Desktop: React.FC = () => {
   const backgroundId = useAppSelector((state: any) => state.programs.backgroundId);
   const visitors = useAppSelector((state:any)=> state.dextop.visitors);
   const socialState = useAppSelector((state: any) => state.social);
+  const lastManualTab = socialState.lastManualTab;
   const dispatch = useAppDispatch();
   const trailerMode = useAppSelector((state:any)=> state.ui.trailerMode);
   
@@ -45,6 +46,7 @@ const Desktop: React.FC = () => {
   const [isDexSocialOpen, setIsDexSocialOpen] = useState(false);
   const [isDexSocialHidden, setIsDexSocialHidden] = useState(false);
   const [focusChatSignal, setFocusChatSignal] = useState(0);
+  const [openedViaTKey, setOpenedViaTKey] = useState(false);
   
   // Migration: Try to restore DexSocial data from old program state
   useEffect(() => {
@@ -53,7 +55,6 @@ const Desktop: React.FC = () => {
       // Look for any existing dexsocial program window data
       const dexSocialProgram = Object.values(currentPrograms).find((p: any) => p.type === 'dexsocial');
       if (dexSocialProgram && dexSocialProgram.state) {
-        console.log('🔄 Migrating existing DexSocial data from program state');
         dispatch(restoreFromProgramState(dexSocialProgram.state));
       }
     };
@@ -125,7 +126,6 @@ const Desktop: React.FC = () => {
         
         // If a player hasn't updated in 5 seconds and appears to be moving, they might be stuck
         if (player?.isMoving && (now - lastUpdate) > 5000) {
-          console.log(`Remote player ${playerId} animation might be stuck, forcing refresh`);
           // Force a visual refresh by dispatching a minimal update
           dispatch(updatePlayerPosition({
             playerId,
@@ -213,13 +213,15 @@ const Desktop: React.FC = () => {
         e.preventDefault();
 
         if (!isDexSocialOpen) {
-          // Open and focus
+          // Open and focus - always use local tab for T key (don't update lastManualTab)
           dispatch(setActiveTab('local'));
           setIsDexSocialOpen(true);
           setFocusChatSignal((s) => s + 1);
+          setOpenedViaTKey(true);
         } else {
           // Chat open but input not focused: close it
           setIsDexSocialOpen(false);
+          setOpenedViaTKey(false);
         }
       }
     };
@@ -248,9 +250,10 @@ const Desktop: React.FC = () => {
 
         // Toggle invisible chat
         setIsDexSocialHidden(true);
-        setActiveTab('local');
+        dispatch(setActiveTab('local'));
         setIsDexSocialOpen(true);
         setFocusChatSignal((s)=>s+1);
+        setOpenedViaTKey(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -305,15 +308,31 @@ const Desktop: React.FC = () => {
 
   const handleDexSocialToggle = () => {
     if (!isDexSocialOpen) {
-      // About to open
+      // About to open - preserve last tab unless there are notifications
+      setOpenedViaTKey(false); // Not opened via T key
+      console.log('Opening DexSocial, lastManualTab from Redux:', lastManualTab);
       if (hasDexNotification && notificationTarget) {
+        // If there are notifications, switch to the notification tab
+        console.log('Has notifications, switching to:', notificationTarget.tab);
         if (notificationTarget.tab === 'private' && notificationTarget.friendId) {
           dispatch(setSelectedFriend(notificationTarget.friendId));
         }
         dispatch(setActiveTab(notificationTarget.tab));
+        // Update lastManualTab to remember this tab for next time
+        dispatch(setLastManualTab(notificationTarget.tab));
+      } else {
+        // If no notifications, use the last manually selected tab
+        console.log('No notifications, using lastManualTab:', lastManualTab);
+        dispatch(setActiveTab(lastManualTab));
       }
     }
     setIsDexSocialOpen(!isDexSocialOpen);
+  };
+
+  const handleTabChange = (tab: 'friends' | 'local' | 'private' | 'dextop') => {
+    // Update lastManualTab when user manually changes tabs
+    console.log('Manual tab change to:', tab, '- updating Redux lastManualTab');
+    dispatch(setLastManualTab(tab));
   };
 
   if (!roomId) {
@@ -381,16 +400,29 @@ const Desktop: React.FC = () => {
             onClick={() => setIsDexSocialOpen(false)}
           />
           <div className={`dex-social-widget${isDexSocialHidden ? ' invisible-chat' : ''}`}>
-            <DexSocial
-              windowId="dex-social-widget"
-              position={{ x: 0, y: 0 }}
-              size={{ width: 400, height: 350 }}
-              zIndex={10000}
-              isMinimized={false}
-              programState={socialState}
-              onClose={() => { setIsDexSocialOpen(false); setIsDexSocialHidden(false);} }
-              focusTrigger={focusChatSignal}
-            />
+            {(() => {
+              const initialTab = openedViaTKey ? 'local' : lastManualTab;
+              console.log('DexSocial initialTab:', initialTab, 'openedViaTKey:', openedViaTKey, 'lastManualTab from Redux:', lastManualTab);
+              return (
+                <DexSocial
+                  windowId="dex-social-widget"
+                  position={{ x: 0, y: 0 }}
+                  size={{ width: 400, height: 350 }}
+                  zIndex={10000}
+                  isMinimized={false}
+                  programState={socialState}
+                  onClose={() => { 
+                    setIsDexSocialOpen(false); 
+                    setIsDexSocialHidden(false);
+                    setOpenedViaTKey(false);
+                  }}
+                  focusTrigger={focusChatSignal}
+                  onTabChange={handleTabChange}
+                  initialTab={initialTab}
+                  forceLocalTab={openedViaTKey}
+                />
+              );
+            })()}
           </div>
         </>
       )}

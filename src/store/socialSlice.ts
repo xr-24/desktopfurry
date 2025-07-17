@@ -27,6 +27,7 @@ interface FriendRequest {
 
 interface SocialState {
   activeTab: 'friends' | 'local' | 'private' | 'dextop';
+  lastManualTab: 'friends' | 'local' | 'private' | 'dextop';
   localMessages: Message[];
   privateMessages: { [friendId: string]: Message[] };
   friends: Friend[];
@@ -39,6 +40,7 @@ interface SocialState {
 
 const initialState: SocialState = {
   activeTab: 'local',
+  lastManualTab: 'local',
   localMessages: [],
   privateMessages: {},
   friends: [],
@@ -55,6 +57,9 @@ const socialSlice = createSlice({
   reducers: {
     setActiveTab: (state, action: PayloadAction<'friends' | 'local' | 'private' | 'dextop'>) => {
       state.activeTab = action.payload;
+    },
+    setLastManualTab: (state, action: PayloadAction<'friends' | 'local' | 'private' | 'dextop'>) => {
+      state.lastManualTab = action.payload;
     },
     addLocalMessage: (state, action: PayloadAction<{ message: Message; currentUserId: string }>) => {
       const { message, currentUserId } = action.payload;
@@ -143,9 +148,10 @@ const socialSlice = createSlice({
         }
       });
       
-      // Update unread counts
-      state.unreadMessages = messages.length;
-      if (messages.length > 0) {
+      // Only count unread messages and set notifications for unread messages
+      const unreadMessages = messages.filter(message => !message.isRead);
+      state.unreadMessages = unreadMessages.length;
+      if (unreadMessages.length > 0) {
         state.lastNotification = { tab: 'private' };
       }
     },
@@ -167,6 +173,7 @@ const socialSlice = createSlice({
 
 export const {
   setActiveTab,
+  setLastManualTab,
   addLocalMessage,
   addPrivateMessage,
   updateFriends,
