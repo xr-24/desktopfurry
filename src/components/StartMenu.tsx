@@ -4,6 +4,7 @@ import { openProgram } from '../store/programSlice';
 import { setChatColorHue } from '../store/playerSlice';
 import { toggleGridSnapping } from '../store/uiSlice';
 import { resetToDefaults } from '../store/iconSlice';
+import { authService } from '../services/authService';
 // Dynamically load all pattern images from assets/patterns
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const patternsContext = (require as any).context('../assets/patterns', false, /\.(png|jpe?g|gif)$/);
@@ -31,11 +32,33 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
   const chatColorHue = useAppSelector((state:any)=> state.player.chatColorHue);
   const gridSnappingEnabled = useAppSelector((state:any) => state.ui.gridSnappingEnabled);
   
-  // Get purchased backgrounds from shop state
-  const shopState = useAppSelector((state: any) => state.shop);
-  const purchasedBackgrounds = shopState?.items?.backgrounds || [];
-
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const [purchasedBackgrounds, setPurchasedBackgrounds] = React.useState<string[]>([]);
+
+  // Load purchased backgrounds when component mounts
+  React.useEffect(() => {
+    const loadPurchasedBackgrounds = async () => {
+      try {
+        const purchaseHistory = await authService.loadPurchaseHistory();
+        console.log('Purchase history:', purchaseHistory);
+        if (purchaseHistory && purchaseHistory.purchases) {
+          const backgroundPurchases = purchaseHistory.purchases.filter((purchase: any) => purchase.item_type === 'background');
+          console.log('Background purchases:', backgroundPurchases);
+          const backgroundIds = backgroundPurchases
+            .map((purchase: any) => purchase.metadata?.background_id)
+            .filter(Boolean);
+          console.log('Extracted background IDs:', backgroundIds);
+          setPurchasedBackgrounds(backgroundIds);
+        }
+      } catch (error) {
+        console.error('Failed to load purchased backgrounds:', error);
+      }
+    };
+
+    if (isOpen) {
+      loadPurchasedBackgrounds();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -47,13 +70,8 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
 
   // Filter backgrounds to only show free ones + purchased ones
   const getAvailableBackgrounds = () => {
-    const purchasedBackgroundIds = purchasedBackgrounds
-      .filter((bg: any) => bg.is_purchased)
-      .map((bg: any) => bg.metadata?.background_id)
-      .filter(Boolean);
-
     return RETRO_BACKGROUNDS.filter(bg => 
-      FREE_BACKGROUNDS.includes(bg.id) || purchasedBackgroundIds.includes(bg.id)
+      FREE_BACKGROUNDS.includes(bg.id) || purchasedBackgrounds.includes(bg.id)
     );
   };
 

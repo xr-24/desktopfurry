@@ -53,13 +53,22 @@ const Shop: React.FC<ShopProps> = ({
       if (data) {
         // Remove placeholder categories/items per requirement
         const filteredItems = { ...data.items };
-        // Remove all backgrounds (unlocked by default)
-        filteredItems.backgrounds = [];
 
         // Helper to filter out placeholder items – keep those with a valid asset_path
         const filterPlaceholders = (arr: ShopItem[] = []) => arr.filter(i => !!i.asset_path);
         filteredItems.games = filterPlaceholders(filteredItems.games);
         filteredItems.themes = filterPlaceholders(filteredItems.themes);
+        
+        // Filter out free backgrounds from shop (they're available by default)
+        const FREE_BACKGROUND_IDS = [
+          'sandstone', 'waves', 'circles', 'blocks', 'bubbles', 'clouds', 
+          'paradise', 'metal links', 'palm tree', 'purple sponge', 'red tile', 
+          'pink flower', 'sunset'
+        ];
+        filteredItems.backgrounds = (filteredItems.backgrounds || []).filter((bg: ShopItem) => {
+          const bgId = bg.metadata?.background_id?.toLowerCase();
+          return bgId && !FREE_BACKGROUND_IDS.includes(bgId);
+        });
 
         // Always trust server-reported balance as the source of truth.
         dispatch(loadShopSuccess({
@@ -197,6 +206,25 @@ const Shop: React.FC<ShopProps> = ({
                 })()
               ) : (
                 item.name
+              )}
+            </div>
+          ) : item.item_type === 'background' ? (
+            <div className="background-preview" style={{
+              width: '100%',
+              height: '100%',
+              backgroundImage: item.metadata?.background_id ? 
+                `url(/assets/patterns/${item.metadata.background_id.split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}.png)` : 
+                'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'repeat',
+              border: '1px solid #999',
+              borderRadius: '2px'
+            }}>
+              {!item.metadata?.background_id && (
+                <div className="item-placeholder">
+                  {getItemIcon(item.item_type)}
+                </div>
               )}
             </div>
           ) : item.asset_path ? (
@@ -341,4 +369,4 @@ const Shop: React.FC<ShopProps> = ({
   );
 };
 
-export default Shop; 
+export default Shop;

@@ -216,7 +216,7 @@ router.get('/purchases', authService.authenticateToken, async (req, res) => {
     const userId = req.user.userId;
     
     const purchasesResult = await db.query(`
-      SELECT up.*, si.name, si.category, si.item_type, si.asset_path
+      SELECT up.*, si.name, si.category, si.item_type, si.asset_path, si.metadata
       FROM user_purchases up
       JOIN shop_items si ON up.shop_item_id = si.id
       WHERE up.user_id = $1
