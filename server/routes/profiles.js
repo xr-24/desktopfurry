@@ -7,32 +7,11 @@ const { authenticateToken } = require('../auth');
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log('Fetching profile for user:', userId);
     
     // First check if user profile exists, if not create it
-    let profile = await db.query(`
-      SELECT 
-        up.*,
-        u.username,
-        COALESCE(aa.hue, 0) as hue, 
-        COALESCE(aa.eyes, 'none') as eyes, 
-        COALESCE(aa.ears, 'none') as ears, 
-        COALESCE(aa.fluff, 'none') as fluff, 
-        COALESCE(aa.tail, 'none') as tail, 
-        COALESCE(aa.body, 'CustomBase') as body
-      FROM user_profiles up
-      JOIN users u ON up.user_id = u.id
-      LEFT JOIN avatar_appearances aa ON up.user_id = aa.user_id
-      WHERE up.user_id = $1
-    `, [userId]);
-
-    if (profile.rows.length === 0) {
-      // Create profile if it doesn't exist
-      await db.query(`
-        INSERT INTO user_profiles (user_id, biography, interest_tags, privacy_setting)
-        VALUES ($1, '', '', 'public')
-      `, [userId]);
-      
-      // Try again
+    let profile;
+    try {
       profile = await db.query(`
         SELECT 
           up.*,
@@ -48,12 +27,58 @@ router.get('/me', authenticateToken, async (req, res) => {
         LEFT JOIN avatar_appearances aa ON up.user_id = aa.user_id
         WHERE up.user_id = $1
       `, [userId]);
+      console.log('Profile query result:', profile.rows.length, 'rows');
+    } catch (queryError) {
+      console.error('Profile query failed:', queryError);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Database query failed: ' + queryError.message 
+      });
+    }
+
+    if (profile.rows.length === 0) {
+      console.log('No profile found, creating one...');
+      try {
+        // Create profile if it doesn't exist
+        await db.query(`
+          INSERT INTO user_profiles (user_id, biography, interest_tags, privacy_setting)
+          VALUES ($1, '', '', 'public')
+        `, [userId]);
+        console.log('Profile created successfully');
+        
+        // Try again
+        profile = await db.query(`
+          SELECT 
+            up.*,
+            u.username,
+            COALESCE(aa.hue, 0) as hue, 
+            COALESCE(aa.eyes, 'none') as eyes, 
+            COALESCE(aa.ears, 'none') as ears, 
+            COALESCE(aa.fluff, 'none') as fluff, 
+            COALESCE(aa.tail, 'none') as tail, 
+            COALESCE(aa.body, 'CustomBase') as body
+          FROM user_profiles up
+          JOIN users u ON up.user_id = u.id
+          LEFT JOIN avatar_appearances aa ON up.user_id = aa.user_id
+          WHERE up.user_id = $1
+        `, [userId]);
+        console.log('Profile refetch result:', profile.rows.length, 'rows');
+      } catch (createError) {
+        console.error('Profile creation failed:', createError);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Failed to create profile: ' + createError.message 
+        });
+      }
     }
 
     res.json({ success: true, profile: profile.rows[0] });
   } catch (error) {
     console.error('Error fetching user profile:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error: ' + error.message 
+    });
   }
 });
 

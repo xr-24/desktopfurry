@@ -473,9 +473,12 @@ class AuthService {
   // Generic API call method for profile operations
   async apiCall(path: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', data?: any): Promise<any> {
     try {
+      // Remove leading /api if it exists since baseURL already includes it
+      const cleanPath = path.startsWith('/api') ? path.substring(4) : path;
+      
       const config: any = {
         method: method.toLowerCase(),
-        url: path,
+        url: cleanPath,
       };
 
       if (data && (method === 'POST' || method === 'PUT')) {
