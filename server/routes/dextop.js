@@ -44,6 +44,7 @@ router.get('/my-dextop', authService.authenticateToken, async (req, res) => {
         id: dextop.id,
         name: dextop.name,
         backgroundId: dextop.background_id,
+        currentTheme: dextop.current_theme,
         isPublic: dextop.is_public,
         allowVisitors: dextop.allow_visitors,
         allowVisitorInteraction: dextop.allow_visitor_interaction,
@@ -136,6 +137,29 @@ router.post('/background', authService.authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error updating background:', error);
     res.status(500).json({ error: 'Failed to update background' });
+  }
+});
+
+// Update dextop theme
+router.post('/theme', authService.authenticateToken, async (req, res) => {
+  try {
+    const { themeId } = req.body;
+    
+    if (!themeId) {
+      return res.status(400).json({ error: 'Theme ID required' });
+    }
+    
+    // Update the current theme in the dextops table
+    await db.query(`
+      UPDATE dextops 
+      SET current_theme = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE user_id = $2
+    `, [themeId, req.user.userId]);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating theme:', error);
+    res.status(500).json({ error: 'Failed to update theme' });
   }
 });
 
@@ -281,4 +305,4 @@ router.get('/visit/:dextopId', authService.authenticateToken, async (req, res) =
   }
 });
 
-module.exports = router; 
+module.exports = router;

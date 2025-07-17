@@ -7,6 +7,12 @@
   --win98-blue: #0080ff;
   --win98-dark-blue: #0000ff;
   --win98-desktop-teal: #008080;
+  
+  /* Theme-specific variables (can be overridden by themes) */
+  --theme-text-primary: #000000;
+  --theme-text-secondary: #404040;
+  --theme-font-primary: 'Better VCR', 'MS Sans Serif', sans-serif;
+  --theme-font-monospace: 'Better VCR', monospace;
 }
 
 .win98-window {
@@ -290,4 +296,4 @@
 .form-group input {
   width: 100%;
   box-sizing: border-box;
-} 
+}

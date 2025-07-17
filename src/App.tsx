@@ -4,6 +4,7 @@ import { store } from './store/store';
 import { socketService } from './services/socketService';
 import { useAppSelector, useAppDispatch } from './store/hooks';
 import { setInventoryData } from './store/inventorySlice';
+import { initializeTheme, loadThemesStart, loadThemesSuccess, loadThemesFailure, setCurrentTheme } from './store/themeSlice';
 import AuthScreen from './components/AuthScreen';
 import Desktop from './components/Desktop';
 import './App.css';
@@ -18,6 +19,9 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     // Connect to socket when app starts (but don't join anything yet)
     socketService.connect();
+
+    // Initialize theme system
+    dispatchRedux(initializeTheme());
 
     // Preload inventory once authenticated so cosmetics have asset paths
     const fetchInventory = async () => {
@@ -37,11 +41,31 @@ const AppContent: React.FC = () => {
     };
     fetchInventory();
 
+    // Load themes and current theme when authenticated
+    const loadThemeData = async () => {
+      if (!authService.isAuthenticated()) return;
+      
+      dispatchRedux(loadThemesStart());
+      try {
+        const purchasedThemes = await authService.loadPurchasedThemes();
+        dispatchRedux(loadThemesSuccess({ purchasedThemes }));
+        
+        // Load saved theme from server
+        const savedTheme = await authService.loadCurrentTheme();
+        if (savedTheme) {
+          dispatchRedux(setCurrentTheme(savedTheme));
+        }
+      } catch (error) {
+        dispatchRedux(loadThemesFailure('Failed to load themes'));
+      }
+    };
+    loadThemeData();
+
     // Cleanup on unmount
     return () => {
       socketService.disconnect();
     };
-  }, []);
+  }, [dispatchRedux]);
 
   // Show auth screen if not authenticated
   if (!isAuthenticated) {

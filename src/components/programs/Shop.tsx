@@ -227,6 +227,51 @@ const Shop: React.FC<ShopProps> = ({
                 </div>
               )}
             </div>
+          ) : item.item_type === 'theme' ? (
+            <div className="theme-preview" style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              border: '1px solid #999',
+              borderRadius: '2px',
+              overflow: 'hidden'
+            }}>
+              {/* Theme color preview */}
+              <div style={{
+                flex: 1,
+                background: item.metadata?.colors ? 
+                  `linear-gradient(45deg, ${item.metadata.colors.primary} 0%, ${item.metadata.colors.accent} 50%, ${item.metadata.colors.secondary} 100%)` :
+                  'linear-gradient(45deg, #c0c0c0 0%, #0080ff 50%, #dfdfdf 100%)',
+                position: 'relative'
+              }}>
+                {/* Mini window preview */}
+                <div style={{
+                  position: 'absolute',
+                  top: '4px',
+                  left: '4px',
+                  right: '4px',
+                  bottom: '4px',
+                  backgroundColor: item.metadata?.colors?.primary || '#c0c0c0',
+                  border: `1px solid ${item.metadata?.colors?.border || '#808080'}`,
+                  borderRadius: '1px'
+                }}>
+                  <div style={{
+                    height: '8px',
+                    background: item.metadata?.colors?.accent || '#0080ff',
+                    borderBottom: `1px solid ${item.metadata?.colors?.border || '#808080'}`
+                  }}></div>
+                  <div style={{
+                    padding: '2px',
+                    fontSize: '6px',
+                    color: item.metadata?.colors?.text || '#000000',
+                    lineHeight: '1'
+                  }}>
+                    Theme Preview
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : item.asset_path ? (
             <img 
               src={item.asset_path}

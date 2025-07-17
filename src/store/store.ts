@@ -9,6 +9,7 @@ import inventorySlice from './inventorySlice';
 import shopSlice from './shopSlice';
 import uiSlice from './uiSlice';
 import iconSlice from './iconSlice';
+import themeSlice from './themeSlice';
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +23,7 @@ export const store = configureStore({
     shop: shopSlice,
     ui: uiSlice,
     icons: iconSlice,
+    theme: themeSlice,
   },
 });
 
@@ -29,4 +31,4 @@ export const store = configureStore({
 (window as any).store = store;
 
 export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch; 
+export type AppDispatch = typeof store.dispatch;

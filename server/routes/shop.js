@@ -178,6 +178,10 @@ router.post('/purchase', authService.authenticateToken, async (req, res) => {
           VALUES ($1, $2)
           ON CONFLICT (user_id, title_id) DO NOTHING
         `, [userId, titleId]);
+      } else if (item.item_type === 'theme') {
+        // Theme purchases are tracked only in user_purchases table
+        // No additional inventory integration needed for themes
+        console.log(`Theme "${item.name}" purchased by user ${userId}`);
       }
       
       // Commit transaction

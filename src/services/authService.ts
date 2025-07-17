@@ -433,6 +433,42 @@ class AuthService {
     const disabled = localStorage.getItem('welcome_message_disabled');
     return disabled !== 'true'; // Default to showing welcome message
   }
+
+  // Theme-related methods
+  async loadPurchasedThemes(): Promise<string[]> {
+    try {
+      const response = await axios.get('/shop/purchases');
+      const purchases = response.data.purchases || [];
+      return purchases
+        .filter((purchase: any) => purchase.item_type === 'theme')
+        .map((purchase: any) => {
+          // Map shop item names to theme IDs
+          const nameToId: { [key: string]: string } = {
+            'Ocean Theme': 'ocean-theme',
+            'Forest Theme': 'forest-theme', 
+            'Sunset Theme': 'sunset-theme'
+          };
+          return nameToId[purchase.name] || purchase.name.toLowerCase().replace(/\s+/g, '-');
+        });
+    } catch (error) {
+      console.error('Failed to load purchased themes:', error);
+      return [];
+    }
+  }
+
+  async saveCurrentTheme(themeId: string): Promise<boolean> {
+    return this.postKeepAlive('/dextop/theme', { themeId });
+  }
+
+  async loadCurrentTheme(): Promise<string | null> {
+    try {
+      const response = await axios.get('/dextop/my-dextop');
+      return response.data.dextop?.currentTheme || null;
+    } catch (error) {
+      console.error('Failed to load current theme:', error);
+      return null;
+    }
+  }
 }
 
-export const authService = new AuthService(); 
+export const authService = new AuthService();

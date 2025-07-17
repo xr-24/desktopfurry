@@ -4,6 +4,7 @@ import { openProgram } from '../store/programSlice';
 import { setChatColorHue } from '../store/playerSlice';
 import { toggleGridSnapping } from '../store/uiSlice';
 import { resetToDefaults } from '../store/iconSlice';
+import { setCurrentTheme, loadThemesStart, loadThemesSuccess, loadThemesFailure } from '../store/themeSlice';
 import { authService } from '../services/authService';
 // Dynamically load all pattern images from assets/patterns
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -22,7 +23,7 @@ const RETRO_BACKGROUNDS: Background[] = patternsContext.keys().map((file: string
   const patternPath = patternsContext(file) as string;
   const fileName = file.replace('./', '');
   const id = fileName.substring(0, fileName.lastIndexOf('.')).toLowerCase();
-  const name = id.charAt(0).toUpperCase() + id.slice(1).replace(/-/g, ' ');
+  const name = fileName.substring(0, fileName.lastIndexOf('.'));
   return { id, name, pattern: patternPath };
 });
 
@@ -31,13 +32,14 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
   const { id: currentPlayerId } = useAppSelector((state: any) => state.player || {});
   const chatColorHue = useAppSelector((state:any)=> state.player.chatColorHue);
   const gridSnappingEnabled = useAppSelector((state:any) => state.ui.gridSnappingEnabled);
+  const { currentTheme, availableThemes } = useAppSelector((state: any) => state.theme);
   
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   const [purchasedBackgrounds, setPurchasedBackgrounds] = React.useState<string[]>([]);
 
-  // Load purchased backgrounds when component mounts
+  // Load purchased backgrounds and themes when component mounts
   React.useEffect(() => {
-    const loadPurchasedBackgrounds = async () => {
+    const loadPurchasedItems = async () => {
       try {
         const purchaseHistory = await authService.loadPurchaseHistory();
         console.log('Purchase history:', purchaseHistory);
@@ -49,16 +51,25 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
             .filter(Boolean);
           console.log('Extracted background IDs:', backgroundIds);
           setPurchasedBackgrounds(backgroundIds);
+
+          // Load purchased themes
+          dispatch(loadThemesStart());
+          try {
+            const purchasedThemes = await authService.loadPurchasedThemes();
+            dispatch(loadThemesSuccess({ purchasedThemes }));
+          } catch (error) {
+            dispatch(loadThemesFailure('Failed to load themes'));
+          }
         }
       } catch (error) {
-        console.error('Failed to load purchased backgrounds:', error);
+        console.error('Failed to load purchased items:', error);
       }
     };
 
     if (isOpen) {
-      loadPurchasedBackgrounds();
+      loadPurchasedItems();
     }
-  }, [isOpen]);
+  }, [isOpen, dispatch]);
 
   if (!isOpen) return null;
 
@@ -70,9 +81,19 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
 
   // Filter backgrounds to only show free ones + purchased ones
   const getAvailableBackgrounds = () => {
-    return RETRO_BACKGROUNDS.filter(bg => 
-      FREE_BACKGROUNDS.includes(bg.id) || purchasedBackgrounds.includes(bg.id)
-    );
+    console.log('All RETRO_BACKGROUNDS:', RETRO_BACKGROUNDS.map(bg => ({ id: bg.id, name: bg.name })));
+    console.log('FREE_BACKGROUNDS:', FREE_BACKGROUNDS);
+    console.log('purchasedBackgrounds:', purchasedBackgrounds);
+    
+    return RETRO_BACKGROUNDS.filter(bg => {
+      const isFree = FREE_BACKGROUNDS.includes(bg.id);
+      const isPurchased = purchasedBackgrounds.some(purchasedId => 
+        purchasedId.toLowerCase() === bg.id || 
+        purchasedId.toLowerCase().replace(/\s+/g, ' ') === bg.name.toLowerCase()
+      );
+      console.log(`Background ${bg.id} (${bg.name}): free=${isFree}, purchased=${isPurchased}`);
+      return isFree || isPurchased;
+    });
   };
 
   const availableBackgrounds = getAvailableBackgrounds();
@@ -146,6 +167,40 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
                   ></div>
                   <span>{bg.name}</span>
                   {currentBackground === bg.id && <span>✓</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="start-menu-item themes-item">
+            <span>🎭</span>
+            <span>Themes</span>
+            <span className="arrow">▶</span>
+            
+            <div className="themes-submenu">
+              {availableThemes.filter((theme: any) => theme.isPurchased).map((theme: any) => (
+                <div 
+                  key={theme.id}
+                  className={`theme-option ${currentTheme === theme.id ? 'selected' : ''}`}
+                  onClick={() => {
+                    dispatch(setCurrentTheme(theme.id));
+                    authService.saveCurrentTheme(theme.id);
+                    onClose();
+                  }}
+                >
+                  <div 
+                    className="theme-preview" 
+                    style={{ 
+                      background: `linear-gradient(45deg, ${theme.colors.primary} 0%, ${theme.colors.accent} 100%)`,
+                      width: '20px',
+                      height: '20px',
+                      border: '1px solid #999',
+                      borderRadius: '2px'
+                    }}
+                  ></div>
+                  <span>{theme.name}</span>
+                  {currentTheme === theme.id && <span>✓</span>}
+                  {!theme.isPurchased && <span>🔒</span>}
                 </div>
               ))}
             </div>
