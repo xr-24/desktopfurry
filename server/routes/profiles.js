@@ -8,11 +8,17 @@ router.get('/me', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     
-    const profile = await db.query(`
+    // First check if user profile exists, if not create it
+    let profile = await db.query(`
       SELECT 
         up.*,
         u.username,
-        aa.hue, aa.eyes, aa.ears, aa.fluff, aa.tail, aa.body
+        COALESCE(aa.hue, 0) as hue, 
+        COALESCE(aa.eyes, 'none') as eyes, 
+        COALESCE(aa.ears, 'none') as ears, 
+        COALESCE(aa.fluff, 'none') as fluff, 
+        COALESCE(aa.tail, 'none') as tail, 
+        COALESCE(aa.body, 'CustomBase') as body
       FROM user_profiles up
       JOIN users u ON up.user_id = u.id
       LEFT JOIN avatar_appearances aa ON up.user_id = aa.user_id
@@ -20,7 +26,28 @@ router.get('/me', authenticateToken, async (req, res) => {
     `, [userId]);
 
     if (profile.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Profile not found' });
+      // Create profile if it doesn't exist
+      await db.query(`
+        INSERT INTO user_profiles (user_id, biography, interest_tags, privacy_setting)
+        VALUES ($1, '', '', 'public')
+      `, [userId]);
+      
+      // Try again
+      profile = await db.query(`
+        SELECT 
+          up.*,
+          u.username,
+          COALESCE(aa.hue, 0) as hue, 
+          COALESCE(aa.eyes, 'none') as eyes, 
+          COALESCE(aa.ears, 'none') as ears, 
+          COALESCE(aa.fluff, 'none') as fluff, 
+          COALESCE(aa.tail, 'none') as tail, 
+          COALESCE(aa.body, 'CustomBase') as body
+        FROM user_profiles up
+        JOIN users u ON up.user_id = u.id
+        LEFT JOIN avatar_appearances aa ON up.user_id = aa.user_id
+        WHERE up.user_id = $1
+      `, [userId]);
     }
 
     res.json({ success: true, profile: profile.rows[0] });

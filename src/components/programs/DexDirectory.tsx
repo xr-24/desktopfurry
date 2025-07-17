@@ -390,44 +390,24 @@ const DexDirectory: React.FC<DexDirectoryProps> = ({
   };
 
   return (
-    <div className="dexdirectory-window">
-      <div className="window-header">
-        <div className="window-title">
-          <span className="window-icon">👥</span>
-          DexDirectory
-        </div>
-        <div className="window-controls">
-          <button className="window-control minimize" onClick={onMinimize}>
-            _
-          </button>
-          <button className="window-control maximize" onClick={onMaximize}>
-            {isMaximized ? '❐' : '□'}
-          </button>
-          <button className="window-control close" onClick={onClose}>
-            ×
-          </button>
-        </div>
+    <div className="dexdirectory-content">
+      <div className="tab-bar">
+        <button
+          className={`tab ${activeTab === 'profile' ? 'active' : ''}`}
+          onClick={() => setActiveTab('profile')}
+        >
+          My Profile
+        </button>
+        <button
+          className={`tab ${activeTab === 'browse' ? 'active' : ''}`}
+          onClick={() => setActiveTab('browse')}
+        >
+          Browse
+        </button>
       </div>
 
-      <div className="window-content">
-        <div className="tab-bar">
-          <button
-            className={`tab ${activeTab === 'profile' ? 'active' : ''}`}
-            onClick={() => setActiveTab('profile')}
-          >
-            My Profile
-          </button>
-          <button
-            className={`tab ${activeTab === 'browse' ? 'active' : ''}`}
-            onClick={() => setActiveTab('browse')}
-          >
-            Browse
-          </button>
-        </div>
-
-        <div className="tab-content">
-          {activeTab === 'profile' ? renderProfileTab() : renderBrowseTab()}
-        </div>
+      <div className="tab-content">
+        {activeTab === 'profile' ? renderProfileTab() : renderBrowseTab()}
       </div>
     </div>
   );

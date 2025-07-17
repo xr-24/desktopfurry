@@ -1,72 +1,11 @@
-/* DexDirectory Window Styles */
-.dexdirectory-window {
+/* DexDirectory Content Styles */
+.dexdirectory-content {
   background: #c0c0c0;
-  border: 2px outset #c0c0c0;
   font-family: 'MS Sans Serif', sans-serif;
   font-size: 11px;
-  min-width: 600px;
-  min-height: 500px;
+  height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-.window-header {
-  background: linear-gradient(90deg, #0080ff 0%, #004080 100%);
-  color: white;
-  padding: 2px 4px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: bold;
-  font-size: 11px;
-}
-
-.window-title {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.window-icon {
-  font-size: 14px;
-}
-
-.window-controls {
-  display: flex;
-  gap: 2px;
-}
-
-.window-control {
-  background: #c0c0c0;
-  border: 1px outset #c0c0c0;
-  width: 16px;
-  height: 14px;
-  font-size: 9px;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.window-control:hover {
-  background: #e0e0e0;
-}
-
-.window-control:active {
-  border: 1px inset #c0c0c0;
-}
-
-.window-control.close:hover {
-  background: #ff4444;
-  color: white;
-}
-
-.window-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: #c0c0c0;
 }
 
 /* Tab Bar */
