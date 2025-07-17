@@ -1,0 +1,38 @@
+-- New cosmetic items to add to shop_items table
+INSERT INTO shop_items (name, description, category, item_type, price, asset_path, metadata) VALUES
+-- New Cosmetic Items
+('Head Hook', 'Stylish head hook accessory', 'cosmetics', 'item', 400, '/assets/characters/items/misc/headhook.png', '{}'),
+('Head Rainbow', 'Colorful rainbow head accessory', 'cosmetics', 'item', 600, '/assets/characters/items/misc/rainbow.png', '{}'),
+('Orange Cat Head', 'Orange cat head accessory', 'cosmetics', 'item', 500, '/assets/characters/items/misc/orange-cathead.png', '{}'),
+('UFO Companion', 'Flying UFO companion', 'cosmetics', 'item', 800, '/assets/characters/items/misc/UFO.png', '{}'),
+('Mini Palmtree', 'Tiny palm tree accessory', 'cosmetics', 'item', 300, '/assets/characters/items/misc/mini-palmtree.png', '{}'),
+('Cocktail', 'Refreshing cocktail drink', 'cosmetics', 'item', 250, '/assets/characters/items/misc/cocktail.png', '{}'),
+('Gun', 'Toy gun accessory', 'cosmetics', 'item', 400, '/assets/characters/items/misc/gun.png', '{}'),
+('Mouth 1', 'Expression mouth style 1', 'cosmetics', 'item', 200, '/assets/characters/items/misc/Mouth 1.png', '{}'),
+('Mouth 2', 'Expression mouth style 2', 'cosmetics', 'item', 200, '/assets/characters/items/misc/Mouth 2.png', '{}'),
+('Mouth 3', 'Expression mouth style 3', 'cosmetics', 'item', 200, '/assets/characters/items/misc/Mouth 3.png', '{}'),
+('Mouth 4', 'Expression mouth style 4', 'cosmetics', 'item', 200, '/assets/characters/items/misc/Mouth 4.png', '{}'),
+('Mouth 5', 'Expression mouth style 5', 'cosmetics', 'item', 200, '/assets/characters/items/misc/Mouth 5.png', '{}'),
+('Mouth 6', 'Expression mouth style 6', 'cosmetics', 'item', 200, '/assets/characters/items/misc/Mouth 6.png', '{}'),
+('Mouth 7', 'Expression mouth style 7', 'cosmetics', 'item', 200, '/assets/characters/items/misc/Mouth 7.png', '{}'),
+('Mouth 8', 'Expression mouth style 8', 'cosmetics', 'item', 200, '/assets/characters/items/misc/Mouth 8.png', '{}'),
+('Mouth 9', 'Expression mouth style 9', 'cosmetics', 'item', 200, '/assets/characters/items/misc/Mouth 9.png', '{}'),
+
+-- New Purchasable Backgrounds
+('Dark Sky Background', 'Mysterious dark sky pattern', 'backgrounds', 'background', 300, '', '{"background_id": "dark sky"}'),
+('Pink Sky Background', 'Beautiful pink sky pattern', 'backgrounds', 'background', 300, '', '{"background_id": "pink sky"}'),
+('Glitch Background', 'Digital glitch effect pattern', 'backgrounds', 'background', 400, '', '{"background_id": "glitch"}'),
+('Ice Cream Background', 'Sweet ice cream pattern', 'backgrounds', 'background', 350, '', '{"background_id": "ice cream"}'),
+('Veggies Background', 'Fresh vegetables pattern', 'backgrounds', 'background', 250, '', '{"background_id": "veggies"}'),
+('Strawberries Background', 'Delicious strawberries pattern', 'backgrounds', 'background', 300, '', '{"background_id": "strawberries"}'),
+('Duck Background', 'Cute duck pattern', 'backgrounds', 'background', 300, '', '{"background_id": "duck"}'),
+('Bees Background', 'Buzzing bees pattern', 'backgrounds', 'background', 350, '', '{"background_id": "bees"}'),
+('Summer Background', 'Warm summer vibes pattern', 'backgrounds', 'background', 400, '', '{"background_id": "summer"}'),
+('Forest Background', 'Peaceful forest pattern', 'backgrounds', 'background', 350, '', '{"background_id": "forest"}'),
+('City Background', 'Urban city skyline pattern', 'backgrounds', 'background', 400, '', '{"background_id": "city"}'),
+('Blue Geo Background', 'Blue geometric pattern', 'backgrounds', 'background', 300, '', '{"background_id": "blue geo"}'),
+('Planets Background', 'Space planets pattern', 'backgrounds', 'background', 450, '', '{"background_id": "planets"}'),
+('Grid Background', 'Clean grid pattern', 'backgrounds', 'background', 250, '', '{"background_id": "grid"}'),
+('Purple Geo Background', 'Purple geometric pattern', 'backgrounds', 'background', 300, '', '{"background_id": "purple geo"}'),
+('Mariposa Background', 'Beautiful butterfly pattern', 'backgrounds', 'background', 400, '', '{"background_id": "mariposa"}'),
+('Bubbles 2 Background', 'Floating bubbles pattern v2', 'backgrounds', 'background', 300, '', '{"background_id": "bubbles 2"}');

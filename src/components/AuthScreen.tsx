@@ -13,7 +13,7 @@ const AuthScreen: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isAuthenticated, isLoading, error } = useAppSelector((state) => state.auth);
   
-  const [mode, setMode] = useState<'welcome' | 'guest' | 'login' | 'register' | 'migrate'>('welcome');
+  const [mode, setMode] = useState<'welcome' | 'login' | 'register' | 'migrate'>('welcome');
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -103,29 +103,7 @@ const AuthScreen: React.FC = () => {
     setFormError(null);
   };
 
-  const handleGuestLogin = async () => {
-    if (!formData.username.trim()) {
-      setFormError('Username is required');
-      return;
-    }
 
-    setIsSubmitting(true);
-    dispatch(loginStart());
-
-    const result = await authService.createGuest(formData.username.trim());
-    
-    if (result.success && result.user) {
-      dispatch(loginSuccess(result.user));
-      await loadUserDextop();
-      socketService.authenticate();
-      // socketService.createRoom(result.user.username); // removed
-    } else {
-      dispatch(loginFailure(result.error || 'Failed to create guest account'));
-      setFormError(result.error || 'Failed to create guest account');
-    }
-    
-    setIsSubmitting(false);
-  };
 
   const handleLogin = async () => {
     if (!formData.email.trim() || !formData.password) {
@@ -235,16 +213,6 @@ const AuthScreen: React.FC = () => {
       <div className="auth-options">
         <button 
           className="win98-button primary"
-          onClick={() => setMode('guest')}
-        >
-          🎮 Start as Guest
-        </button>
-        <p className="auth-subtitle">Jump right in! No signup required.</p>
-        
-        <div className="auth-divider">or</div>
-        
-        <button 
-          className="win98-button"
           onClick={() => setMode('login')}
         >
           🔑 I Have an Account
@@ -269,54 +237,7 @@ const AuthScreen: React.FC = () => {
     </div>
   );
 
-  const renderGuestForm = () => (
-    <div className="auth-content">
-      <h2>🎮 Guest Account</h2>
-      <p>Choose a username to get started:</p>
-      
-      <div className="form-group">
-        <label htmlFor="username">Username:</label>
-        <input
-          id="username"
-          name="username"
-          type="text"
-          className="win98-input"
-          value={formData.username}
-          onChange={handleInputChange}
-          placeholder="Enter your username"
-          maxLength={20}
-          disabled={isSubmitting}
-        />
-      </div>
 
-      {(formError || error) && (
-        <div className="auth-error">
-          ⚠️ {formError || error}
-        </div>
-      )}
-
-      <div className="auth-actions">
-        <button 
-          className="win98-button primary"
-          onClick={handleGuestLogin}
-          disabled={isSubmitting || !formData.username.trim()}
-        >
-          {isSubmitting ? 'Creating...' : 'Start Playing'}
-        </button>
-        <button 
-          className="win98-button"
-          onClick={() => setMode('welcome')}
-          disabled={isSubmitting}
-        >
-          Back
-        </button>
-      </div>
-      
-      <div className="auth-note">
-        💾 Your progress will be saved locally. Create a full account later to access it from anywhere!
-      </div>
-    </div>
-  );
 
   const renderLoginForm = () => (
     <div className="auth-content">
@@ -469,7 +390,6 @@ const AuthScreen: React.FC = () => {
         </div>
         
         {mode === 'welcome' && renderWelcomeScreen()}
-        {mode === 'guest' && renderGuestForm()}
         {mode === 'login' && renderLoginForm()}
         {mode === 'register' && renderRegisterForm()}
       </div>

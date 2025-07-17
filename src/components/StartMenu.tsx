@@ -30,10 +30,34 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
   const { id: currentPlayerId } = useAppSelector((state: any) => state.player || {});
   const chatColorHue = useAppSelector((state:any)=> state.player.chatColorHue);
   const gridSnappingEnabled = useAppSelector((state:any) => state.ui.gridSnappingEnabled);
+  
+  // Get purchased backgrounds from shop state
+  const shopState = useAppSelector((state: any) => state.shop);
+  const purchasedBackgrounds = shopState?.items?.backgrounds || [];
 
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
 
   if (!isOpen) return null;
+
+  // Define free backgrounds that are always available
+  const FREE_BACKGROUNDS = [
+    'sandstone', 'waves', 'circles', 'blocks', 'bubbles', 'clouds', 
+    'paradise', 'metal links', 'palm tree'
+  ];
+
+  // Filter backgrounds to only show free ones + purchased ones
+  const getAvailableBackgrounds = () => {
+    const purchasedBackgroundIds = purchasedBackgrounds
+      .filter((bg: any) => bg.is_purchased)
+      .map((bg: any) => bg.metadata?.background_id)
+      .filter(Boolean);
+
+    return RETRO_BACKGROUNDS.filter(bg => 
+      FREE_BACKGROUNDS.includes(bg.id) || purchasedBackgroundIds.includes(bg.id)
+    );
+  };
+
+  const availableBackgrounds = getAvailableBackgrounds();
 
   const toggleSettings = () => {
     setIsSettingsOpen(prev => !prev);
@@ -89,7 +113,7 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
             <span className="arrow">▶</span>
             
             <div className="backgrounds-submenu">
-              {RETRO_BACKGROUNDS.map((bg) => (
+              {availableBackgrounds.map((bg) => (
                 <div 
                   key={bg.id}
                   className={`background-option ${currentBackground === bg.id ? 'selected' : ''}`}
@@ -223,4 +247,4 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
   );
 };
 
-export default StartMenu; 
+export default StartMenu;

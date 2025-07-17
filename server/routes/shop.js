@@ -149,6 +149,10 @@ router.post('/purchase', authService.authenticateToken, async (req, res) => {
           VALUES ($1, $2)
           ON CONFLICT (user_id, item_id) DO NOTHING
         `, [userId, inventoryItemId]);
+      } else if (item.item_type === 'background') {
+        // Background purchases are tracked only in user_purchases table
+        // No additional inventory integration needed for backgrounds
+        console.log(`Background "${item.name}" purchased by user ${userId}`);
       } else if (item.item_type === 'title') {
         // Ensure title exists in titles table
         const existingTitleResult = await db.query(`
@@ -228,4 +232,4 @@ router.get('/purchases', authService.authenticateToken, async (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;

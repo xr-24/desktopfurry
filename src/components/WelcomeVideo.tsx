@@ -60,12 +60,22 @@ const WelcomeVideo: React.FC<WelcomeVideoProps> = ({ onClose }) => {
   // Check if BDE Media Player is still open
   const bdeProgram = Object.values(openPrograms).find((p: any) => p.type === 'bdemediaplayer');
   
-  // Show disable prompt when BDE Media Player is closed
+  // Track if we've opened the BDE Media Player
+  const [hasOpenedBDE, setHasOpenedBDE] = useState(false);
+  
+  // Mark that we've opened the BDE Media Player
   useEffect(() => {
-    if (showWelcomeMessage && !bdeProgram && !showDisablePrompt) {
+    if (bdeProgram && !hasOpenedBDE) {
+      setHasOpenedBDE(true);
+    }
+  }, [bdeProgram, hasOpenedBDE]);
+  
+  // Show disable prompt when BDE Media Player is closed (but only after it was opened)
+  useEffect(() => {
+    if (showWelcomeMessage && hasOpenedBDE && !bdeProgram && !showDisablePrompt) {
       setShowDisablePrompt(true);
     }
-  }, [bdeProgram, showWelcomeMessage, showDisablePrompt]);
+  }, [bdeProgram, showWelcomeMessage, showDisablePrompt, hasOpenedBDE]);
 
   const handleDisableWelcome = async () => {
     try {
