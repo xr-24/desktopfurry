@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS messages (
     recipient_id UUID REFERENCES users(id) ON DELETE CASCADE, -- NULL for local messages
     content TEXT NOT NULL,
     message_type VARCHAR(20) NOT NULL CHECK (message_type IN ('local', 'private')),
+    sender_chat_color INTEGER DEFAULT 0, -- Store the sender's chat color hue
     is_read BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     CONSTRAINT valid_message CHECK (

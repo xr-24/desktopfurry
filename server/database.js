@@ -245,12 +245,12 @@ const db = {
   },
 
   // Message functions
-  async saveMessage(senderId, recipientId, content, messageType) {
+  async saveMessage(senderId, recipientId, content, messageType, senderChatColor = 0) {
     const result = await pool.query(`
-      INSERT INTO messages (sender_id, recipient_id, content, message_type)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO messages (sender_id, recipient_id, content, message_type, sender_chat_color)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING id, created_at
-    `, [senderId, recipientId, content, messageType]);
+    `, [senderId, recipientId, content, messageType, senderChatColor]);
     return result.rows[0];
   },
 
@@ -267,14 +267,14 @@ const db = {
 
   async getRecentMessages(userId, limit = 50) {
     const result = await pool.query(`
-      SELECT m.*, u.username as sender_username
+      SELECT m.*, u.username as sender_username, u.id as sender_id
       FROM messages m
       JOIN users u ON m.sender_id = u.id
       WHERE m.recipient_id = $1 OR m.sender_id = $1
-      ORDER BY m.created_at DESC
+      ORDER BY m.created_at ASC
       LIMIT $2
     `, [userId, limit]);
-    return result.rows.reverse(); // Return in chronological order
+    return result.rows; // Already in chronological order
   },
 
   async markMessagesAsRead(userId, messageIds) {

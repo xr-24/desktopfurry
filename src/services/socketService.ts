@@ -291,11 +291,32 @@ class SocketService {
       console.log('Received offline messages:', messages);
       const currentUserId = authService.getStoredUser()?.id;
       
-      messages.forEach(message => {
-        if (message.senderId !== currentUserId) {
-          console.log('Adding offline message to store:', message);
-          store.dispatch(addPrivateMessage({ message, currentUserId }));
-        }
+      // Load all recent messages (not just unread ones) to get complete conversation history
+      authService.getRecentMessages(100).then(recentMessages => {
+        console.log('Loading recent messages:', recentMessages);
+        
+        // Transform and add all recent messages
+        recentMessages.forEach(msg => {
+          const transformedMessage = {
+            id: msg.id,
+            sender: msg.sender_username,
+            senderId: msg.sender_id,
+            content: msg.content,
+            color: msg.sender_chat_color || 0, // Use stored chat color
+            timestamp: new Date(msg.created_at).getTime(),
+            type: 'private' as const,
+            recipientId: msg.recipient_id,
+            isRead: msg.is_read
+          };
+          
+          // Only add if not already in store
+          const existingMessages = store.getState().social.privateMessages[transformedMessage.senderId] || [];
+          const messageExists = existingMessages.some(existing => existing.id === transformedMessage.id);
+          
+          if (!messageExists) {
+            store.dispatch(addPrivateMessage({ message: transformedMessage, currentUserId }));
+          }
+        });
       });
     });
 

@@ -489,8 +489,8 @@ io.on('connection', (socket) => {
       const user = await db.findUserById(decoded.userId);
       if (!user) return;
 
-      // Save message to database
-      const savedMessage = await db.saveMessage(user.id, recipientId, message.content, 'private');
+      // Save message to database with chat color
+      const savedMessage = await db.saveMessage(user.id, recipientId, message.content, 'private', message.color || 0);
 
       const fullMessage = {
         ...message,

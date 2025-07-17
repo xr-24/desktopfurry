@@ -66,25 +66,28 @@ const socialSlice = createSlice({
     },
     addPrivateMessage: (state, action: PayloadAction<{ message: Message; currentUserId: string }>) => {
       const { message, currentUserId } = action.payload;
-      console.log('addPrivateMessage called with:', { message, currentUserId });
       
+      // Determine the conversation partner (friend) ID
       const friendId = message.senderId === currentUserId 
         ? message.recipientId 
         : message.senderId;
-      
-      console.log('Determined friendId:', friendId);
       
       if (friendId) {
         if (!state.privateMessages[friendId]) {
           state.privateMessages[friendId] = [];
         }
-        state.privateMessages[friendId].push(message);
-        console.log('Message added to privateMessages for friendId:', friendId);
+        
+        // Check if message already exists to prevent duplicates
+        const messageExists = state.privateMessages[friendId].some(existing => existing.id === message.id);
+        if (!messageExists) {
+          state.privateMessages[friendId].push(message);
+        }
       }
-      if (message.senderId !== currentUserId) {
+      
+      // Only increment unread count for messages from others
+      if (message.senderId !== currentUserId && !message.isRead) {
         state.unreadMessages += 1;
         state.lastNotification = { tab: 'private', friendId };
-        console.log('Updated unread count:', state.unreadMessages);
       }
     },
     updateFriends: (state, action: PayloadAction<Friend[]>) => {
