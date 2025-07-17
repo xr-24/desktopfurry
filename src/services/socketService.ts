@@ -318,11 +318,18 @@ class SocketService {
       audioService.playSound('notif');
     });
 
-    this.socket.on('friendRequestAccepted', (data: { friend: any }) => {
-      // Update friends list
-      Object.values(this.friendStatusHandlers).forEach(handler => 
-        handler({ [data.friend.id]: data.friend })
-      );
+    this.socket.on('friendRequestAccepted', (data: { friend: any; friendsList?: any }) => {
+      // Update friends list with the complete updated list
+      if (data.friendsList) {
+        Object.values(this.friendStatusHandlers).forEach(handler => 
+          handler(data.friendsList)
+        );
+      } else {
+        // Fallback to just updating the single friend
+        Object.values(this.friendStatusHandlers).forEach(handler => 
+          handler({ [data.friend.id]: data.friend })
+        );
+      }
     });
 
     this.socket.on('joinDextopByCode', ({ code }) => {

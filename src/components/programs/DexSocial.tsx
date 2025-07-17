@@ -125,7 +125,16 @@ const DexSocial: React.FC<DexSocialProps> = ({
       // Auto-close after sending local chat if onClose provided
       onClose?.();
     } else if (activeTab === 'private' && selectedFriend) {
+      const selectedFriendData = programState.friends.find(f => f.id === selectedFriend);
+      const isOffline = selectedFriendData && !selectedFriendData.isOnline;
+      
       socketService.sendPrivateMessage(selectedFriend, messageInput);
+      
+      // Show feedback for offline messages
+      if (isOffline) {
+        // You could add a toast notification here if you want
+        console.log('Message sent to offline friend - will be delivered when they log in');
+      }
     }
 
     setMessageInput('');
@@ -238,20 +247,28 @@ const DexSocial: React.FC<DexSocialProps> = ({
               </div>
             )}
             <div className="friends-list">
-              {programState.friends.map((friend) => (
-                <div key={friend.id} className="friend-item">
-                  <span className={`status-dot ${friend.isOnline ? 'online' : 'offline'}`} />
-                  <span className="friend-name">{friend.username}</span>
-                  {friend.isOnline && friend.currentDextop && (
-                    <button 
-                      className="win98-button small"
-                      onClick={() => handleJoinFriendDextop(friend.id)}
-                    >
-                      Join
-                    </button>
-                  )}
-                </div>
-              ))}
+              {programState.friends
+                .sort((a, b) => {
+                  // Sort online friends first, then alphabetically
+                  if (a.isOnline !== b.isOnline) {
+                    return a.isOnline ? -1 : 1;
+                  }
+                  return a.username.localeCompare(b.username);
+                })
+                .map((friend) => (
+                  <div key={friend.id} className="friend-item">
+                    <span className={`status-dot ${friend.isOnline ? 'online' : 'offline'}`} />
+                    <span className="friend-name">{friend.username}</span>
+                    {friend.isOnline && friend.currentDextop && (
+                      <button 
+                        className="win98-button small"
+                        onClick={() => handleJoinFriendDextop(friend.id)}
+                      >
+                        Join
+                      </button>
+                    )}
+                  </div>
+                ))}
             </div>
           </div>
         );
@@ -309,15 +326,22 @@ const DexSocial: React.FC<DexSocialProps> = ({
           <div className="dex-social-private">
             <div className="friends-sidebar">
               {programState.friends
-                .filter(f => f.isOnline)
+                .sort((a, b) => {
+                  // Sort online friends first, then alphabetically
+                  if (a.isOnline !== b.isOnline) {
+                    return a.isOnline ? -1 : 1;
+                  }
+                  return a.username.localeCompare(b.username);
+                })
                 .map((friend) => (
                   <div
                     key={friend.id}
                     className={`friend-item ${selectedFriend === friend.id ? 'selected' : ''}`}
                     onClick={() => setSelectedFriendLocal(friend.id)}
                   >
-                    <span className="status-dot online" />
+                    <span className={`status-dot ${friend.isOnline ? 'online' : 'offline'}`} />
                     <span className="friend-name">{friend.username}</span>
+                    {!friend.isOnline && <span className="offline-indicator">(offline)</span>}
                   </div>
                 ))}
             </div>
@@ -347,6 +371,11 @@ const DexSocial: React.FC<DexSocialProps> = ({
                     <div ref={messagesEndRef} />
                   </div>
                   <div className="message-input">
+                    {selectedFriend && !programState.friends.find(f => f.id === selectedFriend)?.isOnline && (
+                      <div className="offline-notice">
+                        Friend is offline. Message will be delivered when they log in.
+                      </div>
+                    )}
                     <input
                       type="text"
                       placeholder="Type a message..."

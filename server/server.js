@@ -598,11 +598,11 @@ io.on('connection', (socket) => {
       // Save to database
       await db.addFriend(decoded.userId, request.from_user_id);
 
-      // Notify both users
+      // Notify both users with updated friends lists
       const friendData = {
         id: request.from_user_id,
         username: request.from_username,
-        isOnline: true,
+        isOnline: onlineUsers.has(request.from_user_id),
         currentDextop: onlineUsers.get(request.from_user_id)?.currentDextop
       };
 
@@ -613,11 +613,45 @@ io.on('connection', (socket) => {
         currentDextop: onlineUsers.get(decoded.userId)?.currentDextop
       };
 
-      socket.emit('friendRequestAccepted', { friend: friendData });
+      // Send updated friends list to both users
+      const [userFriends, otherUserFriends] = await Promise.all([
+        db.getUserFriends(decoded.userId),
+        db.getUserFriends(request.from_user_id)
+      ]);
+
+      const updatedUserFriendsList = {};
+      for (const friend of userFriends) {
+        const isOnline = onlineUsers.has(friend.id);
+        updatedUserFriendsList[friend.id] = {
+          id: friend.id,
+          username: friend.username,
+          isOnline,
+          currentDextop: isOnline ? onlineUsers.get(friend.id)?.currentDextop : undefined
+        };
+      }
+
+      const updatedOtherUserFriendsList = {};
+      for (const friend of otherUserFriends) {
+        const isOnline = onlineUsers.has(friend.id);
+        updatedOtherUserFriendsList[friend.id] = {
+          id: friend.id,
+          username: friend.username,
+          isOnline,
+          currentDextop: isOnline ? onlineUsers.get(friend.id)?.currentDextop : undefined
+        };
+      }
+
+      socket.emit('friendRequestAccepted', { 
+        friend: friendData,
+        friendsList: updatedUserFriendsList
+      });
 
       const otherSocketId = userSockets.get(request.from_user_id);
       if (otherSocketId) {
-        io.to(otherSocketId).emit('friendRequestAccepted', { friend: userData });
+        io.to(otherSocketId).emit('friendRequestAccepted', { 
+          friend: userData,
+          friendsList: updatedOtherUserFriendsList
+        });
       }
     } catch (error) {
       console.error('Error accepting friend request:', error);
