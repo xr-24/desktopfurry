@@ -16,6 +16,10 @@ export interface UserProfile {
   fluff?: string;
   tail?: string;
   body?: string;
+  // Avatar crop settings for profile picture
+  avatar_crop_scale?: number;
+  avatar_crop_offset_x?: number;
+  avatar_crop_offset_y?: number;
   // Additional fields for search results
   is_friend?: boolean;
 }

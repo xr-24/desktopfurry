@@ -55,7 +55,7 @@ const programSlice = createSlice({
         terminal: { width: 500, height: 300, isMultiplayer: false },
         inventory: { width: 550, height: 450, isMultiplayer: false },
         shop: { width: 700, height: 500, isMultiplayer: false },
-        dexdirectory: { width: 800, height: 600, isMultiplayer: false },
+        dexdirectory: { width: 800, height: 700, isMultiplayer: false },
       };
       
       const config = programConfigs[type];

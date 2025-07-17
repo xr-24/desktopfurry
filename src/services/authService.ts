@@ -474,7 +474,7 @@ class AuthService {
   async apiCall(path: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', data?: any): Promise<any> {
     try {
       // Remove leading /api if it exists since baseURL already includes it
-      const cleanPath = path.startsWith('/api') ? path.substring(4) : path;
+      const cleanPath = path.startsWith('/api/') ? path.substring(4) : path;
       
       const config: any = {
         method: method.toLowerCase(),
@@ -485,10 +485,13 @@ class AuthService {
         config.data = data;
       }
 
+      console.log(`Making API call: ${method} ${cleanPath}`, data);
       const response = await axios(config);
+      console.log(`API call response:`, response.data);
       return response.data;
     } catch (error: any) {
       console.error(`API call failed: ${method} ${path}`, error);
+      console.error('Error details:', error.response?.data);
       return {
         success: false,
         error: error.response?.data?.error || `${method} request failed`

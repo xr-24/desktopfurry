@@ -13,12 +13,18 @@ interface AvatarCropProps {
   appearance: AvatarAppearance;
   size?: number;
   className?: string;
+  cropConfig?: {
+    scale?: number;
+    offsetX?: number;
+    offsetY?: number;
+  };
 }
 
 const AvatarCrop: React.FC<AvatarCropProps> = ({ 
   appearance, 
   size = 80, 
-  className = '' 
+  className = '',
+  cropConfig
 }) => {
   const getAssetPath = (category: string, asset: string): string | undefined => {
     if (!asset || asset === 'none') return undefined;
@@ -40,25 +46,29 @@ const AvatarCrop: React.FC<AvatarCropProps> = ({
 
   const spriteContainerStyle = {
     position: 'relative' as const,
-    width: '64px',
-    height: '64px',
-    transform: 'scale(1.2)', // Slightly larger to show more detail
+    width: `${size}px`,
+    height: `${size}px`,
     filter: `hue-rotate(${appearance.hue}deg)`,
+    overflow: 'hidden',
   };
+
+  // Default crop settings optimized for head/shoulders view
+  const defaultCropConfig = {
+    scale: 2.2,
+    offsetX: -0.5,
+    offsetY: -0.3
+  };
+
+  const finalCropConfig = { ...defaultCropConfig, ...cropConfig };
 
   const spriteStyle = {
     position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    width: '64px',
-    height: '64px',
+    // Use configurable positioning for better control
+    top: `${size * finalCropConfig.offsetY}px`,
+    left: `${size * finalCropConfig.offsetX}px`,
+    width: `${size * finalCropConfig.scale}px`,
+    height: `${size * finalCropConfig.scale}px`,
     imageRendering: 'pixelated' as const,
-  };
-
-  // Only show the upper portion (head and shoulders) by cropping
-  const cropContainerStyle = {
-    ...cropStyle,
-    clipPath: 'inset(0 0 40% 0)', // Crop bottom 40% to show head/shoulders only
   };
 
   return (

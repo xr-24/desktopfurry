@@ -107,6 +107,11 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ profile }) => {
                 body: profile.body || 'CustomBase',
               }}
               size={60}
+              cropConfig={{
+                scale: profile.avatar_crop_scale || 2.2,
+                offsetX: profile.avatar_crop_offset_x || -0.5,
+                offsetY: profile.avatar_crop_offset_y || -0.3,
+              }}
             />
           </div>
           <div className="profile-card-info">

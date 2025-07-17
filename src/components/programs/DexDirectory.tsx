@@ -182,19 +182,24 @@ const DexDirectory: React.FC<DexDirectoryProps> = ({
     return (
       <div className="profile-tab">
         <div className="profile-header">
-          <div className="profile-avatar">
-            <AvatarCrop
-              appearance={{
-                hue: currentProfile.hue || 0,
-                eyes: currentProfile.eyes || 'none',
-                ears: currentProfile.ears || 'none',
-                fluff: currentProfile.fluff || 'none',
-                tail: currentProfile.tail || 'none',
-                body: currentProfile.body || 'CustomBase',
-              }}
-              size={120}
-            />
-          </div>
+            <div className="profile-avatar">
+              <AvatarCrop
+                appearance={{
+                  hue: currentProfile.hue || 0,
+                  eyes: currentProfile.eyes || 'none',
+                  ears: currentProfile.ears || 'none',
+                  fluff: currentProfile.fluff || 'none',
+                  tail: currentProfile.tail || 'none',
+                  body: currentProfile.body || 'CustomBase',
+                }}
+                size={120}
+                cropConfig={{
+                  scale: currentProfile.avatar_crop_scale || 2.2,
+                  offsetX: currentProfile.avatar_crop_offset_x || -0.5,
+                  offsetY: currentProfile.avatar_crop_offset_y || -0.3,
+                }}
+              />
+            </div>
           <div className="profile-info">
             <h2 className="username">{currentProfile.username}</h2>
             {!isEditing && (
@@ -281,6 +286,87 @@ const DexDirectory: React.FC<DexDirectoryProps> = ({
               </div>
             </div>
 
+            <div className="form-group">
+              <label>Avatar Picture Crop:</label>
+              <div className="avatar-crop-controls">
+                <div className="crop-preview">
+                  <AvatarCrop
+                    appearance={{
+                      hue: editingProfile?.hue || 0,
+                      eyes: editingProfile?.eyes || 'none',
+                      ears: editingProfile?.ears || 'none',
+                      fluff: editingProfile?.fluff || 'none',
+                      tail: editingProfile?.tail || 'none',
+                      body: editingProfile?.body || 'CustomBase',
+                    }}
+                    size={80}
+                    cropConfig={{
+                      scale: editingProfile?.avatar_crop_scale || 2.2,
+                      offsetX: editingProfile?.avatar_crop_offset_x || -0.5,
+                      offsetY: editingProfile?.avatar_crop_offset_y || -0.3,
+                    }}
+                  />
+                </div>
+                <div className="crop-sliders">
+                  <div className="slider-group">
+                    <label>Zoom: {((editingProfile?.avatar_crop_scale || 2.2) * 100 / 2.2).toFixed(0)}%</label>
+                    <input
+                      type="range"
+                      min="1.5"
+                      max="3.5"
+                      step="0.1"
+                      value={editingProfile?.avatar_crop_scale || 2.2}
+                      onChange={(e) =>
+                        dispatch(updateEditingProfile({ avatar_crop_scale: parseFloat(e.target.value) }))
+                      }
+                      className="win98-slider"
+                    />
+                  </div>
+                  <div className="slider-group">
+                    <label>Horizontal Position</label>
+                    <input
+                      type="range"
+                      min="-1"
+                      max="0"
+                      step="0.05"
+                      value={editingProfile?.avatar_crop_offset_x || -0.5}
+                      onChange={(e) =>
+                        dispatch(updateEditingProfile({ avatar_crop_offset_x: parseFloat(e.target.value) }))
+                      }
+                      className="win98-slider"
+                    />
+                  </div>
+                  <div className="slider-group">
+                    <label>Vertical Position</label>
+                    <input
+                      type="range"
+                      min="-0.8"
+                      max="0.2"
+                      step="0.05"
+                      value={editingProfile?.avatar_crop_offset_y || -0.3}
+                      onChange={(e) =>
+                        dispatch(updateEditingProfile({ avatar_crop_offset_y: parseFloat(e.target.value) }))
+                      }
+                      className="win98-slider"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="win98-button"
+                    onClick={() =>
+                      dispatch(updateEditingProfile({
+                        avatar_crop_scale: 2.2,
+                        avatar_crop_offset_x: -0.5,
+                        avatar_crop_offset_y: -0.3,
+                      }))
+                    }
+                  >
+                    Reset to Default
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div className="form-actions">
               <button
                 className="win98-button"
@@ -301,7 +387,19 @@ const DexDirectory: React.FC<DexDirectoryProps> = ({
             {saveError && <div className="error">{saveError}</div>}
           </div>
         ) : (
-          <div className="profile-view">
+          <div 
+            className="profile-view"
+            style={{
+              backgroundImage: currentProfile.profile_background_id ? 
+                `linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)), url(/assets/patterns/${
+                  availableBackgrounds.find(bg => bg.id === currentProfile.profile_background_id)?.pattern.split('/').pop() || 'Sandstone.png'
+                })` : 
+                undefined,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat'
+            }}
+          >
             <div className="profile-section">
               <h3>Biography</h3>
               <div className="biography">

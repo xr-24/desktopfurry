@@ -21,7 +21,10 @@ router.get('/me', authenticateToken, async (req, res) => {
           COALESCE(aa.ears, 'none') as ears, 
           COALESCE(aa.fluff, 'none') as fluff, 
           COALESCE(aa.tail, 'none') as tail, 
-          COALESCE(aa.body, 'CustomBase') as body
+          COALESCE(aa.body, 'CustomBase') as body,
+          COALESCE(up.avatar_crop_scale, 2.2) as avatar_crop_scale,
+          COALESCE(up.avatar_crop_offset_x, -0.5) as avatar_crop_offset_x,
+          COALESCE(up.avatar_crop_offset_y, -0.3) as avatar_crop_offset_y
         FROM user_profiles up
         JOIN users u ON up.user_id = u.id
         LEFT JOIN avatar_appearances aa ON up.user_id = aa.user_id
@@ -86,7 +89,15 @@ router.get('/me', authenticateToken, async (req, res) => {
 router.put('/me', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { biography, profile_background_id, interest_tags, privacy_setting } = req.body;
+    const { 
+      biography, 
+      profile_background_id, 
+      interest_tags, 
+      privacy_setting,
+      avatar_crop_scale,
+      avatar_crop_offset_x,
+      avatar_crop_offset_y
+    } = req.body;
 
     // Validate input
     if (biography && biography.length > 500) {
@@ -101,6 +112,22 @@ router.put('/me', authenticateToken, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid privacy setting' });
     }
 
+    // Validate avatar crop values
+    if (avatar_crop_scale !== undefined && (avatar_crop_scale < 1 || avatar_crop_scale > 5)) {
+      return res.status(400).json({ success: false, error: 'Invalid avatar crop scale (must be between 1 and 5)' });
+    }
+
+    if (avatar_crop_offset_x !== undefined && (avatar_crop_offset_x < -2 || avatar_crop_offset_x > 2)) {
+      return res.status(400).json({ success: false, error: 'Invalid avatar crop offset X (must be between -2 and 2)' });
+    }
+
+    if (avatar_crop_offset_y !== undefined && (avatar_crop_offset_y < -2 || avatar_crop_offset_y > 2)) {
+      return res.status(400).json({ success: false, error: 'Invalid avatar crop offset Y (must be between -2 and 2)' });
+    }
+
+    console.log('Updating profile for user:', userId);
+    console.log('Update data:', { biography, profile_background_id, interest_tags, privacy_setting, avatar_crop_scale, avatar_crop_offset_x, avatar_crop_offset_y });
+
     // Update profile
     const result = await db.query(`
       UPDATE user_profiles 
@@ -109,16 +136,43 @@ router.put('/me', authenticateToken, async (req, res) => {
         profile_background_id = COALESCE($3, profile_background_id),
         interest_tags = COALESCE($4, interest_tags),
         privacy_setting = COALESCE($5, privacy_setting),
+        avatar_crop_scale = COALESCE($6, avatar_crop_scale),
+        avatar_crop_offset_x = COALESCE($7, avatar_crop_offset_x),
+        avatar_crop_offset_y = COALESCE($8, avatar_crop_offset_y),
         updated_at = NOW()
       WHERE user_id = $1
       RETURNING *
-    `, [userId, biography, profile_background_id, interest_tags, privacy_setting]);
+    `, [userId, biography, profile_background_id, interest_tags, privacy_setting, avatar_crop_scale, avatar_crop_offset_x, avatar_crop_offset_y]);
+
+    console.log('Update result:', result.rows.length, 'rows affected');
 
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Profile not found' });
     }
 
-    res.json({ success: true, profile: result.rows[0] });
+    // Get the complete profile data including avatar appearance
+    const completeProfile = await db.query(`
+      SELECT 
+        up.*,
+        u.username,
+        COALESCE(aa.hue, 0) as hue, 
+        COALESCE(aa.eyes, 'none') as eyes, 
+        COALESCE(aa.ears, 'none') as ears, 
+        COALESCE(aa.fluff, 'none') as fluff, 
+        COALESCE(aa.tail, 'none') as tail, 
+        COALESCE(aa.body, 'CustomBase') as body,
+        COALESCE(up.avatar_crop_scale, 2.2) as avatar_crop_scale,
+        COALESCE(up.avatar_crop_offset_x, -0.5) as avatar_crop_offset_x,
+        COALESCE(up.avatar_crop_offset_y, -0.3) as avatar_crop_offset_y
+      FROM user_profiles up
+      JOIN users u ON up.user_id = u.id
+      LEFT JOIN avatar_appearances aa ON up.user_id = aa.user_id
+      WHERE up.user_id = $1
+    `, [userId]);
+
+    console.log('Complete profile data:', completeProfile.rows[0]);
+
+    res.json({ success: true, profile: completeProfile.rows[0] });
   } catch (error) {
     console.error('Error updating user profile:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
