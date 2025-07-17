@@ -6,7 +6,7 @@ const { authenticateToken } = require('../auth');
 // GET /api/profiles/me - Get current user's profile
 router.get('/me', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     console.log('Fetching profile for user:', userId);
     
     // First check if user profile exists, if not create it
@@ -85,7 +85,7 @@ router.get('/me', authenticateToken, async (req, res) => {
 // PUT /api/profiles/me - Update current user's profile
 router.put('/me', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const { biography, profile_background_id, interest_tags, privacy_setting } = req.body;
 
     // Validate input
@@ -128,7 +128,7 @@ router.put('/me', authenticateToken, async (req, res) => {
 // GET /api/profiles/search - Search profiles
 router.get('/search', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const { q = '', page = 1 } = req.query;
     const limit = 20;
     const offset = (parseInt(page) - 1) * limit;
@@ -226,7 +226,7 @@ router.get('/search', authenticateToken, async (req, res) => {
 // GET /api/profiles/:userId - Get specific user's profile
 router.get('/:userId', authenticateToken, async (req, res) => {
   try {
-    const currentUserId = req.user.id;
+    const currentUserId = req.user.userId;
     const targetUserId = req.params.userId;
 
     // Check if users are friends
