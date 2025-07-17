@@ -295,6 +295,16 @@ const StartMenu: React.FC<StartMenuProps> = ({ isOpen, onClose, onChangeBackgrou
           
           <div className="start-menu-item" onClick={() => {
             if (currentPlayerId) {
+              dispatch(openProgram({ type: 'dexdirectory', controllerId: currentPlayerId }));
+              onClose();
+            }
+          }}>
+            <span>👥</span>
+            <span>DexDirectory</span>
+          </div>
+          
+          <div className="start-menu-item" onClick={() => {
+            if (currentPlayerId) {
               dispatch(openProgram({ type: 'terminal', controllerId: currentPlayerId }));
               onClose();
             }

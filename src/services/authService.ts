@@ -469,6 +469,29 @@ class AuthService {
       return null;
     }
   }
+
+  // Generic API call method for profile operations
+  async apiCall(path: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', data?: any): Promise<any> {
+    try {
+      const config: any = {
+        method: method.toLowerCase(),
+        url: path,
+      };
+
+      if (data && (method === 'POST' || method === 'PUT')) {
+        config.data = data;
+      }
+
+      const response = await axios(config);
+      return response.data;
+    } catch (error: any) {
+      console.error(`API call failed: ${method} ${path}`, error);
+      return {
+        success: false,
+        error: error.response?.data?.error || `${method} request failed`
+      };
+    }
+  }
 }
 
 export const authService = new AuthService();

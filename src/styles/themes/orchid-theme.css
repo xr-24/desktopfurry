@@ -1,0 +1,16 @@
+/* Orchid Theme - Purple tones */
+:root {
+  --win98-gray: #e6d7ff;
+  --win98-light-gray: #f3ebff;
+  --win98-dark-gray: #c299ff;
+  --win98-darker-gray: #4d1a66;
+  --win98-blue: #8a2be2;
+  --win98-dark-blue: #6a1b9a;
+  --win98-desktop-teal: #5d1a6b;
+  
+  /* Theme-specific variables */
+  --theme-text-primary: #4d1a66;
+  --theme-text-secondary: #6a1b9a;
+  --theme-font-primary: 'Better VCR', 'MS Sans Serif', sans-serif;
+  --theme-font-monospace: 'Better VCR', monospace;
+}

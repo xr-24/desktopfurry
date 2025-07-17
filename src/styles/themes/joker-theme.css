@@ -1,0 +1,29 @@
+/* Joker Theme - Greens and purples */
+:root {
+  --win98-gray: #d7ffd7;
+  --win98-light-gray: #ebffeb;
+  --win98-dark-gray: #99ff99;
+  --win98-darker-gray: #1a4d1a;
+  --win98-blue: #8a2be2;
+  --win98-dark-blue: #6a1b9a;
+  --win98-desktop-teal: #2d5a2d;
+  
+  /* Theme-specific variables */
+  --theme-text-primary: #1a4d1a;
+  --theme-text-secondary: #6a1b9a;
+  --theme-font-primary: 'Better VCR', 'MS Sans Serif', sans-serif;
+  --theme-font-monospace: 'Better VCR', monospace;
+}
+
+/* Joker theme specific overrides for dual-color scheme */
+.joker-theme .program-window {
+  border-color: #8a2be2;
+}
+
+.joker-theme .program-window .title-bar {
+  background: linear-gradient(90deg, #32cd32 0%, #8a2be2 100%);
+}
+
+.joker-theme .win98-button:hover {
+  background: linear-gradient(90deg, #90EE90 0%, #c299ff 100%);
+}

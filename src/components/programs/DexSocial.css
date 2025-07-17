@@ -2,39 +2,40 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: #c0c0c0;
-  border: 2px inset #fff;
+  background-color: var(--win98-gray);
+  border: 2px inset var(--win98-light-gray);
 }
 
 .dex-social-tabs {
   display: flex;
-  background-color: #c0c0c0;
-  border-bottom: 2px solid #808080;
+  background-color: var(--win98-gray);
+  border-bottom: 2px solid var(--win98-dark-gray);
   padding: 4px 4px 0 4px;
 }
 
 .tab-button {
   padding: 4px 12px;
   margin-right: 2px;
-  border: 2px solid #808080;
+  border: 2px solid var(--win98-dark-gray);
   border-bottom: none;
-  background-color: #c0c0c0;
-  font-family: 'MS Sans Serif', sans-serif;
+  background-color: var(--win98-gray);
+  font-family: var(--theme-font-primary, 'MS Sans Serif', sans-serif);
   font-size: 12px;
+  color: var(--theme-text-primary);
   cursor: pointer;
   position: relative;
   bottom: -2px;
 }
 
 .tab-button.active {
-  background-color: #dfdfdf;
-  border-bottom: 2px solid #dfdfdf;
+  background-color: var(--win98-light-gray);
+  border-bottom: 2px solid var(--win98-light-gray);
   z-index: 1;
 }
 
 .tab-content {
   flex: 1;
-  background-color: #dfdfdf;
+  background-color: var(--win98-light-gray);
   padding: 8px;
   overflow: hidden;
 }
@@ -50,25 +51,26 @@
   display: flex;
   gap: 8px;
   padding: 8px;
-  background: #c0c0c0;
-  border: 2px inset #fff;
+  background: var(--win98-gray);
+  border: 2px inset var(--win98-light-gray);
 }
 
 .friend-search input {
   flex: 1;
   padding: 4px;
-  border: 2px inset #fff;
-  background: #fff;
-  font-family: 'MS Sans Serif', sans-serif;
+  border: 2px inset var(--win98-light-gray);
+  background: var(--win98-light-gray);
+  font-family: var(--theme-font-primary, 'MS Sans Serif', sans-serif);
   font-size: 12px;
+  color: var(--theme-text-primary);
 }
 
 .friends-list {
   flex: 1;
   overflow-y: auto;
   margin-top: 8px;
-  border: 2px inset #fff;
-  background: #fff;
+  border: 2px inset var(--win98-light-gray);
+  background: var(--win98-light-gray);
   padding: 4px;
 }
 
@@ -78,11 +80,12 @@
   padding: 4px 8px;
   margin: 2px 0;
   cursor: pointer;
+  color: var(--theme-text-primary);
 }
 
 .friend-item:hover {
-  background-color: #0000aa;
-  color: #fff;
+  background-color: var(--win98-blue);
+  color: var(--win98-light-gray);
 }
 
 .status-dot {
@@ -110,8 +113,8 @@
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  border: 2px inset #fff;
-  background: #fff;
+  border: 2px inset var(--win98-light-gray);
+  background: var(--win98-light-gray);
   padding: 8px;
   margin-bottom: 8px;
 }
@@ -266,4 +269,4 @@
   background-repeat: no-repeat;
   background-position: center;
   transform: rotate(180deg);
-} 
+}

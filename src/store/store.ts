@@ -10,6 +10,7 @@ import shopSlice from './shopSlice';
 import uiSlice from './uiSlice';
 import iconSlice from './iconSlice';
 import themeSlice from './themeSlice';
+import profileSlice from './profileSlice';
 
 export const store = configureStore({
   reducer: {
@@ -24,6 +25,7 @@ export const store = configureStore({
     ui: uiSlice,
     icons: iconSlice,
     theme: themeSlice,
+    profile: profileSlice,
   },
 });
 

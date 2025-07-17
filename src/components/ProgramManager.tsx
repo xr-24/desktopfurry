@@ -16,6 +16,7 @@ import Breakout from './programs/Breakout';
 import Sudoku from './programs/Sudoku';
 import Checkers from './programs/Checkers';
 import Shop from './programs/Shop';
+import DexDirectory from './programs/DexDirectory';
 // DexSocial moved to taskbar widget
 // import DexSocial from './programs/DexSocial';
 
@@ -148,6 +149,27 @@ const ProgramManager: React.FC = () => {
           />
         );
       
+      case 'dexdirectory':
+        return (
+          <ProgramWindow
+            key={program.id}
+            windowId={program.id}
+            title="DexDirectory"
+            icon="👥"
+            position={program.position}
+            size={program.size}
+            zIndex={program.zIndex}
+            isMinimized={program.isMinimized}
+          >
+            <DexDirectory
+              onClose={() => {}}
+              onMinimize={() => {}}
+              onMaximize={() => {}}
+              isMaximized={false}
+            />
+          </ProgramWindow>
+        );
+      
       default:
         return (
           <ProgramWindow
@@ -179,4 +201,4 @@ const ProgramManager: React.FC = () => {
   );
 };
 
-export default ProgramManager; 
+export default ProgramManager;

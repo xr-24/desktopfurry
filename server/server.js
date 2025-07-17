@@ -15,6 +15,7 @@ const dextopRoutes = require('./routes/dextop');
 const usersRoutes = require('./routes/users');
 const inventoryRoutes = require('./routes/inventory');
 const shopRoutes = require('./routes/shop');
+const profilesRoutes = require('./routes/profiles');
 
 const app = express();
 const server = http.createServer(app);
@@ -39,6 +40,7 @@ app.use('/api/dextop', dextopRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/shop', shopRoutes);
+app.use('/api/profiles', profilesRoutes);
 
 // In-memory storage for active dextop sessions
 const activeDextops = new Map(); // dextopId -> { visitors: Map<userId, playerData> }
@@ -859,4 +861,4 @@ setInterval(() => {
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-}); 
+});

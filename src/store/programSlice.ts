@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface ProgramWindow {
   id: string;
-  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'pong' | 'characterEditor' | 'bdemediaplayer' | 'browser98' | 'terminal' | 'inventory' | 'breakout' | 'sudoku' | 'shop';
+  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'pong' | 'characterEditor' | 'bdemediaplayer' | 'browser98' | 'terminal' | 'inventory' | 'breakout' | 'sudoku' | 'shop' | 'dexdirectory';
   isOpen: boolean;
   position: { x: number; y: number };
   size: { width: number; height: number };
@@ -55,6 +55,7 @@ const programSlice = createSlice({
         terminal: { width: 500, height: 300, isMultiplayer: false },
         inventory: { width: 550, height: 450, isMultiplayer: false },
         shop: { width: 700, height: 500, isMultiplayer: false },
+        dexdirectory: { width: 800, height: 600, isMultiplayer: false },
       };
       
       const config = programConfigs[type];
@@ -275,6 +276,10 @@ function getProgramInitialState(type: ProgramWindow['type']) {
       return {
         activeTab: 'cosmetics', // 'cosmetics' | 'themes' | 'backgrounds' | 'games' | 'misc'
       };
+    case 'dexdirectory':
+      return {
+        activeTab: 'profile', // 'profile' | 'browse'
+      };
     default:
       return {};
   }
@@ -318,4 +323,4 @@ export const {
   syncDesktop,
 } = programSlice.actions;
 
-export default programSlice.reducer; 
+export default programSlice.reducer;

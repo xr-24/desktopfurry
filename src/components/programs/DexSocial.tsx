@@ -441,14 +441,14 @@ const DexSocial: React.FC<DexSocialProps> = ({
       <div 
         className="dex-social-title-bar"
         style={{
-          background: 'linear-gradient(90deg, #0080ff 0%, #0040ff 100%)',
+          background: `linear-gradient(90deg, var(--win98-blue) 0%, var(--win98-dark-blue) 100%)`,
           color: 'white',
           padding: '4px 8px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           fontSize: '11px',
-          fontFamily: '"Better VCR", "MS Sans Serif", sans-serif',
+          fontFamily: 'var(--theme-font-primary, "Better VCR", "MS Sans Serif", sans-serif)',
           fontWeight: 'bold'
         }}
       >
@@ -517,4 +517,4 @@ const DexSocial: React.FC<DexSocialProps> = ({
   );
 };
 
-export default DexSocial; 
+export default DexSocial;

@@ -1,0 +1,30 @@
+/* Hotrod Theme - Red tones */
+:root {
+  --win98-gray: #ffd7d7;
+  --win98-light-gray: #ffebeb;
+  --win98-dark-gray: #ff9999;
+  --win98-darker-gray: #661a1a;
+  --win98-blue: #dc143c;
+  --win98-dark-blue: #b71c1c;
+  --win98-desktop-teal: #8b0000;
+  
+  /* Theme-specific variables */
+  --theme-text-primary: #661a1a;
+  --theme-text-secondary: #b71c1c;
+  --theme-font-primary: 'Better VCR', 'MS Sans Serif', sans-serif;
+  --theme-font-monospace: 'Better VCR', monospace;
+}
+
+/* Hotrod theme specific overrides for racing aesthetic */
+.hotrod-theme .program-window .title-bar {
+  background: linear-gradient(90deg, #ff4500 0%, #dc143c 50%, #8b0000 100%);
+}
+
+.hotrod-theme .win98-button:hover {
+  background: linear-gradient(135deg, #ff6347 0%, #ff4500 100%);
+  box-shadow: 0 0 8px rgba(220, 20, 60, 0.6);
+}
+
+.hotrod-theme .desktop {
+  background-color: #8b0000;
+}

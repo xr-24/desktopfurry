@@ -101,6 +101,70 @@ const predefinedThemes: Theme[] = [
     },
     isPurchased: false,
     isFree: false
+  },
+  {
+    id: 'orchid-theme',
+    name: 'Orchid Theme',
+    colors: {
+      primary: '#e6d7ff',
+      secondary: '#f3ebff',
+      accent: '#8a2be2',
+      text: '#4d1a66',
+      textSecondary: '#6a1b9a',
+      border: '#c299ff',
+      shadow: '#4d1a66',
+      desktop: '#5d1a6b'
+    },
+    isPurchased: false,
+    isFree: false
+  },
+  {
+    id: 'pinkie-theme',
+    name: 'Pinkie Theme',
+    colors: {
+      primary: '#ffd7e6',
+      secondary: '#ffebf0',
+      accent: '#e91e63',
+      text: '#661a33',
+      textSecondary: '#c2185b',
+      border: '#ff99cc',
+      shadow: '#661a33',
+      desktop: '#8e1538'
+    },
+    isPurchased: false,
+    isFree: false
+  },
+  {
+    id: 'joker-theme',
+    name: 'Joker Theme',
+    colors: {
+      primary: '#d7ffd7',
+      secondary: '#ebffeb',
+      accent: '#8a2be2',
+      text: '#1a4d1a',
+      textSecondary: '#6a1b9a',
+      border: '#99ff99',
+      shadow: '#1a4d1a',
+      desktop: '#2d5a2d'
+    },
+    isPurchased: false,
+    isFree: false
+  },
+  {
+    id: 'hotrod-theme',
+    name: 'Hotrod Theme',
+    colors: {
+      primary: '#ffd7d7',
+      secondary: '#ffebeb',
+      accent: '#dc143c',
+      text: '#661a1a',
+      textSecondary: '#b71c1c',
+      border: '#ff9999',
+      shadow: '#661a1a',
+      desktop: '#8b0000'
+    },
+    isPurchased: false,
+    isFree: false
   }
 ];
 

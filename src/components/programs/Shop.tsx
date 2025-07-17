@@ -57,7 +57,8 @@ const Shop: React.FC<ShopProps> = ({
         // Helper to filter out placeholder items – keep those with a valid asset_path
         const filterPlaceholders = (arr: ShopItem[] = []) => arr.filter(i => !!i.asset_path);
         filteredItems.games = filterPlaceholders(filteredItems.games);
-        filteredItems.themes = filterPlaceholders(filteredItems.themes);
+        // Don't filter themes by asset_path since they use CSS files instead
+        // filteredItems.themes = filterPlaceholders(filteredItems.themes);
         
         // Filter out free backgrounds from shop (they're available by default)
         const FREE_BACKGROUND_IDS = [
@@ -240,9 +241,25 @@ const Shop: React.FC<ShopProps> = ({
               {/* Theme color preview */}
               <div style={{
                 flex: 1,
-                background: item.metadata?.colors ? 
-                  `linear-gradient(45deg, ${item.metadata.colors.primary} 0%, ${item.metadata.colors.accent} 50%, ${item.metadata.colors.secondary} 100%)` :
-                  'linear-gradient(45deg, #c0c0c0 0%, #0080ff 50%, #dfdfdf 100%)',
+                background: (() => {
+                  // Get theme colors based on theme name
+                  if (item.name === 'Ocean Theme') {
+                    return 'linear-gradient(45deg, #b3d9ff 0%, #0066cc 50%, #e6f3ff 100%)';
+                  } else if (item.name === 'Forest Theme') {
+                    return 'linear-gradient(45deg, #c8e6c8 0%, #228B22 50%, #e8f5e8 100%)';
+                  } else if (item.name === 'Sunset Theme') {
+                    return 'linear-gradient(45deg, #ffcc99 0%, #ff6600 50%, #ffe6cc 100%)';
+                  } else if (item.name === 'Orchid Theme') {
+                    return 'linear-gradient(45deg, #e6d7ff 0%, #8a2be2 50%, #f3ebff 100%)';
+                  } else if (item.name === 'Pinkie Theme') {
+                    return 'linear-gradient(45deg, #ffd7e6 0%, #e91e63 50%, #ffebf0 100%)';
+                  } else if (item.name === 'Joker Theme') {
+                    return 'linear-gradient(45deg, #d7ffd7 0%, #32cd32 25%, #8a2be2 75%, #ebffeb 100%)';
+                  } else if (item.name === 'Hotrod Theme') {
+                    return 'linear-gradient(45deg, #ffd7d7 0%, #dc143c 50%, #ffebeb 100%)';
+                  }
+                  return 'linear-gradient(45deg, #c0c0c0 0%, #0080ff 50%, #dfdfdf 100%)';
+                })(),
                 position: 'relative'
               }}>
                 {/* Mini window preview */}
@@ -252,19 +269,64 @@ const Shop: React.FC<ShopProps> = ({
                   left: '4px',
                   right: '4px',
                   bottom: '4px',
-                  backgroundColor: item.metadata?.colors?.primary || '#c0c0c0',
-                  border: `1px solid ${item.metadata?.colors?.border || '#808080'}`,
+                  backgroundColor: (() => {
+                    if (item.name === 'Ocean Theme') return '#b3d9ff';
+                    if (item.name === 'Forest Theme') return '#c8e6c8';
+                    if (item.name === 'Sunset Theme') return '#ffcc99';
+                    if (item.name === 'Orchid Theme') return '#e6d7ff';
+                    if (item.name === 'Pinkie Theme') return '#ffd7e6';
+                    if (item.name === 'Joker Theme') return '#d7ffd7';
+                    if (item.name === 'Hotrod Theme') return '#ffd7d7';
+                    return '#c0c0c0';
+                  })(),
+                  border: `1px solid ${(() => {
+                    if (item.name === 'Ocean Theme') return '#0080ff';
+                    if (item.name === 'Forest Theme') return '#90EE90';
+                    if (item.name === 'Sunset Theme') return '#ff9966';
+                    if (item.name === 'Orchid Theme') return '#c299ff';
+                    if (item.name === 'Pinkie Theme') return '#ff99cc';
+                    if (item.name === 'Joker Theme') return '#99ff99';
+                    if (item.name === 'Hotrod Theme') return '#ff9999';
+                    return '#808080';
+                  })()}`,
                   borderRadius: '1px'
                 }}>
                   <div style={{
                     height: '8px',
-                    background: item.metadata?.colors?.accent || '#0080ff',
-                    borderBottom: `1px solid ${item.metadata?.colors?.border || '#808080'}`
+                    background: (() => {
+                      if (item.name === 'Ocean Theme') return '#0066cc';
+                      if (item.name === 'Forest Theme') return '#228B22';
+                      if (item.name === 'Sunset Theme') return '#ff6600';
+                      if (item.name === 'Orchid Theme') return '#8a2be2';
+                      if (item.name === 'Pinkie Theme') return '#e91e63';
+                      if (item.name === 'Joker Theme') return 'linear-gradient(90deg, #32cd32 0%, #8a2be2 100%)';
+                      if (item.name === 'Hotrod Theme') return 'linear-gradient(90deg, #ff4500 0%, #dc143c 50%, #8b0000 100%)';
+                      return '#0080ff';
+                    })(),
+                    borderBottom: `1px solid ${(() => {
+                      if (item.name === 'Ocean Theme') return '#0080ff';
+                      if (item.name === 'Forest Theme') return '#90EE90';
+                      if (item.name === 'Sunset Theme') return '#ff9966';
+                      if (item.name === 'Orchid Theme') return '#c299ff';
+                      if (item.name === 'Pinkie Theme') return '#ff99cc';
+                      if (item.name === 'Joker Theme') return '#99ff99';
+                      if (item.name === 'Hotrod Theme') return '#ff9999';
+                      return '#808080';
+                    })()}`
                   }}></div>
                   <div style={{
                     padding: '2px',
                     fontSize: '6px',
-                    color: item.metadata?.colors?.text || '#000000',
+                    color: (() => {
+                      if (item.name === 'Ocean Theme') return '#003366';
+                      if (item.name === 'Forest Theme') return '#1a4d1a';
+                      if (item.name === 'Sunset Theme') return '#663300';
+                      if (item.name === 'Orchid Theme') return '#4d1a66';
+                      if (item.name === 'Pinkie Theme') return '#661a33';
+                      if (item.name === 'Joker Theme') return '#1a4d1a';
+                      if (item.name === 'Hotrod Theme') return '#661a1a';
+                      return '#000000';
+                    })(),
                     lineHeight: '1'
                   }}>
                     Theme Preview

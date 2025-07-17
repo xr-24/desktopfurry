@@ -1,0 +1,16 @@
+/* Pinkie Theme - Pink tones */
+:root {
+  --win98-gray: #ffd7e6;
+  --win98-light-gray: #ffebf0;
+  --win98-dark-gray: #ff99cc;
+  --win98-darker-gray: #661a33;
+  --win98-blue: #e91e63;
+  --win98-dark-blue: #c2185b;
+  --win98-desktop-teal: #8e1538;
+  
+  /* Theme-specific variables */
+  --theme-text-primary: #661a33;
+  --theme-text-secondary: #c2185b;
+  --theme-font-primary: 'Better VCR', 'MS Sans Serif', sans-serif;
+  --theme-font-monospace: 'Better VCR', monospace;
+}
