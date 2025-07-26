@@ -23,6 +23,7 @@ export const defaultIcons: DesktopIcon[] = [
   { id: 'pong', label: 'Pong', icon: '🏓', x: 150, y: 260, type: 'pong', hidden: false },
   { id: 'breakout', label: 'Breakout', icon: '🧱', x: 150, y: 360, type: 'breakout', hidden: false },
   { id: 'sudoku', label: 'Sudoku', icon: '🔢', x: 150, y: 460, type: 'sudoku', hidden: false },
+  { id: 'seabuddy', label: 'SeaBuddy', icon: '🐠', x: 250, y: 60, type: 'seabuddy', hidden: false },
 ];
 
 interface IconsState {

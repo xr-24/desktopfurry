@@ -559,6 +559,47 @@ class AuthService {
       return false;
     }
   }
+
+  // Fish management methods
+  async loadFish(): Promise<any | null> {
+    try {
+      const response = await axios.get('/fish');
+      return response.data.fish || null;
+    } catch (error) {
+      console.error('Failed to load fish:', error);
+      return null;
+    }
+  }
+
+  async createFish(fishData: { fish_type: string; fish_name: string; tank_background: string }): Promise<boolean> {
+    try {
+      await axios.post('/fish', fishData);
+      return true;
+    } catch (error) {
+      console.error('Failed to create fish:', error);
+      return false;
+    }
+  }
+
+  async feedFish(): Promise<boolean> {
+    try {
+      await axios.put('/fish/feed');
+      return true;
+    } catch (error) {
+      console.error('Failed to feed fish:', error);
+      return false;
+    }
+  }
+
+  async cleanTank(): Promise<boolean> {
+    try {
+      await axios.put('/fish/clean');
+      return true;
+    } catch (error) {
+      console.error('Failed to clean tank:', error);
+      return false;
+    }
+  }
 }
 
 export const authService = new AuthService();

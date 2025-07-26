@@ -407,7 +407,7 @@ const Desktop: React.FC = () => {
                 <DexSocial
                   windowId="dex-social-widget"
                   position={{ x: 0, y: 0 }}
-                  size={{ width: 400, height: 350 }}
+                  size={{ width: 600, height: 350 }}
                   zIndex={10000}
                   isMinimized={false}
                   programState={socialState}

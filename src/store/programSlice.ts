@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface ProgramWindow {
   id: string;
-  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'pong' | 'characterEditor' | 'bdemediaplayer' | 'browser98' | 'terminal' | 'inventory' | 'breakout' | 'sudoku' | 'shop' | 'dexdirectory';
+  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'pong' | 'characterEditor' | 'bdemediaplayer' | 'browser98' | 'terminal' | 'inventory' | 'breakout' | 'sudoku' | 'shop' | 'dexdirectory' | 'seabuddy';
   isOpen: boolean;
   position: { x: number; y: number };
   size: { width: number; height: number };
@@ -56,6 +56,7 @@ const programSlice = createSlice({
         inventory: { width: 550, height: 450, isMultiplayer: false },
         shop: { width: 700, height: 500, isMultiplayer: false },
         dexdirectory: { width: 500, height: 270, isMultiplayer: false },
+        seabuddy: { width: 600, height: 450, isMultiplayer: true },
       };
       
       const config = programConfigs[type];
@@ -279,6 +280,25 @@ function getProgramInitialState(type: ProgramWindow['type']) {
     case 'dexdirectory':
       return {
         activeTab: 'profile', // 'profile' | 'browse'
+      };
+    case 'seabuddy':
+      return {
+        setupStep: 'tank', // 'tank' | 'fish' | 'name' | 'complete'
+        selectedTank: null,
+        selectedFish: null,
+        fishName: '',
+        fishPosition: { x: 50, y: 50 },
+        fishMovement: { direction: 0, speed: 1 },
+        hunger: 100,
+        cleanliness: 100,
+        happiness: 100,
+        health: 100,
+        currentTool: 'none',
+        showStats: false,
+        lastFed: Date.now(),
+        lastCleaned: Date.now(),
+        lastMovement: Date.now(),
+        isLoaded: false,
       };
     default:
       return {};

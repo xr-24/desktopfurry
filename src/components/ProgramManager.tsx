@@ -17,6 +17,7 @@ import Sudoku from './programs/Sudoku';
 import Checkers from './programs/Checkers';
 import Shop from './programs/Shop';
 import DexDirectory from './programs/DexDirectory';
+import SeaBuddy from './programs/SeaBuddy';
 // DexSocial moved to taskbar widget
 // import DexSocial from './programs/DexSocial';
 
@@ -168,6 +169,17 @@ const ProgramManager: React.FC = () => {
               isMaximized={false}
             />
           </ProgramWindow>
+        );
+
+      case 'seabuddy':
+        return (
+          <SeaBuddy
+            key={program.id}
+            {...commonProps}
+            programState={program.state}
+            controllerId={program.controllerId}
+            currentPlayerId={currentPlayerId}
+          />
         );
       
       default:

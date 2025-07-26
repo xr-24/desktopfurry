@@ -362,8 +362,7 @@ const DexSocial: React.FC<DexSocialProps> = ({
                     onClick={() => setSelectedFriendLocal(friend.id)}
                   >
                     <span className={`status-dot ${friend.isOnline ? 'online' : 'offline'}`} />
-                    <span className="friend-name">{friend.username}</span>
-                    {!friend.isOnline && <span className="offline-indicator">(offline)</span>}
+                    <span className={`friend-name ${friend.isOnline ? 'online' : 'offline'}`}>{friend.username}</span>
                   </div>
                 ))}
             </div>

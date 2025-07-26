@@ -110,6 +110,14 @@
   margin-left: 4px;
 }
 
+.friend-name.online {
+  color: #000000;
+}
+
+.friend-name.offline {
+  color: #808080;
+}
+
 
 
 /* Local Chat Tab */
@@ -170,7 +178,7 @@
 }
 
 .friends-sidebar {
-  width: 150px;
+  width: 200px;
   border: 2px inset #fff;
   background: #fff;
   overflow-y: auto;
