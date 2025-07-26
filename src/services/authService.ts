@@ -560,35 +560,56 @@ class AuthService {
     }
   }
 
-  // Fish management methods (temporarily disabled)
+  // Fish management methods
   async loadFish(): Promise<any | null> {
-    // Temporarily return null until fish API is fixed
-    return null;
+    try {
+      const response = await axios.get('/api/fish');
+      return response.data.fish || null;
+    } catch (error) {
+      console.error('Failed to load fish:', error);
+      return null;
+    }
   }
 
   async createFish(fishData: { fish_type: string; fish_name: string; tank_background: string }): Promise<boolean> {
-    // Temporarily return false until fish API is fixed
-    console.log('Fish creation temporarily disabled');
-    return false;
+    try {
+      await axios.post('/api/fish', fishData);
+      return true;
+    } catch (error) {
+      console.error('Failed to create fish:', error);
+      return false;
+    }
   }
 
   async feedFish(): Promise<boolean> {
-    // Temporarily return false until fish API is fixed
-    console.log('Fish feeding temporarily disabled');
-    return false;
+    try {
+      await axios.put('/api/fish/feed');
+      return true;
+    } catch (error) {
+      console.error('Failed to feed fish:', error);
+      return false;
+    }
   }
 
   async cleanTank(): Promise<boolean> {
-    // Temporarily return false until fish API is fixed
-    console.log('Tank cleaning temporarily disabled');
-    return false;
+    try {
+      await axios.put('/api/fish/clean');
+      return true;
+    } catch (error) {
+      console.error('Failed to clean tank:', error);
+      return false;
+    }
   }
 
   // Debug method to decay fish stats for testing
   async decayFish(): Promise<any> {
-    // Temporarily return null until fish API is fixed
-    console.log('Fish decay temporarily disabled');
-    return null;
+    try {
+      const response = await axios.post('/api/fish/decay');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to decay fish:', error);
+      return null;
+    }
   }
 }
 
