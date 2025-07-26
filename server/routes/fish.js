@@ -191,4 +191,34 @@ router.put('/move', authService.verifyToken, async (req, res) => {
   }
 });
 
+// Debug/testing endpoint to manually decay fish stats
+router.post('/decay', authService.verifyToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    const result = await db.query(`
+      UPDATE user_fish 
+      SET 
+        hunger_level = GREATEST(0, hunger_level - 10),
+        tank_cleanliness = GREATEST(0, tank_cleanliness - 15),
+        updated_at = NOW()
+      WHERE user_id = $1
+      RETURNING hunger_level, tank_cleanliness
+    `, [userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Fish not found' });
+    }
+
+    res.json({ 
+      message: 'Fish stats decayed',
+      hunger_level: result.rows[0].hunger_level,
+      tank_cleanliness: result.rows[0].tank_cleanliness
+    });
+  } catch (error) {
+    console.error('Error decaying fish stats:', error);
+    res.status(500).json({ error: 'Failed to decay fish stats' });
+  }
+});
+
 module.exports = router; 

@@ -36,7 +36,12 @@ function loadInitialIcons(): DesktopIcon[] {
     const stored = localStorage.getItem('desktop_icons');
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        // Merge with default icons to ensure new icons are added
+        const existingIds = new Set(parsed.map((icon: DesktopIcon) => icon.id));
+        const newIcons = defaultIcons.filter(icon => !existingIds.has(icon.id));
+        return [...parsed, ...newIcons];
+      }
     }
   } catch (err) {
     console.error('Failed to load icons from storage', err);

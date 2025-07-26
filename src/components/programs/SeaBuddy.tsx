@@ -246,6 +246,31 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
     }
   };
 
+  // Debug function to decay fish stats for testing
+  const handleDecay = async () => {
+    if (!isController) return;
+
+    try {
+      const result = await authService.decayFish();
+      if (result) {
+        const newHappiness = calculateHappiness(result.hunger_level, result.tank_cleanliness);
+        const newHealth = calculateHealth(result.tank_cleanliness);
+        
+        dispatch(updateProgramState({
+          windowId,
+          newState: {
+            hunger: result.hunger_level,
+            cleanliness: result.tank_cleanliness,
+            happiness: newHappiness,
+            health: newHealth,
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to decay fish:', error);
+    }
+  };
+
   // Render setup flow
   if (programState.setupStep !== 'complete') {
     return (
@@ -527,14 +552,34 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
             />
           </button>
 
-          <div style={{ marginLeft: 'auto', fontSize: '11px', color: '#000080' }}>
-            <div>Tank: {programState.cleanliness}%</div>
-            <div>Fish: {programState.happiness}% happy</div>
-          </div>
-        </div>
-      </div>
-    </ProgramWindow>
-  );
-};
+                     {/* Debug Decay Button (for testing) */}
+           {isController && (
+             <button
+               onClick={handleDecay}
+               style={{
+                 width: '60px',
+                 height: '40px',
+                 background: '#ff6600',
+                 border: '2px outset #c0c0c0',
+                 cursor: 'pointer',
+                 padding: '4px',
+                 fontSize: '10px',
+                 color: '#ffffff',
+               }}
+               title="Debug: Decay fish stats for testing"
+             >
+               DECAY
+             </button>
+           )}
+
+           <div style={{ marginLeft: 'auto', fontSize: '11px', color: '#000080' }}>
+             <div>Tank: {programState.cleanliness}%</div>
+             <div>Fish: {programState.happiness}% happy</div>
+           </div>
+         </div>
+       </div>
+     </ProgramWindow>
+   );
+ };
 
 export default SeaBuddy; 
