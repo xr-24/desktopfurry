@@ -298,6 +298,7 @@ function getProgramInitialState(type: ProgramWindow['type']) {
           isSwimming: false,
           facingDirection: 'right',
           movementProgress: 0,
+          driftDirection: Math.random() * 360,
         },
         hunger: 100,
         cleanliness: 100,

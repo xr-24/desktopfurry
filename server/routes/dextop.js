@@ -57,7 +57,7 @@ router.get('/my-dextop', authService.authenticateToken, async (req, res) => {
         size: { width: p.width, height: p.height },
         zIndex: p.z_index,
         isMinimized: p.is_minimized,
-        state: p.program_data
+        state: typeof p.program_data === 'string' ? JSON.parse(p.program_data) : p.program_data
       })),
       avatar: {
         hue: dextop.hue || 0,
@@ -288,7 +288,7 @@ router.get('/visit/:dextopId', authService.authenticateToken, async (req, res) =
         size: { width: p.width, height: p.height },
         zIndex: p.z_index,
         isMinimized: p.is_minimized,
-        state: p.program_data
+        state: typeof p.program_data === 'string' ? JSON.parse(p.program_data) : p.program_data
       })),
       ownerAvatar: {
         hue: dextop.hue || 0,

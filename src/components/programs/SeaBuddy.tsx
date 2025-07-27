@@ -26,6 +26,7 @@ interface SeaBuddyProps {
       isSwimming: boolean;
       facingDirection: 'left' | 'right';
       movementProgress: number; // 0-1 for easing calculation
+      driftDirection: number; // direction to drift when idle
     };
     hunger: number;
     cleanliness: number;
@@ -45,7 +46,8 @@ interface SeaBuddyProps {
 
 // Constants for fish behavior
 const FISH_CONSTANTS = {
-  MOVEMENT_SPEED: 3.0, // pixels per frame (base speed for movement)
+  MOVEMENT_SPEED: 3.0, // pixels per frame (base speed for active movement)
+  DRIFT_SPEED: 0.3, // pixels per frame (slow floating speed when idle)
   IDLE_TIME_MIN: 5000, // minimum idle time (5 seconds)
   IDLE_TIME_MAX: 12000, // maximum idle time (12 seconds)
   MOVEMENT_DURATION: 1500, // how long movement lasts (1.5 seconds)
@@ -53,6 +55,7 @@ const FISH_CONSTANTS = {
   SWIM_SOUND_CHANCE: 0.1, // 10% chance per frame to play swim sound during movement
   ANIMATION_FRAME_RATE: 200, // milliseconds between animation frames (faster when moving)
   DIRECTION_THRESHOLD: 45, // degrees - only flip if direction changes by this much
+  BOUNDARY_BOUNCE: 0.7, // how much to reduce speed when bouncing off boundaries
 }
 
 // Decay rates and tool configuration
@@ -159,6 +162,7 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
                 isSwimming: false,
                 facingDirection: 'right',
                 movementProgress: 0,
+                driftDirection: Math.random() * 360,
               },
               hunger: fishData.hunger_level,
               cleanliness: fishData.tank_cleanliness,
@@ -216,7 +220,7 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
     };
   }, []);
 
-  // Fish movement animation loop with natural movement and smart direction changes
+  // Fish movement animation loop - fish is always moving (either swimming or drifting)
   const animateFish = useCallback(() => {
     if (!isController || programState.setupStep !== 'complete') {
       return;
@@ -242,12 +246,12 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
     const timeSinceLastMovement = now - movement.movementTimer;
     
     if (!movement.isSwimming) {
-      // Fish is idle - check if it's time to start moving
+      // Fish is drifting - check if it's time to start active swimming
       const idleTime = FISH_CONSTANTS.IDLE_TIME_MIN + 
         Math.random() * (FISH_CONSTANTS.IDLE_TIME_MAX - FISH_CONSTANTS.IDLE_TIME_MIN);
       
       if (timeSinceLastMovement > idleTime) {
-        // Start a new movement - pick a random target
+        // Start active swimming - pick a random target
         const newTarget = generateNewTarget();
         const newDirection = Math.atan2(newTarget.y - currentY, newTarget.x - currentX) * (180 / Math.PI);
         
@@ -258,6 +262,7 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
         
         if (directionChange > FISH_CONSTANTS.DIRECTION_THRESHOLD) {
           // Significant direction change - flip the fish
+          // Fish sprite naturally faces left, so we flip it when moving right
           newFacingDirection = newDirection >= -90 && newDirection <= 90 ? 'right' : 'left';
         }
         
@@ -272,9 +277,37 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
           movementProgress: 0,
         };
         isSwimming = true;
+      } else {
+        // Continue drifting in current direction
+        const driftAngle = movement.driftDirection * (Math.PI / 180);
+        let newX = currentX + Math.cos(driftAngle) * FISH_CONSTANTS.DRIFT_SPEED;
+        let newY = currentY + Math.sin(driftAngle) * FISH_CONSTANTS.DRIFT_SPEED;
+
+        // Handle boundary bouncing for drift
+        const padding = FISH_CONSTANTS.TANK_PADDING;
+        let newDriftDirection = movement.driftDirection;
+        
+        if (newX <= padding || newX >= canvasWidth - padding) {
+          newDriftDirection = 180 - movement.driftDirection; // Horizontal bounce
+          newX = Math.max(padding, Math.min(canvasWidth - padding, newX));
+        }
+        if (newY <= padding || newY >= canvasHeight - padding) {
+          newDriftDirection = -movement.driftDirection; // Vertical bounce
+          newY = Math.max(padding, Math.min(canvasHeight - padding, newY));
+        }
+
+        newPosition = {
+          x: (newX / canvasWidth) * 100,
+          y: (newY / canvasHeight) * 100,
+        };
+
+        newMovement = {
+          ...movement,
+          driftDirection: newDriftDirection,
+        };
       }
     } else {
-      // Fish is currently swimming
+      // Fish is actively swimming
       const distanceToTarget = Math.sqrt(
         Math.pow(targetX - currentX, 2) + Math.pow(targetY - currentY, 2)
       );
@@ -284,11 +317,13 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
       
       // Stop swimming if we reached the target or have been moving too long
       if (distanceToTarget < 5 || progress >= 1) {
+        // Switch to drifting mode - use the last direction as drift direction
         newMovement = {
           ...movement,
           isSwimming: false,
-          movementTimer: now, // Reset timer for next idle period
+          movementTimer: now, // Reset timer for next swim cycle
           movementProgress: 0,
+          driftDirection: movement.direction, // Continue in same direction but slowly
         };
         isSwimming = false;
       } else {
@@ -308,11 +343,12 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
         newMovement = {
           ...movement,
           movementProgress: progress,
+          direction: angle * (180 / Math.PI), // Update direction as we move
         };
 
         isSwimming = true;
 
-        // Play random swim sounds occasionally during movement
+        // Play random swim sounds occasionally during active movement
         if (Math.random() < FISH_CONSTANTS.SWIM_SOUND_CHANCE) {
           const swimSounds = ['swim1', 'swim2', 'swim3', 'swim4'];
           const randomSound = swimSounds[Math.floor(Math.random() * swimSounds.length)];
@@ -351,20 +387,15 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
     };
   }, [isController, programState.setupStep, animateFish]);
 
-  // Animation frame cycling for fish sprite (only when swimming)
+  // Animation frame cycling for fish sprite (faster when swimming, slower when drifting)
   useEffect(() => {
     if (programState.setupStep !== 'complete') return;
 
-    if (programState.fishMovement.isSwimming) {
-      const interval = setInterval(() => {
-        setAnimationFrame(prev => (prev + 1) % 2); // Cycle between 0 and 1
-      }, FISH_CONSTANTS.ANIMATION_FRAME_RATE);
+    const interval = setInterval(() => {
+      setAnimationFrame(prev => (prev + 1) % 2); // Cycle between 0 and 1
+    }, programState.fishMovement.isSwimming ? FISH_CONSTANTS.ANIMATION_FRAME_RATE : FISH_CONSTANTS.ANIMATION_FRAME_RATE * 3);
 
-      return () => clearInterval(interval);
-    } else {
-      // Reset to frame 0 when not swimming
-      setAnimationFrame(0);
-    }
+    return () => clearInterval(interval);
   }, [programState.setupStep, programState.fishMovement.isSwimming]);
 
   // Condition decay system
@@ -470,6 +501,7 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
             isSwimming: false, // Start in idle state
             facingDirection: 'right',
             movementProgress: 0,
+            driftDirection: Math.random() * 360,
           },
           hunger: 100,
           cleanliness: 100,
@@ -785,15 +817,18 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
                 width: '60px', 
                 height: '45px', 
                 objectFit: 'contain',
-                opacity: programState.fishMovement.isSwimming ? (animationFrame === 0 ? 1 : 0.85) : 1,
-                transition: 'opacity 0.1s ease, transform 0.3s ease',
+                opacity: programState.fishMovement.isSwimming ? 
+                  (animationFrame === 0 ? 1 : 0.85) : 
+                  (animationFrame === 0 ? 1 : 0.95), // Subtle animation when drifting
+                transition: 'opacity 0.2s ease, transform 0.3s ease',
                 transform: `
-                  ${programState.fishMovement.facingDirection === 'left' ? 'scaleX(-1)' : ''}
+                  ${programState.fishMovement.facingDirection === 'right' ? 'scaleX(-1)' : ''}
                   ${programState.fishMovement.isSwimming ? 
                     `skewY(${Math.sin(programState.fishMovement.direction * Math.PI / 180) * 3}deg) 
                      skewX(${Math.cos(programState.fishMovement.direction * Math.PI / 180) * 2}deg)
                      scale(${1 + programState.fishMovement.movementProgress * 0.1})` : 
-                    ''
+                    `skewY(${Math.sin(programState.fishMovement.driftDirection * Math.PI / 180) * 1}deg) 
+                     skewX(${Math.cos(programState.fishMovement.driftDirection * Math.PI / 180) * 0.5}deg)` // Subtle drift animation
                   }
                 `.replace(/\s+/g, ' ').trim(),
               }}
@@ -843,19 +878,20 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
             )}
           </div>
 
-          {/* Swimming particles effect when fish is moving */}
-          {programState.fishMovement.isSwimming && (
+          {/* Movement particles effect - more prominent when swimming, subtle when drifting */}
+          {(programState.fishMovement.isSwimming || Math.random() < 0.3) && (
             <div
               style={{
                 position: 'absolute',
-                left: `${programState.fishPosition.x + (Math.random() - 0.5) * 5}%`,
-                top: `${programState.fishPosition.y + (Math.random() - 0.5) * 5}%`,
-                width: '2px',
-                height: '2px',
-                background: '#00aaff',
+                left: `${programState.fishPosition.x + (Math.random() - 0.5) * (programState.fishMovement.isSwimming ? 5 : 2)}%`,
+                top: `${programState.fishPosition.y + (Math.random() - 0.5) * (programState.fishMovement.isSwimming ? 5 : 2)}%`,
+                width: programState.fishMovement.isSwimming ? '2px' : '1px',
+                height: programState.fishMovement.isSwimming ? '2px' : '1px',
+                background: programState.fishMovement.isSwimming ? '#00aaff' : '#66ccff',
                 borderRadius: '50%',
-                animation: 'bubble 1s ease-out forwards',
+                animation: `bubble ${programState.fishMovement.isSwimming ? '1s' : '2s'} ease-out forwards`,
                 pointerEvents: 'none',
+                opacity: programState.fishMovement.isSwimming ? 1 : 0.6,
               }}
             />
           )}
@@ -953,4 +989,4 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
   );
 };
 
-export default SeaBuddy; 
+export default SeaBuddy;
