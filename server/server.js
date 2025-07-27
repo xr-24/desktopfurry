@@ -17,7 +17,9 @@ const inventoryRoutes = require('./routes/inventory');
 const shopRoutes = require('./routes/shop');
 const profilesRoutes = require('./routes/profiles');
 const socialRoutes = require('./routes/social');
+console.log('Loading fish routes...');
 const fishRoutes = require('./routes/fish');
+console.log('Fish routes loaded successfully');
 
 const app = express();
 const server = http.createServer(app);
@@ -44,7 +46,9 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/shop', shopRoutes);
 app.use('/api/profiles', profilesRoutes);
 app.use('/api/social', socialRoutes);
+console.log('Registering fish routes...');
 app.use('/api/fish', fishRoutes);
+console.log('Fish routes registered successfully');
 
 // In-memory storage for active dextop sessions
 const activeDextops = new Map(); // dextopId -> { visitors: Map<userId, playerData> }
