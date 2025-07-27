@@ -24,6 +24,8 @@ interface SeaBuddyProps {
       targetY: number;
       movementTimer: number;
       isSwimming: boolean;
+      facingDirection: 'left' | 'right';
+      movementProgress: number; // 0-1 for easing calculation
     };
     hunger: number;
     cleanliness: number;
@@ -43,11 +45,14 @@ interface SeaBuddyProps {
 
 // Constants for fish behavior
 const FISH_CONSTANTS = {
-  MOVEMENT_SPEED: 0.5, // pixels per frame
-  DIRECTION_CHANGE_INTERVAL: 3000, // milliseconds
+  MOVEMENT_SPEED: 3.0, // pixels per frame (base speed for movement)
+  IDLE_TIME_MIN: 5000, // minimum idle time (5 seconds)
+  IDLE_TIME_MAX: 12000, // maximum idle time (12 seconds)
+  MOVEMENT_DURATION: 1500, // how long movement lasts (1.5 seconds)
   TANK_PADDING: 80, // pixels from edge
-  SWIM_SOUND_CHANCE: 0.02, // 2% chance per frame to play swim sound
-  ANIMATION_FRAME_RATE: 500, // milliseconds between animation frames
+  SWIM_SOUND_CHANCE: 0.1, // 10% chance per frame to play swim sound during movement
+  ANIMATION_FRAME_RATE: 200, // milliseconds between animation frames (faster when moving)
+  DIRECTION_THRESHOLD: 45, // degrees - only flip if direction changes by this much
 }
 
 // Decay rates and tool configuration
@@ -56,6 +61,19 @@ const DECAY_RATES = {
   CLEANLINESS_DECAY: 0.5, // points per minute
   UPDATE_INTERVAL: 5000, // check every 5 seconds
 }
+
+// Easing function for natural movement (fast start, slow end)
+const easeOutCubic = (t: number): number => {
+  return 1 - Math.pow(1 - t, 3);
+};
+
+// Helper to normalize angle difference
+const angleDifference = (angle1: number, angle2: number): number => {
+  let diff = angle2 - angle1;
+  while (diff > 180) diff -= 360;
+  while (diff < -180) diff += 360;
+  return Math.abs(diff);
+};
 
 const TOOLS = {
   food: {
@@ -139,6 +157,8 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
                 targetY: 60,
                 movementTimer: now,
                 isSwimming: false,
+                facingDirection: 'right',
+                movementProgress: 0,
               },
               hunger: fishData.hunger_level,
               cleanliness: fishData.tank_cleanliness,
@@ -196,7 +216,7 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
     };
   }, []);
 
-  // Fish movement animation loop
+  // Fish movement animation loop with natural movement and smart direction changes
   const animateFish = useCallback(() => {
     if (!isController || programState.setupStep !== 'complete') {
       return;
@@ -214,45 +234,90 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
     const targetX = (movement.targetX / 100) * canvasWidth;
     const targetY = (movement.targetY / 100) * canvasHeight;
 
-    // Check if we need a new target
-    const distanceToTarget = Math.sqrt(
-      Math.pow(targetX - currentX, 2) + Math.pow(targetY - currentY, 2)
-    );
-
     let newMovement = { ...movement };
     let newPosition = { ...position };
     let isSwimming = false;
 
-    if (distanceToTarget < 10 || now - movement.movementTimer > FISH_CONSTANTS.DIRECTION_CHANGE_INTERVAL) {
-      // Generate new target
-      const newTarget = generateNewTarget();
-      newMovement = {
-        ...movement,
-        targetX: (newTarget.x / canvasWidth) * 100,
-        targetY: (newTarget.y / canvasHeight) * 100,
-        movementTimer: now,
-        direction: Math.atan2(newTarget.y - currentY, newTarget.x - currentX) * (180 / Math.PI),
-      };
-    }
+    // Check if we need to start a new movement cycle
+    const timeSinceLastMovement = now - movement.movementTimer;
+    
+    if (!movement.isSwimming) {
+      // Fish is idle - check if it's time to start moving
+      const idleTime = FISH_CONSTANTS.IDLE_TIME_MIN + 
+        Math.random() * (FISH_CONSTANTS.IDLE_TIME_MAX - FISH_CONSTANTS.IDLE_TIME_MIN);
+      
+      if (timeSinceLastMovement > idleTime) {
+        // Start a new movement - pick a random target
+        const newTarget = generateNewTarget();
+        const newDirection = Math.atan2(newTarget.y - currentY, newTarget.x - currentX) * (180 / Math.PI);
+        
+        // Determine if fish should flip based on direction change
+        let newFacingDirection = movement.facingDirection;
+        const currentAngle = movement.facingDirection === 'right' ? 0 : 180;
+        const directionChange = angleDifference(currentAngle, newDirection);
+        
+        if (directionChange > FISH_CONSTANTS.DIRECTION_THRESHOLD) {
+          // Significant direction change - flip the fish
+          newFacingDirection = newDirection >= -90 && newDirection <= 90 ? 'right' : 'left';
+        }
+        
+        newMovement = {
+          ...movement,
+          targetX: (newTarget.x / canvasWidth) * 100,
+          targetY: (newTarget.y / canvasHeight) * 100,
+          movementTimer: now,
+          direction: newDirection,
+          facingDirection: newFacingDirection,
+          isSwimming: true,
+          movementProgress: 0,
+        };
+        isSwimming = true;
+      }
+    } else {
+      // Fish is currently swimming
+      const distanceToTarget = Math.sqrt(
+        Math.pow(targetX - currentX, 2) + Math.pow(targetY - currentY, 2)
+      );
 
-    // Move towards target
-    if (distanceToTarget > 5) {
-      const angle = Math.atan2(targetY - currentY, targetX - currentX);
-      const newX = currentX + Math.cos(angle) * FISH_CONSTANTS.MOVEMENT_SPEED;
-      const newY = currentY + Math.sin(angle) * FISH_CONSTANTS.MOVEMENT_SPEED;
+      // Calculate movement progress (0 to 1)
+      const progress = Math.min(1, timeSinceLastMovement / FISH_CONSTANTS.MOVEMENT_DURATION);
+      
+      // Stop swimming if we reached the target or have been moving too long
+      if (distanceToTarget < 5 || progress >= 1) {
+        newMovement = {
+          ...movement,
+          isSwimming: false,
+          movementTimer: now, // Reset timer for next idle period
+          movementProgress: 0,
+        };
+        isSwimming = false;
+      } else {
+        // Continue swimming towards target with easing
+        const easedProgress = easeOutCubic(progress);
+        const speed = FISH_CONSTANTS.MOVEMENT_SPEED * (1 - easedProgress * 0.6); // Slow down as we approach
+        
+        const angle = Math.atan2(targetY - currentY, targetX - currentX);
+        const newX = currentX + Math.cos(angle) * speed;
+        const newY = currentY + Math.sin(angle) * speed;
 
-      newPosition = {
-        x: Math.max(10, Math.min(90, (newX / canvasWidth) * 100)),
-        y: Math.max(10, Math.min(90, (newY / canvasHeight) * 100)),
-      };
+        newPosition = {
+          x: Math.max(10, Math.min(90, (newX / canvasWidth) * 100)),
+          y: Math.max(10, Math.min(90, (newY / canvasHeight) * 100)),
+        };
 
-      isSwimming = true;
+        newMovement = {
+          ...movement,
+          movementProgress: progress,
+        };
 
-      // Play random swim sounds occasionally
-      if (Math.random() < FISH_CONSTANTS.SWIM_SOUND_CHANCE) {
-        const swimSounds = ['swim1', 'swim2', 'swim3', 'swim4'];
-        const randomSound = swimSounds[Math.floor(Math.random() * swimSounds.length)];
-        audioService.playSound(randomSound);
+        isSwimming = true;
+
+        // Play random swim sounds occasionally during movement
+        if (Math.random() < FISH_CONSTANTS.SWIM_SOUND_CHANCE) {
+          const swimSounds = ['swim1', 'swim2', 'swim3', 'swim4'];
+          const randomSound = swimSounds[Math.floor(Math.random() * swimSounds.length)];
+          audioService.playSound(randomSound);
+        }
       }
     }
 
@@ -286,16 +351,21 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
     };
   }, [isController, programState.setupStep, animateFish]);
 
-  // Animation frame cycling for fish sprite
+  // Animation frame cycling for fish sprite (only when swimming)
   useEffect(() => {
     if (programState.setupStep !== 'complete') return;
 
-    const interval = setInterval(() => {
-      setAnimationFrame(prev => (prev + 1) % 2); // Cycle between 0 and 1
-    }, FISH_CONSTANTS.ANIMATION_FRAME_RATE);
+    if (programState.fishMovement.isSwimming) {
+      const interval = setInterval(() => {
+        setAnimationFrame(prev => (prev + 1) % 2); // Cycle between 0 and 1
+      }, FISH_CONSTANTS.ANIMATION_FRAME_RATE);
 
-    return () => clearInterval(interval);
-  }, [programState.setupStep]);
+      return () => clearInterval(interval);
+    } else {
+      // Reset to frame 0 when not swimming
+      setAnimationFrame(0);
+    }
+  }, [programState.setupStep, programState.fishMovement.isSwimming]);
 
   // Condition decay system
   useEffect(() => {
@@ -396,8 +466,10 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
             speed: FISH_CONSTANTS.MOVEMENT_SPEED,
             targetX: 60,
             targetY: 60,
-            movementTimer: now,
-            isSwimming: false,
+            movementTimer: now, // Start idle timer
+            isSwimming: false, // Start in idle state
+            facingDirection: 'right',
+            movementProgress: 0,
           },
           hunger: 100,
           cleanliness: 100,
@@ -692,20 +764,20 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
             }}
           />
 
-          {/* Fish */}
+          {/* Fish Container */}
           <div
             style={{
               position: 'absolute',
               left: `${programState.fishPosition.x}%`,
               top: `${programState.fishPosition.y}%`,
-              transform: `translate(-50%, -50%) ${programState.fishMovement.direction < -90 || programState.fishMovement.direction > 90 ? 'scaleX(-1)' : ''}`,
+              transform: 'translate(-50%, -50%)',
               cursor: programState.currentTool === 'food' ? 'pointer' : 'default',
-              transition: 'transform 0.3s ease',
             }}
             onClick={programState.currentTool === 'food' ? handleFishClick : undefined}
             onMouseEnter={() => setHoveredFish(true)}
             onMouseLeave={() => setHoveredFish(false)}
           >
+            {/* Fish Sprite (can be flipped and skewed) */}
             <img
               src={`/assets/sprites/fish/${programState.selectedFish}.png`}
               alt={programState.fishName}
@@ -713,12 +785,21 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
                 width: '60px', 
                 height: '45px', 
                 objectFit: 'contain',
-                opacity: programState.fishMovement.isSwimming ? (animationFrame === 0 ? 1 : 0.8) : 1,
-                transition: 'opacity 0.1s ease'
+                opacity: programState.fishMovement.isSwimming ? (animationFrame === 0 ? 1 : 0.85) : 1,
+                transition: 'opacity 0.1s ease, transform 0.3s ease',
+                transform: `
+                  ${programState.fishMovement.facingDirection === 'left' ? 'scaleX(-1)' : ''}
+                  ${programState.fishMovement.isSwimming ? 
+                    `skewY(${Math.sin(programState.fishMovement.direction * Math.PI / 180) * 3}deg) 
+                     skewX(${Math.cos(programState.fishMovement.direction * Math.PI / 180) * 2}deg)
+                     scale(${1 + programState.fishMovement.movementProgress * 0.1})` : 
+                    ''
+                  }
+                `.replace(/\s+/g, ' ').trim(),
               }}
             />
             
-            {/* Fish Name */}
+            {/* Fish Name (never flipped) */}
             <div
               style={{
                 position: 'absolute',
@@ -736,7 +817,7 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
               {programState.fishName}
             </div>
 
-            {/* Stats Tooltip */}
+            {/* Stats Tooltip (never flipped) */}
             {hoveredFish && (
               <div
                 style={{
