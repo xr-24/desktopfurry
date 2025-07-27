@@ -120,6 +120,17 @@ const Terminal: React.FC<TerminalProps> = ({
         dispatch(toggleTrailerMode());
         appendHistory(trailerMode ? 'Trailer mode deactivated.' : 'Trailer mode activated! Press U to chat invisibly.');
         break;
+      case 'decay':
+        authService.decayFish().then((result: any) => {
+          if (result) {
+            appendHistory(`Fish stats decayed! Hunger: ${result.hunger_level}, Cleanliness: ${result.tank_cleanliness}`);
+          } else {
+            appendHistory('Failed to decay fish stats. Make sure you have a fish!');
+          }
+        }).catch((error: any) => {
+          appendHistory('Error decaying fish stats: ' + (error.message || 'Unknown error'));
+        });
+        break;
       default:
         // Handle dummy command patterns
         if (cmd.toLowerCase().startsWith('hide icon ')) {

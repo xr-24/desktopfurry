@@ -128,6 +128,12 @@ router.put('/clean', authService.authenticateToken, async (req, res) => {
 router.post('/decay', authService.authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
+    console.log('DECAY REQUEST - User ID:', userId);
+
+    // First check if fish exists
+    const checkResult = await db.query('SELECT * FROM user_fish WHERE user_id = $1', [userId]);
+    console.log('DECAY REQUEST - Fish exists:', checkResult.rows.length > 0);
+    console.log('DECAY REQUEST - Fish data:', checkResult.rows[0]);
 
     const result = await db.query(
       'UPDATE user_fish SET hunger_level = GREATEST(0, hunger_level - 10), tank_cleanliness = GREATEST(0, tank_cleanliness - 15), updated_at = NOW() WHERE user_id = $1 RETURNING hunger_level, tank_cleanliness',
@@ -135,6 +141,7 @@ router.post('/decay', authService.authenticateToken, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
+      console.log('DECAY REQUEST - No fish found for user:', userId);
       return res.status(404).json({ error: 'Fish not found' });
     }
 
