@@ -30,9 +30,13 @@ router.post('/', authService.authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
     const { fish_type, fish_name, tank_background } = req.body;
+    
+    console.log('CREATE FISH REQUEST - User ID:', userId);
+    console.log('CREATE FISH REQUEST - Data:', { fish_type, fish_name, tank_background });
 
     // Validate required fields
     if (!fish_type || !fish_name || !tank_background) {
+      console.log('CREATE FISH REQUEST - Missing required fields');
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -64,14 +68,17 @@ router.post('/', authService.authenticateToken, async (req, res) => {
     }
 
     // Create fish
+    console.log('CREATE FISH REQUEST - About to insert fish into database');
     const result = await db.query(
       'INSERT INTO user_fish (user_id, fish_type, fish_name, tank_background) VALUES ($1, $2, $3, $4) RETURNING *',
       [userId, fish_type, fish_name.trim(), tank_background]
     );
 
+    console.log('CREATE FISH REQUEST - Insert successful, rows:', result.rows.length);
+    console.log('CREATE FISH REQUEST - Created fish:', result.rows[0]);
     res.json({ fish: result.rows[0] });
   } catch (error) {
-    console.error('Error creating fish:', error);
+    console.error('CREATE FISH REQUEST - Error creating fish:', error);
     res.status(500).json({ error: 'Failed to create fish' });
   }
 });
