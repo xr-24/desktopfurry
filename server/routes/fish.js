@@ -5,9 +5,9 @@ const authService = require('../auth');
 const router = express.Router();
 
 // Get user's fish
-router.get('/', authService.verifyToken, async (req, res) => {
+router.get('/', authService.authenticateToken, async (req, res) => {
   try {
-    const userId = req.userId;
+    const userId = req.user.userId;
     
     const result = await db.query(
       'SELECT * FROM user_fish WHERE user_id = $1',
@@ -26,9 +26,9 @@ router.get('/', authService.verifyToken, async (req, res) => {
 });
 
 // Create new fish
-router.post('/', authService.verifyToken, async (req, res) => {
+router.post('/', authService.authenticateToken, async (req, res) => {
   try {
-    const userId = req.userId;
+    const userId = req.user.userId;
     const { fish_type, fish_name, tank_background } = req.body;
 
     // Validate required fields
@@ -77,9 +77,9 @@ router.post('/', authService.verifyToken, async (req, res) => {
 });
 
 // Feed fish
-router.put('/feed', authService.verifyToken, async (req, res) => {
+router.put('/feed', authService.authenticateToken, async (req, res) => {
   try {
-    const userId = req.userId;
+    const userId = req.user.userId;
 
     const result = await db.query(
       'UPDATE user_fish SET hunger_level = LEAST(100, hunger_level + 20), last_fed = NOW(), updated_at = NOW() WHERE user_id = $1 RETURNING hunger_level, last_fed',
@@ -101,9 +101,9 @@ router.put('/feed', authService.verifyToken, async (req, res) => {
 });
 
 // Clean tank
-router.put('/clean', authService.verifyToken, async (req, res) => {
+router.put('/clean', authService.authenticateToken, async (req, res) => {
   try {
-    const userId = req.userId;
+    const userId = req.user.userId;
 
     const result = await db.query(
       'UPDATE user_fish SET tank_cleanliness = LEAST(100, tank_cleanliness + 25), last_cleaned = NOW(), updated_at = NOW() WHERE user_id = $1 RETURNING tank_cleanliness, last_cleaned',
@@ -125,9 +125,9 @@ router.put('/clean', authService.verifyToken, async (req, res) => {
 });
 
 // Debug endpoint to manually decay fish stats for testing
-router.post('/decay', authService.verifyToken, async (req, res) => {
+router.post('/decay', authService.authenticateToken, async (req, res) => {
   try {
-    const userId = req.userId;
+    const userId = req.user.userId;
 
     const result = await db.query(
       'UPDATE user_fish SET hunger_level = GREATEST(0, hunger_level - 10), tank_cleanliness = GREATEST(0, tank_cleanliness - 15), updated_at = NOW() WHERE user_id = $1 RETURNING hunger_level, tank_cleanliness',

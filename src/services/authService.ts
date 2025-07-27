@@ -563,7 +563,7 @@ class AuthService {
   // Fish management methods
   async loadFish(): Promise<any | null> {
     try {
-      const response = await axios.get('/api/fish');
+      const response = await axios.get('/fish');
       return response.data.fish || null;
     } catch (error) {
       console.error('Failed to load fish:', error);
@@ -573,7 +573,7 @@ class AuthService {
 
   async createFish(fishData: { fish_type: string; fish_name: string; tank_background: string }): Promise<boolean> {
     try {
-      await axios.post('/api/fish', fishData);
+      await axios.post('/fish', fishData);
       return true;
     } catch (error) {
       console.error('Failed to create fish:', error);
@@ -583,7 +583,7 @@ class AuthService {
 
   async feedFish(): Promise<boolean> {
     try {
-      await axios.put('/api/fish/feed');
+      await axios.put('/fish/feed');
       return true;
     } catch (error) {
       console.error('Failed to feed fish:', error);
@@ -593,7 +593,7 @@ class AuthService {
 
   async cleanTank(): Promise<boolean> {
     try {
-      await axios.put('/api/fish/clean');
+      await axios.put('/fish/clean');
       return true;
     } catch (error) {
       console.error('Failed to clean tank:', error);
@@ -604,7 +604,7 @@ class AuthService {
   // Debug method to decay fish stats for testing
   async decayFish(): Promise<any> {
     try {
-      const response = await axios.post('/api/fish/decay');
+      const response = await axios.post('/fish/decay');
       return response.data;
     } catch (error) {
       console.error('Failed to decay fish:', error);
