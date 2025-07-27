@@ -88,8 +88,35 @@ const Desktop: React.FC = () => {
       removedTypes.forEach((t) => authService.deleteProgramState(t));
     }
 
-    // Skip save if nothing changed compared with last snapshot
-    if (prevState && JSON.stringify(state) === JSON.stringify(prevState)) return;
+    // Skip save if nothing changed compared with last snapshot (excluding animation state)
+    const filterAnimationState = (programsState: any) => {
+      const filtered = { ...programsState };
+      filtered.openPrograms = { ...programsState.openPrograms };
+      
+      Object.keys(filtered.openPrograms).forEach(windowId => {
+        const program = filtered.openPrograms[windowId];
+        if (program.type === 'seabuddy' && program.state) {
+          // Filter out animation fields for comparison
+          const { movementTimer, lastDecayUpdate, fishMovement, ...persistentState } = program.state;
+          const { direction, facingDirection, driftDirection } = fishMovement || {};
+          filtered.openPrograms[windowId] = {
+            ...program,
+            state: {
+              ...persistentState,
+              fishMovement: {
+                direction: direction || 0,
+                facingDirection: facingDirection || 'right',
+                driftDirection: driftDirection || 0,
+              }
+            }
+          };
+        }
+      });
+      
+      return filtered;
+    };
+    
+    if (prevState && JSON.stringify(filterAnimationState(state)) === JSON.stringify(filterAnimationState(prevState))) return;
 
     lastSavedRef.current = state;
 
@@ -98,13 +125,31 @@ const Desktop: React.FC = () => {
       authService.updateBackground(state.backgroundId);
       // Persist each open program window
       Object.values(state.openPrograms).forEach((p: any) => {
+        // Filter out animation/timer fields for programs that have them
+        let stateToSave = p.state || {};
+        if (p.type === 'seabuddy' && stateToSave) {
+          // Only save persistent SeaBuddy state, exclude animation/timer fields
+          const { movementTimer, lastDecayUpdate, fishMovement, ...persistentState } = stateToSave;
+          // Keep only the non-animating parts of fishMovement
+          const { direction, facingDirection, driftDirection, ...fishMovementRest } = fishMovement || {};
+          stateToSave = {
+            ...persistentState,
+            fishMovement: {
+              direction: direction || 0,
+              facingDirection: facingDirection || 'right', 
+              driftDirection: driftDirection || 0,
+              // Exclude: speed, targetX, targetY, movementTimer, isSwimming, movementProgress
+            }
+          };
+        }
+        
         authService.saveProgramState(
           p.type,
           p.position,
           p.size,
           p.zIndex,
           p.isMinimized,
-          p.state || {}
+          stateToSave
         );
       });
     }, 1000); // debounce 1 s

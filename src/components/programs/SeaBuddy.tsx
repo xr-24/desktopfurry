@@ -154,15 +154,17 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
               fishName: fishData.fish_name,
               fishPosition: { x: fishData.fish_x || 50, y: fishData.fish_y || 50 },
               fishMovement: {
-                direction: Math.random() * 360,
+                // Use persisted direction/facing data if available, otherwise randomize
+                direction: programState.fishMovement?.direction || Math.random() * 360,
+                facingDirection: programState.fishMovement?.facingDirection || 'right',
+                driftDirection: programState.fishMovement?.driftDirection || Math.random() * 360,
+                // Initialize animation state (not persisted)
                 speed: FISH_CONSTANTS.MOVEMENT_SPEED,
                 targetX: 60,
                 targetY: 60,
                 movementTimer: now,
                 isSwimming: false,
-                facingDirection: 'right',
                 movementProgress: 0,
-                driftDirection: Math.random() * 360,
               },
               hunger: fishData.hunger_level,
               cleanliness: fishData.tank_cleanliness,
