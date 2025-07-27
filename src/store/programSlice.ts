@@ -311,6 +311,9 @@ function getProgramInitialState(type: ProgramWindow['type']) {
         lastMovement: now,
         lastDecayUpdate: now,
         isLoaded: false,
+        isDying: false,
+        deathAnimationStartTime: 0,
+        isDead: false,
       };
     default:
       return {};

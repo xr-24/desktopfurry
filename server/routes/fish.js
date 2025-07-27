@@ -131,6 +131,30 @@ router.put('/clean', authService.authenticateToken, async (req, res) => {
   }
 });
 
+// Clear/delete fish
+router.delete('/clear', authService.authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    
+    const result = await db.query(
+      'DELETE FROM user_fish WHERE user_id = $1 RETURNING fish_name',
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Fish not found' });
+    }
+
+    res.json({ 
+      message: 'Fish cleared successfully',
+      fish_name: result.rows[0].fish_name
+    });
+  } catch (error) {
+    console.error('Error clearing fish:', error);
+    res.status(500).json({ error: 'Failed to clear fish' });
+  }
+});
+
 // Debug endpoint to manually decay fish stats for testing
 router.post('/decay', authService.authenticateToken, async (req, res) => {
   try {

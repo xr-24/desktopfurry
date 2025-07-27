@@ -26,17 +26,28 @@ const AuthScreen: React.FC = () => {
   // Try to resume session on component mount
   useEffect(() => {
     const tryResumeSession = async () => {
+      console.log('🔑 Checking if user is authenticated...');
       if (authService.isAuthenticated()) {
+        console.log('✅ User is authenticated, verifying token...');
         const isValid = await authService.verifyToken();
+        console.log('🔐 Token valid:', isValid);
         if (isValid) {
           const userData = authService.getStoredUser();
+          console.log('👤 User data:', userData);
           if (userData && userData.userType !== 'guest') {
+            console.log('🚀 Non-guest user found, loading dextop...');
             dispatch(loginSuccess(userData));
             await loadUserDextop();
             socketService.authenticate();
             // socketService.createRoom(userData.username); // removed to avoid legacy room duplication
+          } else {
+            console.log('👥 Guest user or no user data');
           }
+        } else {
+          console.log('❌ Token invalid');
         }
+      } else {
+        console.log('🔓 User not authenticated');
       }
     };
 
@@ -44,8 +55,12 @@ const AuthScreen: React.FC = () => {
   }, [dispatch]);
 
   const loadUserDextop = async () => {
+    console.log('🔍 Loading user dextop...');
     const dextopData = await authService.loadMyDextop();
+    console.log('📦 Raw dextop data:', dextopData);
+    
     if (dextopData) {
+      console.log('✅ Programs found:', dextopData.programs?.length || 0, dextopData.programs);
       dispatch(loadDextopSuccess({
         dextop: { ...dextopData.dextop, isOwner: true },
         achievements: dextopData.achievements,
@@ -58,6 +73,15 @@ const AuthScreen: React.FC = () => {
       let highestZ = 100;
       for (const p of dextopData.programs) {
         const windowId = p.id || `${p.type}-${Date.now()}`;
+        
+        // Debug: Log the raw state data
+        console.log(`Loading program ${p.type}:`, {
+          rawState: p.state,
+          stateType: typeof p.state,
+          isString: typeof p.state === 'string',
+          parsed: typeof p.state === 'string' ? 'NEED_TO_PARSE' : 'ALREADY_OBJECT'
+        });
+        
         openPrograms[windowId] = {
           id: windowId,
           type: p.type,
@@ -92,6 +116,8 @@ const AuthScreen: React.FC = () => {
       }
 
       socketService.updateAppearance(dextopData.avatar);
+    } else {
+      console.log('❌ No dextop data returned from server');
     }
   };
 

@@ -121,10 +121,20 @@ const Desktop: React.FC = () => {
     lastSavedRef.current = state;
 
     const timer = setTimeout(() => {
+      console.log('💾 Desktop save triggered! Programs to save:', Object.keys(state.openPrograms).length);
+      
       // Save background
       authService.updateBackground(state.backgroundId);
       // Persist each open program window
       Object.values(state.openPrograms).forEach((p: any) => {
+        console.log(`💾 Saving program: ${p.type}`, {
+          type: p.type,
+          position: p.position,
+          size: p.size,
+          zIndex: p.zIndex,
+          isMinimized: p.isMinimized,
+          stateKeys: Object.keys(p.state || {})
+        });
         // Filter out animation/timer fields for programs that have them
         let stateToSave = p.state || {};
         if (p.type === 'seabuddy' && stateToSave) {

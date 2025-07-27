@@ -253,9 +253,22 @@ class AuthService {
 
   // Save program state  (now uses keepalive fetch)
   async saveProgramState(programType: string, position: any, size: any, zIndex: number, isMinimized: boolean, programData: any): Promise<boolean> {
-    return this.postKeepAlive('/dextop/save-program', {
+    console.log(`🚀 API call to save ${programType} state:`, {
+      programType, position, size, zIndex, isMinimized, 
+      dataSize: JSON.stringify(programData).length
+    });
+    
+    const result = this.postKeepAlive('/dextop/save-program', {
       programType, position, size, zIndex, isMinimized, programData
     });
+    
+    result.then(success => {
+      console.log(`✅ Save ${programType} result:`, success);
+    }).catch(error => {
+      console.error(`❌ Save ${programType} failed:`, error);
+    });
+    
+    return result;
   }
 
   // Update background (now uses keepalive fetch)
@@ -597,6 +610,16 @@ class AuthService {
       return true;
     } catch (error) {
       console.error('Failed to clean tank:', error);
+      return false;
+    }
+  }
+
+  async clearFish(): Promise<boolean> {
+    try {
+      await axios.delete('/fish/clear');
+      return true;
+    } catch (error) {
+      console.error('Failed to clear fish:', error);
       return false;
     }
   }
