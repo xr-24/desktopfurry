@@ -18,8 +18,15 @@ const shopRoutes = require('./routes/shop');
 const profilesRoutes = require('./routes/profiles');
 const socialRoutes = require('./routes/social');
 console.log('Loading fish routes...');
-const fishRoutes = require('./routes/fish');
-console.log('Fish routes loaded successfully');
+let fishRoutes;
+try {
+  fishRoutes = require('./routes/fish');
+  console.log('Fish routes loaded successfully');
+} catch (error) {
+  console.error('FAILED TO LOAD FISH ROUTES:', error);
+  console.error('Error stack:', error.stack);
+  fishRoutes = null; // Set to null so we can check later
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -46,9 +53,13 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/shop', shopRoutes);
 app.use('/api/profiles', profilesRoutes);
 app.use('/api/social', socialRoutes);
-console.log('Registering fish routes...');
-app.use('/api/fish', fishRoutes);
-console.log('Fish routes registered successfully');
+if (fishRoutes) {
+  console.log('Registering fish routes...');
+  app.use('/api/fish', fishRoutes);
+  console.log('Fish routes registered successfully');
+} else {
+  console.error('SKIPPING FISH ROUTES REGISTRATION - Routes failed to load');
+}
 
 // In-memory storage for active dextop sessions
 const activeDextops = new Map(); // dextopId -> { visitors: Map<userId, playerData> }
