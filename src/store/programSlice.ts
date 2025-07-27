@@ -282,22 +282,31 @@ function getProgramInitialState(type: ProgramWindow['type']) {
         activeTab: 'profile', // 'profile' | 'browse'
       };
     case 'seabuddy':
+      const now = Date.now();
       return {
         setupStep: 'tank', // 'tank' | 'fish' | 'name' | 'complete'
         selectedTank: null,
         selectedFish: null,
         fishName: '',
         fishPosition: { x: 50, y: 50 },
-        fishMovement: { direction: 0, speed: 1 },
+        fishMovement: { 
+          direction: Math.random() * 360, 
+          speed: 0.5,
+          targetX: 60,
+          targetY: 60,
+          movementTimer: now,
+          isSwimming: false,
+        },
         hunger: 100,
         cleanliness: 100,
         happiness: 100,
         health: 100,
         currentTool: 'none',
         showStats: false,
-        lastFed: Date.now(),
-        lastCleaned: Date.now(),
-        lastMovement: Date.now(),
+        lastFed: now,
+        lastCleaned: now,
+        lastMovement: now,
+        lastDecayUpdate: now,
         isLoaded: false,
       };
     default:

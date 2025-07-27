@@ -124,6 +124,26 @@ const Terminal: React.FC<TerminalProps> = ({
         authService.decayFish().then((result: any) => {
           if (result) {
             appendHistory(`Fish stats decayed! Hunger: ${result.hunger_level}, Cleanliness: ${result.tank_cleanliness}`);
+            
+            // Update any open SeaBuddy windows with the new fish stats
+            const state = store.getState() as any;
+            const openPrograms = state.programs.openPrograms;
+            const seaBuddyWindow = Object.values(openPrograms).find((w: any) => w.type === 'seabuddy') as any;
+            
+            if (seaBuddyWindow) {
+              const newHappiness = Math.round((result.hunger_level + result.tank_cleanliness) / 2);
+              const newHealth = Math.round(result.tank_cleanliness * 0.8 + 20);
+              
+              dispatch(updateProgramState({
+                windowId: seaBuddyWindow.id,
+                newState: {
+                  hunger: result.hunger_level,
+                  cleanliness: result.tank_cleanliness,
+                  happiness: newHappiness,
+                  health: newHealth,
+                }
+              }));
+            }
           } else {
             appendHistory('Failed to decay fish stats. Make sure you have a fish!');
           }
