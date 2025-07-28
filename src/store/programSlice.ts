@@ -320,7 +320,7 @@ function getProgramInitialState(type: ProgramWindow['type']) {
       };
     case 'chickenquest':
       return {
-        gameState: 'playing', // 'playing', 'training', 'dialogue'
+        gameState: 'title', // 'title', 'playing', 'training', 'dialogue'
         currentRoom: 'town',
         playerPosition: { x: 400, y: 350 },
         camera: { x: 0, y: 0 },
