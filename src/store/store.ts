@@ -11,6 +11,7 @@ import uiSlice from './uiSlice';
 import iconSlice from './iconSlice';
 import themeSlice from './themeSlice';
 import profileSlice from './profileSlice';
+import chickenQuestSlice from './chickenQuestSlice';
 
 export const store = configureStore({
   reducer: {
@@ -26,6 +27,7 @@ export const store = configureStore({
     icons: iconSlice,
     theme: themeSlice,
     profile: profileSlice,
+    chickenQuest: chickenQuestSlice,
   },
 });
 

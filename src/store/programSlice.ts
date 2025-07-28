@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface ProgramWindow {
   id: string;
-  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'pong' | 'characterEditor' | 'bdemediaplayer' | 'browser98' | 'terminal' | 'inventory' | 'breakout' | 'sudoku' | 'shop' | 'dexdirectory' | 'seabuddy';
+  type: 'paint' | 'notepad' | 'winamp' | 'checkers' | 'snake' | 'pong' | 'characterEditor' | 'bdemediaplayer' | 'browser98' | 'terminal' | 'inventory' | 'breakout' | 'sudoku' | 'shop' | 'dexdirectory' | 'seabuddy' | 'chickenquest';
   isOpen: boolean;
   position: { x: number; y: number };
   size: { width: number; height: number };
@@ -57,6 +57,7 @@ const programSlice = createSlice({
         shop: { width: 700, height: 500, isMultiplayer: false },
         dexdirectory: { width: 500, height: 270, isMultiplayer: false },
         seabuddy: { width: 600, height: 450, isMultiplayer: true },
+        chickenquest: { width: 800, height: 600, isMultiplayer: false },
       };
       
       const config = programConfigs[type];
@@ -316,6 +317,15 @@ function getProgramInitialState(type: ProgramWindow['type']) {
         isDead: false,
         deathDate: undefined,
         showDestroyPrompt: false,
+      };
+    case 'chickenquest':
+      return {
+        gameState: 'playing', // 'playing', 'training', 'dialogue'
+        currentRoom: 'town',
+        playerPosition: { x: 400, y: 350 },
+        camera: { x: 0, y: 0 },
+        interactableNearby: null,
+        showUI: true,
       };
     default:
       return {};

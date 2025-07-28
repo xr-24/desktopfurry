@@ -18,6 +18,7 @@ import Checkers from './programs/Checkers';
 import Shop from './programs/Shop';
 import DexDirectory from './programs/DexDirectory';
 import SeaBuddy from './programs/SeaBuddy';
+import ChickenQuest from './programs/ChickenQuest';
 // DexSocial moved to taskbar widget
 // import DexSocial from './programs/DexSocial';
 
@@ -179,6 +180,14 @@ const ProgramManager: React.FC = () => {
             programState={program.state}
             controllerId={program.controllerId}
             currentPlayerId={currentPlayerId}
+          />
+        );
+
+      case 'chickenquest':
+        return (
+          <ChickenQuest
+            key={program.id}
+            {...commonProps}
           />
         );
       
