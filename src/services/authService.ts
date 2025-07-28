@@ -614,6 +614,19 @@ class AuthService {
     }
   }
 
+  async killFish(deathPosition: { x: number; y: number }): Promise<any> {
+    try {
+      const response = await axios.put('/fish/kill', {
+        death_position_x: deathPosition.x,
+        death_position_y: deathPosition.y
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to kill fish:', error);
+      return null;
+    }
+  }
+
   async clearFish(): Promise<boolean> {
     try {
       await axios.delete('/fish/clear');

@@ -131,6 +131,38 @@ router.put('/clean', authService.authenticateToken, async (req, res) => {
   }
 });
 
+// Mark fish as dead
+router.put('/kill', authService.authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { death_position_x, death_position_y } = req.body;
+    
+    const result = await db.query(
+      `UPDATE user_fish SET 
+        is_dead = TRUE, 
+        death_date = NOW(), 
+        death_position_x = $2, 
+        death_position_y = $3,
+        updated_at = NOW() 
+      WHERE user_id = $1 RETURNING fish_name, death_date`,
+      [userId, death_position_x || 50, death_position_y || 50]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Fish not found' });
+    }
+
+    res.json({ 
+      message: 'Fish marked as dead',
+      fish_name: result.rows[0].fish_name,
+      death_date: result.rows[0].death_date
+    });
+  } catch (error) {
+    console.error('Error marking fish as dead:', error);
+    res.status(500).json({ error: 'Failed to mark fish as dead' });
+  }
+});
+
 // Clear/delete fish
 router.delete('/clear', authService.authenticateToken, async (req, res) => {
   try {

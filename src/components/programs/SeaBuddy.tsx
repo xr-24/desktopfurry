@@ -42,6 +42,9 @@ interface SeaBuddyProps {
     isDying: boolean;
     deathAnimationStartTime: number;
     isDead: boolean;
+    deathPosition?: { x: number; y: number };
+    deathDate?: string;
+    showDestroyPrompt: boolean;
   };
   controllerId: string;
   currentPlayerId: string;
@@ -136,6 +139,7 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
       audioService.loadSound('clean1', '/assets/sounds/tank/clean1.wav');
       audioService.loadSound('clean2', '/assets/sounds/tank/clean2.wav');
       audioService.loadSound('vaporize', '/assets/sounds/tank/vaporize.wav');
+      audioService.loadSound('bones', '/assets/sounds/tank/bones-clean.aiff');
     }
   }, [isController]);
 
@@ -147,8 +151,20 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
       try {
         const fishData = await authService.loadFish();
         if (fishData) {
-          // Player already has a fish, load it
+          // Player has a fish in database, load it
           const now = Date.now();
+          
+          // Check if fish is dead from database
+          const isDead = fishData.is_dead === true;
+          const deathDate = fishData.death_date ? new Date(fishData.death_date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          }) : undefined;
+          
           dispatch(updateProgramState({
             windowId,
             newState: {
@@ -156,7 +172,9 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
               selectedTank: fishData.tank_background,
               selectedFish: fishData.fish_type,
               fishName: fishData.fish_name,
-              fishPosition: { x: fishData.fish_x || 50, y: fishData.fish_y || 50 },
+              fishPosition: isDead ? 
+                { x: fishData.death_position_x || fishData.fish_x || 50, y: fishData.death_position_y || fishData.fish_y || 85 } :
+                { x: fishData.fish_x || 50, y: fishData.fish_y || 50 },
               fishMovement: {
                 // Use persisted direction/facing data if available, otherwise randomize
                 direction: programState.fishMovement?.direction || Math.random() * 360,
@@ -178,10 +196,17 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
               lastCleaned: new Date(fishData.last_cleaned).getTime(),
               lastDecayUpdate: now,
               isLoaded: true,
+              // Set death state from database
+              isDying: false,
+              deathAnimationStartTime: 0,
+              isDead: isDead,
+              deathPosition: isDead ? { x: fishData.death_position_x || fishData.fish_x || 50, y: fishData.death_position_y || fishData.fish_y || 85 } : undefined,
+              deathDate: deathDate,
+              showDestroyPrompt: false,
             }
           }));
         } else {
-          // New player, start setup
+          // No fish in database, start setup
           dispatch(updateProgramState({
             windowId,
             newState: { 
@@ -251,28 +276,69 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
     // Handle death animation
     if (programState.isDying) {
       const deathElapsed = now - programState.deathAnimationStartTime;
-      const deathDuration = 4000; // 4 seconds
-      const deathProgress = Math.min(1, deathElapsed / deathDuration);
+      const transformDuration = 1000; // 1 second for death transformation
+      const sinkDuration = 3000; // 3 seconds for sinking
+      const totalDuration = transformDuration + sinkDuration;
       
-      // Float to bottom with slow sinking motion
-      const targetBottom = 85; // Near bottom of tank
-      const startY = position.y;
-      const newY = startY + (targetBottom - startY) * deathProgress;
-      
-      // Add some subtle swaying motion
-      const swayAmount = Math.sin(deathElapsed * 0.001) * 2;
-      const newX = position.x + swayAmount;
-      
-      newPosition = {
-        x: Math.max(10, Math.min(90, newX)),
-        y: Math.min(85, newY),
-      };
+      if (deathElapsed < transformDuration) {
+        // Phase 1: Transformation phase - fish stops and transforms
+        // Don't move the fish, just let the visual transformation happen in the render
+        newPosition = { ...position }; // Stay in current position
+      } else {
+        // Phase 2: Sinking phase - fish sinks straight down
+        const sinkElapsed = deathElapsed - transformDuration;
+        const sinkProgress = Math.min(1, sinkElapsed / sinkDuration);
+        
+        // Store the death position if not already stored
+        if (!programState.deathPosition) {
+          const deathPos = { x: position.x, y: position.y };
+          dispatch(updateProgramState({
+            windowId,
+            newState: { 
+              deathPosition: deathPos
+            }
+          }));
+          // Use the death position immediately for this frame
+          const targetBottom = 85; // Near bottom of tank
+          const newY = deathPos.y + (targetBottom - deathPos.y) * sinkProgress;
+          newPosition = {
+            x: deathPos.x,
+            y: Math.min(85, newY),
+          };
+        } else {
+          // Sink straight down from death position
+          const targetBottom = 85; // Near bottom of tank
+          const startY = programState.deathPosition.y;
+          const newY = startY + (targetBottom - startY) * sinkProgress;
+          
+          newPosition = {
+            x: programState.deathPosition.x, // Stay at same X position
+            y: Math.min(85, newY),
+          };
+        }
+      }
 
       // Mark as dead when animation completes
-      if (deathProgress >= 1 && !programState.isDead) {
+      if (deathElapsed >= totalDuration && !programState.isDead) {
+        const deathDate = new Date().toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+        
+        // Save death state to database
+        const deathPosition = programState.deathPosition || { x: position.x, y: position.y };
+        authService.killFish(deathPosition);
+        
         dispatch(updateProgramState({
           windowId,
-          newState: { isDead: true }
+          newState: { 
+            isDead: true,
+            deathDate: deathDate
+          }
         }));
       }
 
@@ -587,9 +653,21 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
 
 
 
-  // Handle fish interaction (feeding)
+  // Handle fish interaction (feeding or clicking dead fish)
   const handleFishClick = async () => {
-    if (!isController || programState.currentTool !== 'food') return;
+    if (!isController) return;
+    
+    // If fish is dead, show destroy prompt
+    if (programState.isDead) {
+      dispatch(updateProgramState({
+        windowId,
+        newState: { showDestroyPrompt: true }
+      }));
+      return;
+    }
+    
+    // If fish is alive and we have food tool selected
+    if (programState.currentTool !== 'food') return;
 
     try {
       await authService.feedFish();
@@ -673,57 +751,133 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
       // Play vaporize sound
       audioService.playSound('vaporize');
 
-      // After death animation completes, clear fish from database and reset to setup
-      setTimeout(async () => {
-        try {
-          await authService.clearFish();
-          
-          // Reset to setup state
-          dispatch(updateProgramState({
-            windowId,
-            newState: {
-              setupStep: 'tank',
-              selectedTank: null,
-              selectedFish: null,
-              fishName: '',
-              fishPosition: { x: 50, y: 50 },
-              fishMovement: {
-                direction: 0,
-                speed: FISH_CONSTANTS.MOVEMENT_SPEED,
-                targetX: 60,
-                targetY: 60,
-                movementTimer: 0,
-                isSwimming: false,
-                facingDirection: 'right',
-                movementProgress: 0,
-                driftDirection: 0,
-              },
-              hunger: 100,
-              cleanliness: 100,
-              happiness: 100,
-              health: 100,
-              currentTool: 'none',
-              showStats: false,
-              lastFed: 0,
-              lastCleaned: 0,
-              lastMovement: 0,
-              lastDecayUpdate: 0,
-              isDying: false,
-              deathAnimationStartTime: 0,
-              isDead: false,
-            }
-          }));
-
-          // Reset name input
-          setNameInput('');
-        } catch (error) {
-          console.error('Failed to clear fish from database:', error);
-        }
-      }, 4000); // 4 seconds for death animation to complete
+      // Death animation completed - fish is now marked as dead in database
 
     } catch (error) {
       console.error('Failed to start fish clearing:', error);
     }
+  };
+
+  // Handle creating new fish after clearing old one
+  const handleNewFish = async () => {
+    if (!isController) return;
+
+    try {
+      // Clear fish from database
+      await authService.clearFish();
+
+      // Reset to setup state
+      dispatch(updateProgramState({
+        windowId,
+        newState: {
+          setupStep: 'tank',
+          selectedTank: null,
+          selectedFish: null,
+          fishName: '',
+          fishPosition: { x: 50, y: 50 },
+          fishMovement: {
+            direction: 0,
+            speed: FISH_CONSTANTS.MOVEMENT_SPEED,
+            targetX: 60,
+            targetY: 60,
+            movementTimer: 0,
+            isSwimming: false,
+            facingDirection: 'right',
+            movementProgress: 0,
+            driftDirection: 0,
+          },
+          hunger: 100,
+          cleanliness: 100,
+          happiness: 100,
+          health: 100,
+          currentTool: 'none',
+          showStats: false,
+          lastFed: 0,
+          lastCleaned: 0,
+          lastMovement: 0,
+          lastDecayUpdate: 0,
+          isDying: false,
+          deathAnimationStartTime: 0,
+          isDead: false,
+          deathPosition: undefined,
+          deathDate: undefined,
+          showDestroyPrompt: false,
+        }
+      }));
+
+      // Reset name input
+      setNameInput('');
+    } catch (error) {
+      console.error('Failed to clear fish for new fish:', error);
+    }
+  };
+
+  // Handle destroying fish remains
+  const handleDestroyRemains = async () => {
+    if (!isController) return;
+
+    try {
+      // Play bone sound
+      audioService.playSound('bones');
+      
+      // Clear fish from database
+      await authService.clearFish();
+      
+      // Reset to setup state after short delay
+      setTimeout(() => {
+        dispatch(updateProgramState({
+          windowId,
+          newState: {
+            setupStep: 'tank',
+            selectedTank: null,
+            selectedFish: null,
+            fishName: '',
+            fishPosition: { x: 50, y: 50 },
+            fishMovement: {
+              direction: 0,
+              speed: FISH_CONSTANTS.MOVEMENT_SPEED,
+              targetX: 60,
+              targetY: 60,
+              movementTimer: 0,
+              isSwimming: false,
+              facingDirection: 'right',
+              movementProgress: 0,
+              driftDirection: 0,
+            },
+            hunger: 100,
+            cleanliness: 100,
+            happiness: 100,
+            health: 100,
+            currentTool: 'none',
+            showStats: false,
+            lastFed: 0,
+            lastCleaned: 0,
+            lastMovement: 0,
+            lastDecayUpdate: 0,
+            isDying: false,
+            deathAnimationStartTime: 0,
+            isDead: false,
+            deathPosition: undefined,
+            deathDate: undefined,
+            showDestroyPrompt: false,
+          }
+        }));
+
+        // Reset name input
+        setNameInput('');
+      }, 200); // Short delay for sound to start
+    } catch (error) {
+      console.error('Failed to destroy remains:', error);
+    }
+  };
+
+  // Handle canceling destroy prompt
+  const handleCancelDestroy = () => {
+    if (!isController) return;
+    dispatch(updateProgramState({
+      windowId,
+      newState: { showDestroyPrompt: false }
+    }));
   };
 
 
@@ -918,69 +1072,104 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
           />
 
           {/* Fish Container */}
-          <div
-            style={{
-              position: 'absolute',
-              left: `${programState.fishPosition.x}%`,
-              top: `${programState.fishPosition.y}%`,
-              transform: 'translate(-50%, -50%)',
-              cursor: programState.currentTool === 'food' ? 'pointer' : 'default',
-            }}
-            onClick={programState.currentTool === 'food' ? handleFishClick : undefined}
-            onMouseEnter={() => setHoveredFish(true)}
-            onMouseLeave={() => setHoveredFish(false)}
-          >
+                      <div
+              style={{
+                position: 'absolute',
+                left: `${programState.fishPosition.x}%`,
+                top: `${programState.fishPosition.y}%`,
+                transform: 'translate(-50%, -50%)',
+                cursor: programState.isDead ? 'pointer' : (programState.currentTool === 'food' ? 'pointer' : 'default'),
+              }}
+              onClick={handleFishClick}
+              onMouseEnter={() => setHoveredFish(true)}
+              onMouseLeave={() => setHoveredFish(false)}
+            >
             {/* Fish Sprite (can be flipped and skewed) */}
             <img
-              src={programState.isDying || programState.isDead ? 
-                '/assets/sprites/fish/dead.png' : 
-                `/assets/sprites/fish/${programState.selectedFish}.png`}
+              src={(() => {
+                if (programState.isDying) {
+                  const deathElapsed = Date.now() - programState.deathAnimationStartTime;
+                  const transformDuration = 1000;
+                  if (deathElapsed < transformDuration) {
+                    // During transformation, still show live fish
+                    return `/assets/sprites/fish/${programState.selectedFish}.png`;
+                  } else {
+                    // After transformation, show dead fish
+                    return '/assets/sprites/fish/dead.png';
+                  }
+                } else if (programState.isDead) {
+                  return '/assets/sprites/fish/dead.png';
+                } else {
+                  return `/assets/sprites/fish/${programState.selectedFish}.png`;
+                }
+              })()}
               alt={programState.fishName}
               style={{ 
                 width: '60px', 
                 height: '45px', 
                 objectFit: 'contain',
-                opacity: programState.isDying ? 
-                  (0.3 + Math.sin(Date.now() * 0.01) * 0.1) : // Fading/flickering effect during death
-                  programState.isDead ? 0.5 : // Semi-transparent when dead
-                  programState.fishMovement.isSwimming ? 
-                    (animationFrame === 0 ? 1 : 0.85) : 
-                    (animationFrame === 0 ? 1 : 0.95), // Subtle animation when drifting
-                transition: programState.isDying ? 'none' : 'opacity 0.2s ease, transform 0.3s ease',
-                transform: programState.isDying || programState.isDead ? 
-                  'rotate(90deg)' : // Dead fish lies on its side
-                  `
-                    ${programState.fishMovement.facingDirection === 'right' ? 'scaleX(-1)' : ''}
-                    ${programState.fishMovement.isSwimming ? 
-                      `skewY(${Math.sin(programState.fishMovement.direction * Math.PI / 180) * 3}deg) 
-                       skewX(${Math.cos(programState.fishMovement.direction * Math.PI / 180) * 2}deg)
-                       scale(${1 + programState.fishMovement.movementProgress * 0.1})` : 
-                      `skewY(${Math.sin(programState.fishMovement.driftDirection * Math.PI / 180) * 1}deg) 
-                       skewX(${Math.cos(programState.fishMovement.driftDirection * Math.PI / 180) * 0.5}deg)` // Subtle drift animation
+                opacity: (() => {
+                  if (programState.isDying) {
+                    const deathElapsed = Date.now() - programState.deathAnimationStartTime;
+                    const transformDuration = 1000;
+                    if (deathElapsed < transformDuration) {
+                      // Flickering effect during transformation
+                      return 0.3 + Math.sin(Date.now() * 0.02) * 0.3;
+                    } else {
+                      // Semi-transparent when sinking
+                      return 0.7;
                     }
-                  `.replace(/\s+/g, ' ').trim(),
+                  } else if (programState.isDead) {
+                    return 0.5;
+                  } else {
+                    return programState.fishMovement.isSwimming ? 
+                      (animationFrame === 0 ? 1 : 0.85) : 
+                      (animationFrame === 0 ? 1 : 0.95);
+                  }
+                })(),
+                transition: programState.isDying ? 'transform 1s ease-out' : 'opacity 0.2s ease, transform 0.3s ease',
+                transform: (() => {
+                  if (programState.isDying || programState.isDead) {
+                    // Just maintain facing direction, no rotation
+                    return programState.fishMovement.facingDirection === 'right' ? 'scaleX(-1)' : '';
+                  } else {
+                    // Normal fish animation
+                    return `
+                      ${programState.fishMovement.facingDirection === 'right' ? 'scaleX(-1)' : ''}
+                      ${programState.fishMovement.isSwimming ? 
+                        `skewY(${Math.sin(programState.fishMovement.direction * Math.PI / 180) * 3}deg) 
+                         skewX(${Math.cos(programState.fishMovement.direction * Math.PI / 180) * 2}deg)
+                         scale(${1 + programState.fishMovement.movementProgress * 0.1})` : 
+                        `skewY(${Math.sin(programState.fishMovement.driftDirection * Math.PI / 180) * 1}deg) 
+                         skewX(${Math.cos(programState.fishMovement.driftDirection * Math.PI / 180) * 0.5}deg)` // Subtle drift animation
+                      }
+                    `.replace(/\s+/g, ' ').trim();
+                  }
+                })(),
               }}
             />
             
-            {/* Fish Name (never flipped) */}
-            <div
-              style={{
-                position: 'absolute',
-                top: '-25px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                background: 'rgba(0, 0, 0, 0.7)',
-                color: '#ffffff',
-                padding: '2px 6px',
-                borderRadius: '3px',
-                fontSize: '10px',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {programState.fishName}
-            </div>
+            {/* Fish Name (never flipped) - only show for living fish */}
+            {!programState.isDead && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '-25px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  color: '#ffffff',
+                  padding: '2px 6px',
+                  borderRadius: '3px',
+                  fontSize: '10px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {programState.fishName}
+              </div>
+            )}
 
-            {/* Stats Tooltip (never flipped) */}
+            {/* Tooltip - different for dead vs living fish */}
             {hoveredFish && (
               <div
                 style={{
@@ -988,7 +1177,7 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
                   top: '-90px',
                   left: '50%',
                   transform: 'translateX(-50%)',
-                  background: '#ffffcc',
+                  background: programState.isDead ? '#ffcccc' : '#ffffcc',
                   border: '1px solid #000000',
                   padding: '8px',
                   borderRadius: '3px',
@@ -998,10 +1187,23 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
                   boxShadow: '2px 2px 4px rgba(0,0,0,0.3)'
                 }}
               >
-                <div>🍎 Hunger: {Math.round(programState.hunger)}%</div>
-                <div>❤️ Health: {Math.round(programState.health)}%</div>
-                <div>😊 Happiness: {Math.round(programState.happiness)}%</div>
-                <div>🧽 Tank: {Math.round(programState.cleanliness)}%</div>
+                {programState.isDead ? (
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#800000' }}>
+                      RIP {programState.fishName}
+                    </div>
+                    <div style={{ marginTop: '4px', fontSize: '9px' }}>
+                      {programState.deathDate}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div>🍎 Hunger: {Math.round(programState.hunger)}%</div>
+                    <div>❤️ Health: {Math.round(programState.health)}%</div>
+                    <div>😊 Happiness: {Math.round(programState.happiness)}%</div>
+                    <div>🧽 Tank: {Math.round(programState.cleanliness)}%</div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1091,34 +1293,34 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
             </div>
           </div>
 
-          {/* Clear Fish Tool */}
+          {/* Clear Fish / New Fish Tool */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <button
-              onClick={handleClearFish}
-              disabled={!isController || programState.isDying || programState.isDead}
+              onClick={programState.isDead ? handleNewFish : handleClearFish}
+              disabled={!isController || (programState.isDying && !programState.isDead)}
               style={{
                 width: '50px',
                 height: '40px',
-                background: '#ff4444',
+                background: programState.isDead ? '#44aa44' : '#ff4444',
                 border: '2px outset #c0c0c0',
-                cursor: isController && !programState.isDying && !programState.isDead ? 'pointer' : 'not-allowed',
+                cursor: isController && !(programState.isDying && !programState.isDead) ? 'pointer' : 'not-allowed',
                 padding: '4px',
-                opacity: isController && !programState.isDying && !programState.isDead ? 1 : 0.5,
+                opacity: isController && !(programState.isDying && !programState.isDead) ? 1 : 0.5,
               }}
             >
               <div style={{
-                fontSize: '24px',
+                fontSize: programState.isDead ? '18px' : '24px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 height: '100%',
                 color: '#ffffff'
               }}>
-                ⚡
+                {programState.isDead ? '🐠' : '⚡'}
               </div>
             </button>
-            <div style={{ fontSize: '9px', color: '#800000', marginTop: '2px' }}>
-              Clear Fish
+            <div style={{ fontSize: '9px', color: programState.isDead ? '#004400' : '#800000', marginTop: '2px' }}>
+              {programState.isDead ? 'New Fish' : 'Clear Fish'}
             </div>
           </div>
 
@@ -1128,9 +1330,13 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
               🧽 Tank: {Math.round(programState.cleanliness)}%
             </div>
             <div style={{ marginBottom: '2px' }}>
-              😊 Fish: {Math.round(programState.happiness)}% happy
+              {programState.isDead ? (
+                <span style={{ color: '#800000' }}>💀 Fish: deceased</span>
+              ) : (
+                <>😊 Fish: {Math.round(programState.happiness)}% happy</>
+              )}
             </div>
-            {programState.hunger < 30 && (
+            {!programState.isDead && programState.hunger < 30 && (
               <div style={{ color: '#ff0000', fontSize: '10px' }}>
                 🍎 Hungry!
               </div>
@@ -1142,6 +1348,55 @@ const SeaBuddy: React.FC<SeaBuddyProps> = ({
             )}
           </div>
         </div>
+
+        {/* Destroy Remains Prompt */}
+        {programState.showDestroyPrompt && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: '#c0c0c0',
+              border: '2px outset #c0c0c0',
+              padding: '15px',
+              zIndex: 2000,
+              boxShadow: '4px 4px 8px rgba(0,0,0,0.5)',
+            }}
+          >
+            <div style={{ marginBottom: '10px', fontSize: '12px', color: '#000080' }}>
+              Destroy remains of {programState.fishName}?
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button
+                onClick={handleDestroyRemains}
+                style={{
+                  padding: '5px 10px',
+                  background: '#ff4444',
+                  color: '#ffffff',
+                  border: '2px outset #c0c0c0',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                }}
+              >
+                Destroy
+              </button>
+              <button
+                onClick={handleCancelDestroy}
+                style={{
+                  padding: '5px 10px',
+                  background: '#c0c0c0',
+                  color: '#000000',
+                  border: '2px outset #c0c0c0',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </ProgramWindow>
     </>

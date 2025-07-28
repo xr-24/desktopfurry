@@ -314,6 +314,8 @@ function getProgramInitialState(type: ProgramWindow['type']) {
         isDying: false,
         deathAnimationStartTime: 0,
         isDead: false,
+        deathDate: undefined,
+        showDestroyPrompt: false,
       };
     default:
       return {};
